@@ -5,9 +5,24 @@ from sqlalchemy.orm import relationship, declarative_base
 
 Base = declarative_base() 
 
+
+class Department(Base): 
+    __tablename__ = 'departments' 
+    id = Column( 
+        Integer, 
+        unique=True, 
+        primary_key=True 
+    ) 
+    name = Column( 
+        String, 
+        unique=True 
+    ) 
+
+    user = relationship('User', back_populates='departments') 
+
+
 class User(Base): 
     __tablename__ = 'users' 
-
     id = Column( 
         Integer, 
         primary_key=True, 
@@ -32,11 +47,12 @@ class User(Base):
         String, 
         unique=True 
     ) 
-    department = Column( 
-        String, 
-        unique=False, 
+    department_id = Column( 
+        Integer, 
+        ForeignKey('demartments.id'), 
     ) 
 
+    department = relationship('Department', back_populates='users') 
     client = relationship("Client", back_populates="users") 
     event = relationship("User", back_populates="users") 
 
@@ -101,11 +117,11 @@ class Contract(Base):
     client_id = Column( 
         ForeignKey('clients.id') 
     ) 
-    # A multiplier par 100 pour retrouver un prix avec centimes 
+    # A diviser par 100 pour retrouver un prix avec centimes 
     amount = Column( 
         Integer 
     ) 
-    # A multiplier par 100 pour retrouver un prix avec centimes 
+    # A diviser par 100 pour retrouver un prix avec centimes 
     paid_amount = Column( 
         Integer 
     ) 

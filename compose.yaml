@@ -1,18 +1,29 @@
+
 version: "3.9"
-   
+
+volumes:
+  db_data:
+
 services:
-  db:
+  postgres:
     image: postgres
-    volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
+    # container_name: postgres
+    # restart: always
+    ports: 
+      - ${DB_PORT}:${DB_PORT} 
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
 
   adminer:
-    # container_name: adminer_connect_uthd
-    image: dockette/adminer
+    image: adminer
+    hostname: adminer
+    container_name: adminer
+    # restart: always
     ports:
-      - ${ADMINER_PORT}:80
+      - ${ADMINER_PORT}:${ADMINER_PORT}
+
 

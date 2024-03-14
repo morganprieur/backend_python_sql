@@ -1,0 +1,18 @@
+version: "3.9"
+   
+services:
+  db:
+    image: postgres
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  adminer:
+    # container_name: adminer_connect_uthd
+    image: dockette/adminer
+    ports:
+      - ${ADMINER_PORT}:80
+

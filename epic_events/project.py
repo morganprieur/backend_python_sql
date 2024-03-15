@@ -1,60 +1,53 @@
 
 from sqlalchemy import create_engine 
-# import sqlalchemy 
 import psycopg2 
+from models import Base, Department  
+from sqlalchemy.orm import sessionmaker 
 
-# ======== 
-# DATABASES = {
-#     'ENGINE': 'django.db.backends.postgresql',
-#     'NAME': os.environ.get('POSTGRES_DB'),
-#     'USER': os.environ.get('POSTGRES_USER'),
-#     'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-#     'HOST': 'db',
-#     'PORT': os.environ.get('DB_PORT'), 
-# }
-# ======== 
+import os 
 
-# db_user = "app_user" 
-db_user = "postgres" 
-db_password = "postgres" 
-# db_password = "secretpassword" 
-# db_host = "192.168.240.1" 
-# db_host = "127.0.0.1" 
-# db_host = "0.0.0.0" 
-db_host = "localhost" 
-# db_host = "db_data" 
-# db_host = "postgres" 
-# db_host = "p12_work-postgres-1" 
-db_port = "5432" 
-db_name = "app_db" 
+db_user = os.environ.get('POSTGRES_USER') 
+db_password = os.environ.get("POSTGRES_PASSWORD") 
+db_host = os.environ.get("POSTGRES_HOST") 
+db_port = os.environ.get("DB_PORT") 
+db_name = os.environ.get("POSTGRES_DB") 
 
-# db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-# db_url = f"psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}" 
-# db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-# db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-print(db_url) 
-# postgresql+psycopg2://app_user:secretpassword@localhost:5432/app_db
-# http://localhost:8080/?pgsql=postgres&username=app_user&db=app_db&ns=public
-# ======== 
-# conn_url = 'postgresql+psycopg2://yourUserDBName:yourUserDBPassword@yourDBDockerContainerName/yourDBName'
-# ======== 
+db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
+# print(db_url) 
 
 engine = create_engine(db_url) 
 print(engine) 
 
 try: 
     conn = engine.connect() 
-    print(conn) 
+    # print(conn) 
     print('success!') 
+
+    Base.metadata.drop_all(bind=conn) 
+    Base.metadata.create_all(bind=conn) 
+
+    Session = sessionmaker(bind=conn) 
+    session = Session() 
+
+    vente = Department(name='vente') 
+    session.add(vente) 
+    session.commit() 
+
+    vente_db = session.query(Department).filter(Department.name == 'vente').first() 
+    print(f'produit trouvé : {vente_db.name}, id : {vente_db.id}.') 
+
+    conn.commit() 
+
 except Exception as ex: 
     print(ex) 
 
-if conn is not None: 
-    conn.close() 
-    print('connex closed') 
-
 print('hello') 
+
+
+# if conn is not None: 
+#     conn.close() 
+#     print('connex closed') 
+
 
 if __name__ == "main": 
     main() 

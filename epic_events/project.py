@@ -1,7 +1,7 @@
 
 from sqlalchemy import create_engine 
 import psycopg2 
-from models import Base, Department  
+from models import Base, Client, Contract, Department, Event, User   
 from sqlalchemy.orm import sessionmaker 
 
 import os 
@@ -19,24 +19,41 @@ engine = create_engine(db_url)
 print(engine) 
 
 try: 
-    conn = engine.connect() 
-    # print(conn) 
-    print('success!') 
+    # conn = engine.connect() 
+    # # print(conn) 
+    # print('success!') 
 
-    Base.metadata.drop_all(bind=conn) 
-    Base.metadata.create_all(bind=conn) 
+    Base.metadata.drop_all(bind=engine) 
+    Base.metadata.create_all(bind=engine) 
 
-    Session = sessionmaker(bind=conn) 
+    Session = sessionmaker(bind=engine) 
     session = Session() 
 
     vente = Department(name='vente') 
     session.add(vente) 
     session.commit() 
 
-    vente_db = session.query(Department).filter(Department.name == 'vente').first() 
-    print(f'produit trouvé : {vente_db.name}, id : {vente_db.id}.') 
+    vente.name = 'commerce' 
+    session.commit() 
 
-    conn.commit() 
+    sales_user = User( 
+        name='sales 1', 
+        email='sales_1@mail.com', 
+        password='S3cr3tp4ss', 
+        phone='01 23 45 67 89', 
+        department=vente 
+    ) 
+    session.add(sales_user) 
+    session.commit() 
+
+    vente_db = session.query(Department).filter(Department.id == 1).first() 
+    print(f'département trouvé : {vente_db.name}, id : {vente_db.id}.') 
+
+    users_db = session.query(User).filter(User.department==vente) 
+    for user in users_db: 
+        print(f'User trouvé : {user.name}, id : {user.id}, departement : {user.department.name}') 
+
+    # conn.commit() 
 
 except Exception as ex: 
     print(ex) 

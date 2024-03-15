@@ -18,7 +18,7 @@ class Department(Base):
         unique=True 
     ) 
 
-    users = relationship('User', back_populates='departments') 
+    user = relationship('User', back_populates='department') 
 
 
 class User(Base): 
@@ -52,9 +52,9 @@ class User(Base):
         ForeignKey('departments.id'), 
     ) 
 
-    departments = relationship('Department', back_populates='users') 
-    clients = relationship("Client", back_populates="users") 
-    events = relationship("Event", back_populates="users") 
+    department = relationship('Department', back_populates='user') 
+    clients = relationship("Client", back_populates="user") 
+    events = relationship("Event", back_populates="user") 
 
     def __repr__(self): 
         return f'User {self.name}' 
@@ -101,9 +101,8 @@ class Client(Base):
         ForeignKey("users.id"), 
     ) 
 
-    users = relationship('User', back_populates="clients") 
-    # sales_contact = relationship('User', back_populates="clients") 
-    contracts = relationship("Contract", back_populates="clients") 
+    user = relationship('User', back_populates="clients") 
+    contract = relationship("Contract", back_populates="clients") 
 
     def __repr__(self): 
         return f'Client {self.name}' 
@@ -136,7 +135,7 @@ class Contract(Base):
         DateTime 
     ) 
 
-    clients = relationship("Client", back_populates="contracts") 
+    clients = relationship("Client", back_populates="contract") 
     events = relationship("Event", back_populates="contracts") 
 
     def __repr__(self): 
@@ -184,7 +183,7 @@ class Event(Base):
         String 
     ) 
 
-    users = relationship("User", back_populates="events") 
+    user = relationship("User", back_populates="events") 
     # support_contact = relationship("User", back_populates="events") 
     contracts = relationship("Contract", back_populates="events") 
 

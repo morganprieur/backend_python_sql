@@ -18,7 +18,7 @@ class Department(Base):
         unique=True 
     ) 
 
-    user = relationship('User', back_populates='departments') 
+    user = relationship('User', back_populates='department') 
 
 
 class User(Base): 
@@ -49,12 +49,12 @@ class User(Base):
     ) 
     department_id = Column( 
         Integer, 
-        ForeignKey('demartments.id'), 
+        ForeignKey('departments.id'), 
     ) 
 
-    department = relationship('Department', back_populates='users') 
-    client = relationship("Client", back_populates="users") 
-    event = relationship("User", back_populates="users") 
+    department = relationship('Department', back_populates='user') 
+    clients = relationship("Client", back_populates="user") 
+    events = relationship("Event", back_populates="user") 
 
     def __repr__(self): 
         return f'User {self.name}' 
@@ -64,6 +64,7 @@ class Client(Base):
 
     id = Column( 
         Integer, 
+        primary_key=True, 
         unique=True, 
         index=True 
     ) 
@@ -97,10 +98,10 @@ class Client(Base):
     ) 
     sales_contact_id = Column( 
         Integer, 
-        ForeignKey("user.id"), 
+        ForeignKey("users.id"), 
     ) 
 
-    sales_contact = relationship('User', back_populates="clients") 
+    user = relationship('User', back_populates="clients") 
     contract = relationship("Contract", back_populates="clients") 
 
     def __repr__(self): 
@@ -111,6 +112,7 @@ class Contract(Base):
     __tablename__ = 'contracts' 
     id = Column( 
         Integer, 
+        primary_key=True, 
         unique=True, 
         index=True 
     ) 
@@ -133,8 +135,8 @@ class Contract(Base):
         DateTime 
     ) 
 
-    client = relationship("User", back_populates="contracts") 
-    event = relationship("Event", back_populates="contracts") 
+    clients = relationship("Client", back_populates="contract") 
+    events = relationship("Event", back_populates="contracts") 
 
     def __repr__(self): 
         return f'Contract {self.id}, client {self.client_id}' 
@@ -145,6 +147,7 @@ class Event(Base):
 
     id = Column( 
         Integer, 
+        primary_key=True, 
         unique=True, 
         index=True 
     ) 
@@ -180,8 +183,9 @@ class Event(Base):
         String 
     ) 
 
-    support_contact = relationship("User", back_populates="events") 
-    contract = relationship("Contract", back_populates="events") 
+    user = relationship("User", back_populates="events") 
+    # support_contact = relationship("User", back_populates="events") 
+    contracts = relationship("Contract", back_populates="events") 
 
     def __repr__(self): 
         return f'Event {self.name}' 

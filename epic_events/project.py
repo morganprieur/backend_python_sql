@@ -1,60 +1,71 @@
 
 from sqlalchemy import create_engine 
-# import sqlalchemy 
 import psycopg2 
+from models import Base, Client, Contract, Department, Event, User   
+from sqlalchemy.orm import sessionmaker 
 
-# ======== 
-# DATABASES = {
-#     'ENGINE': 'django.db.backends.postgresql',
-#     'NAME': os.environ.get('POSTGRES_DB'),
-#     'USER': os.environ.get('POSTGRES_USER'),
-#     'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-#     'HOST': 'db',
-#     'PORT': os.environ.get('DB_PORT'), 
-# }
-# ======== 
+import os 
 
-# db_user = "app_user" 
-db_user = "postgres" 
-db_password = "postgres" 
-# db_password = "secretpassword" 
-# db_host = "192.168.240.1" 
-# db_host = "127.0.0.1" 
-# db_host = "0.0.0.0" 
-db_host = "localhost" 
-# db_host = "db_data" 
-# db_host = "postgres" 
-# db_host = "p12_work-postgres-1" 
-db_port = "5432" 
-db_name = "app_db" 
+db_user = os.environ.get('POSTGRES_USER') 
+db_password = os.environ.get("POSTGRES_PASSWORD") 
+db_host = os.environ.get("POSTGRES_HOST") 
+db_port = os.environ.get("DB_PORT") 
+db_name = os.environ.get("POSTGRES_DB") 
 
-# db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-# db_url = f"psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}" 
-# db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-# db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-print(db_url) 
-# postgresql+psycopg2://app_user:secretpassword@localhost:5432/app_db
-# http://localhost:8080/?pgsql=postgres&username=app_user&db=app_db&ns=public
-# ======== 
-# conn_url = 'postgresql+psycopg2://yourUserDBName:yourUserDBPassword@yourDBDockerContainerName/yourDBName'
-# ======== 
+db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
+# print(db_url) 
 
 engine = create_engine(db_url) 
 print(engine) 
 
 try: 
-    conn = engine.connect() 
-    print(conn) 
-    print('success!') 
+    Base.metadata.drop_all(bind=engine) 
+    Base.metadata.create_all(bind=engine) 
+
+    Session = sessionmaker(bind=engine) 
+    session = Session() 
+
+    vente = Department(name='vente') 
+    session.add(vente) 
+    session.commit() 
+
+    vente.name = 'commerce' 
+    session.commit() 
+
+    sales_user = User( 
+        name='sales 1', 
+        email='sales_1@mail.com', 
+        password='S3cr3tp4ss', 
+        phone='01 23 45 67 89', 
+        department=vente 
+    ) 
+    session.add(sales_user) 
+    session.commit() 
+
+    vente_db = session.query(Department).filter(Department.id == 1).first() 
+    print(f'département trouvé : {vente_db.name}, id : {vente_db.id}.') 
+
+    users_db = session.query(User).filter(User.department==vente) 
+    for user in users_db: 
+        print(f'User trouvé : {user.name}, id : {user.id}, departement : {user.department.name}') 
+
+    # # tuto simpletech 
+    # stock_query = session.query(Stock).join(Warehouse).join(Product) 
+    # stock_chaussure_entrepot_a = stock_query.filter(Product.name=='chaussure', Warehouse.name=='entreprot A').first() 
+    # print(f'Le stock de {stock_chaussure_entrepot_a.product.name} dans {stock_chaussure_entrepot_a.warehouse.name} est de {stock_chaussure_entrepot_a.quantity}.') 
+
+    # conn.commit() 
+
 except Exception as ex: 
     print(ex) 
 
-if conn is not None: 
-    conn.close() 
-    print('connex closed') 
-
 print('hello') 
+
+
+# if conn is not None: 
+#     conn.close() 
+#     print('connex closed') 
+
 
 if __name__ == "main": 
     main() 

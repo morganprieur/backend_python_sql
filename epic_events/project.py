@@ -61,7 +61,7 @@ except Exception as ex:
 
 print('hello') 
 
-
+# Voir si engine s'en occupe ? 
 # if conn is not None: 
 #     conn.close() 
 #     print('connex closed') 

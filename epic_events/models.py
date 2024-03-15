@@ -171,7 +171,8 @@ class Event(Base):
     ) 
     support_contact_id = Column( 
         Integer, 
-        ForeignKey('users.id') 
+        ForeignKey('users.id'), 
+        nullable=True 
     ) 
     location = Column( 
         String 

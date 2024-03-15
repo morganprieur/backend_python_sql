@@ -19,10 +19,6 @@ engine = create_engine(db_url)
 print(engine) 
 
 try: 
-    # conn = engine.connect() 
-    # # print(conn) 
-    # print('success!') 
-
     Base.metadata.drop_all(bind=engine) 
     Base.metadata.create_all(bind=engine) 
 
@@ -52,6 +48,11 @@ try:
     users_db = session.query(User).filter(User.department==vente) 
     for user in users_db: 
         print(f'User trouvé : {user.name}, id : {user.id}, departement : {user.department.name}') 
+
+    # # tuto simpletech 
+    # stock_query = session.query(Stock).join(Warehouse).join(Product) 
+    # stock_chaussure_entrepot_a = stock_query.filter(Product.name=='chaussure', Warehouse.name=='entreprot A').first() 
+    # print(f'Le stock de {stock_chaussure_entrepot_a.product.name} dans {stock_chaussure_entrepot_a.warehouse.name} est de {stock_chaussure_entrepot_a.quantity}.') 
 
     # conn.commit() 
 

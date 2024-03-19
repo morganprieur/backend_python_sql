@@ -37,14 +37,15 @@ Développer une application (CLI) de gestion de clientèle (CRM), avec Python et
     taper dans un terminal `docker compose up --build` 
     * Après chaque modification du fichier compose.yaml : penser à : 
     - supprimer les volumes dans l'outil de gestion de Docker 
-    - "re-builder" le container (`docker compose up--build`) 
+    - "re-builder" le container (`docker compose up --build`) 
     * Pour relancer le container sans avoir modifié le compose.yaml : `docker compose up` 
-    * Fermer le container : `ctrl+c`, ou depuis un autre terminal : `compose down` 
+    * Fermer le container : `ctrl+c`, 
+        ou depuis un autre terminal : `compose down` 
 5. Vérifier qu'Adminer peut se connecter à la BDD : 
     - visiter l'adresse http://localhost:${ADMINER_PORT} 
     - sélectionner "Postgresql" dans le menu déroulant 
     + taper les informations suivantes dans le formulaire : 
-        - host : <le nom du service> 
+        - host : <le_nom_du_service> 
         - utilisateur : POSTGRES_USER 
         - mot de passe : POSTGRES_PASSWORD 
         - nom de base de données : POSTGRES_DB 
@@ -52,9 +53,16 @@ Développer une application (CLI) de gestion de clientèle (CRM), avec Python et
     --> Adminer affiche la bdd. 
 
 **Compléter** 
-<!-- 6. Lancer l'application ?  -->
 <!-- 6. Données ?  -->
 
+
+## Démarrer l'application : 
+
+1. Activer Pipenv :     
+    - `pipenv install` 
+    - `pipenv shell` 
+2. Se placer dans le dossier du projet : `cd epic_events` 
+3. Lancer l'application : `pipenv run python projet.py` 
 
 
 

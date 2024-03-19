@@ -2,6 +2,8 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean 
 from sqlalchemy.orm import relationship, declarative_base 
 
+import os 
+import bcrypt 
 
 Base = declarative_base() 
 
@@ -19,6 +21,19 @@ class Department(Base):
     ) 
 
     user = relationship('User', back_populates='department') 
+
+    def __str__(self): 
+        return f'Modèle Département : {self.name}, id : {self.id}.' 
+
+    def __repr__(self): 
+        return str(self) 
+        # return f'User {self.__str__()}' 
+
+    # def select_one_item(self, itemName, value): 
+    #     # print('dept attribute L34 : ', attribute) 
+    #     itemName = self.session.query(Department).filter(Department.name==value).first() 
+    #     return itemName 
+    #     # return self.repr() 
 
 
 class User(Base): 
@@ -56,8 +71,13 @@ class User(Base):
     clients = relationship("Client", back_populates="user") 
     events = relationship("Event", back_populates="user") 
 
+    def __str__(self): 
+        return f'Modèle User : {self.name}, id : {self.id}.' 
+
     def __repr__(self): 
-        return f'User {self.name}' 
+        return str(self) 
+        # return f'User {self.name}' 
+
 
 class Client(Base): 
     __tablename__ = 'clients' 
@@ -104,8 +124,24 @@ class Client(Base):
     user = relationship('User', back_populates="clients") 
     contract = relationship("Contract", back_populates="clients") 
 
+    def __str__(self): 
+        return f'Modèle Client : {self.name}, id : {self.id}.' 
+
     def __repr__(self): 
-        return f'Client {self.name}' 
+        return str(self) 
+        # return f'Client {self.name}' 
+
+    def add_item(self, itemName, fields:list): 
+        itemName = Client( 
+            name=fields[0], 
+            email=fields[1], 
+            phone=fields[2], 
+            corporation_name=fields[3], 
+            created_at=fields[4], 
+            updated_at=fields[5], 
+            sales_contact_id=fields[6], 
+        ) 
+        return itemName 
 
 
 class Contract(Base): 

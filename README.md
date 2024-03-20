@@ -52,9 +52,32 @@ Développer une application (CLI) de gestion de clientèle (CRM), avec Python et
     - envoyer le formulaire 
     --> Adminer affiche la bdd. 
 
-**Compléter** 
-<!-- 6. Données ?  -->
+6. Données 
+    + Super utilisateur : 
+        - Créer un fichier `data.json` dans le même dossier 
+        - coller ces données dedans : 
+        `{"users": [`
+            `{`
+                `"id": 1,`
+                `"name": "super_admin",` 
+                `"email": "admin@mail.org",` 
+                `"phone": "06 12 34 56 78",` 
+                `"department_id": 1` 
+            `}`
+        `]}` 
+        Le super utilisateur pourra créer les autres départements et les autres utilisateurs. Il fait lui-même partie du département "gestion". 
+    + Données secrètes : 
+        - Dans le fichier `.env`, ajouter une entrée `USER_1_PW` avec pour valeur le mot de passe de votre choix pour le super utilisateur. 
+        - Vérifier que le fichier `.env` est bien ajouté au fichier `.gitignore`. 
 
+7. Configuration d'utilisation 
+    Pour utiliser l'application en mode dev : 
+    commenter la ligne `main('pub')` dans `project.py` et décommenter la ligne `main('dev')`. 
+    Elle utilisera les données de connexion du super utilisateur du fichier json au lieu d'avoir à les taper. 
+    **Attention :** ce mode n'est pas sécurisé, décommenter la ligne `main('pub')` et commenter la ligne `main('dev')` pour une utilisation publique.  
+
+
+**Compléter** 
 
 ## Démarrer l'application : 
 

@@ -53,7 +53,7 @@ class User(Base):
         unique=True, 
         index=True 
     ) 
-    #TODO: password_hash + max_length 
+    #TODO: password_hash 
     password = Column( 
         String, 
         unique=True, 

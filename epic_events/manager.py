@@ -71,23 +71,17 @@ class Manager():
             phone=fields[3], 
             department_id=fields[4], 
         ) 
-        # userName.password = bcrypt.hashpw(fields[2].encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8') 
         userName.password = self.hash_pw(fields[2], 12) 
-        # userName.password = self.hash_pw(fields[2]) 
-        print('userName.password : ', userName.password) 
-        # print('userName.department_id : ', userName.department_id) 
+        # print('userName.password : ', userName.password) 
         self.session.add(userName) 
         self.session.commit() 
         return userName 
-    #     # hashed_password = flask_bcrypt.generate_password_hash('hash3_for_password').decode('utf-8')  
-    #     # print(hashed_password) 
 
     def hash_pw(self, password, nb:int): 
         salt = bcrypt.gensalt(nb)
         hash_password = bcrypt.hashpw( 
             password.encode('utf-8'), 
             salt 
-            # bcrypt.gensalt(12) 
         ).decode('utf-8') 
         return hash_password 
 
@@ -96,17 +90,22 @@ class Manager():
             user_db = self.session.query(User).filter(User.id==int(value)).first() 
         elif field == 'name': 
             user_db = self.session.query(User).filter(User.name==value).first() 
+        elif field == 'email': 
+            user_db = self.session.query(User).filter(User.email==value).first() 
+        # TO_DEL: 
         print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
         return user_db 
 
 
-    def check_pw(self, pw, user_id): 
-        user_db = self.select_one_user('id', 1) 
+    def check_pw(self, userEmail, pw): 
+        user_db = self.select_one_user('email', userEmail) 
         hashed = user_db.password 
         if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
             print("pw ok") 
+            return True 
         else: 
             print('pw not ok') 
+            return False 
 
 
 

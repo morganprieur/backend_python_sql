@@ -6,4 +6,5 @@ roadmap.md
 questions.md
 
 # secret data 
-.env 
+.env
+data.json 

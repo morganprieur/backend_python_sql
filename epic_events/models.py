@@ -20,7 +20,7 @@ class Department(Base):
         unique=True 
     ) 
 
-    user = relationship('User', back_populates='department') 
+    user = relationship('User', back_populates='department', cascade='all, delete') 
 
     def __str__(self): 
         return f'Modèle Département : {self.name}, id : {self.id}.' 
@@ -53,7 +53,7 @@ class User(Base):
         unique=True, 
         index=True 
     ) 
-    #TODO: password_hash 
+    #TODO: password type ? 
     password = Column( 
         String, 
         unique=True, 

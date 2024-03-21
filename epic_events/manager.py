@@ -42,14 +42,14 @@ class Manager():
             Session = sessionmaker(bind=self.engine) 
             self.session = Session() 
 
-    def add_department_item(self, fields:list): 
+    def add_department(self, fields:list): 
         itemName = Department(name=fields[0]) 
         self.session.add(itemName) 
         self.session.commit() 
         return itemName 
 
-    def update_dept_item(self, new_value, fields:list): 
-        itemName = self.select_one_dept('name', fields[0]) 
+    def update_dept(self, new_value, name): 
+        itemName = self.select_one_dept('name', name) 
         itemName.name = new_value 
         self.session.commit() 
         return itemName 
@@ -61,6 +61,17 @@ class Manager():
             item_db = self.session.query(Department).filter(Department.name==value).first() 
         print(f'département trouvé : {item_db.name}, id : {item_db.id}.') 
         return item_db 
+
+    def select_all_depts(self): 
+        items_db = self.session.query(Department).all() 
+        for item in items_db:
+            print(f'département trouvé : {item.name}, id : {item.id}.') 
+        return items_db 
+
+    def delete_dept(self, field, value): 
+        item_db = self.select_one_dept(field, value) 
+        self.session.delete(item_db) 
+        self.session.commit() 
 
     def add_user(self, fields:list): 
         print(fields) 
@@ -85,17 +96,40 @@ class Manager():
         ).decode('utf-8') 
         return hash_password 
 
+    def update_user(self, id, field, value, new_value): 
+        itemName = self.select_one_user('id', id) 
+        if field == 'name': 
+            itemName.name = new_value 
+        elif field == 'email': 
+            itemName.email = new_value 
+        elif field == 'phone': 
+            itemName.phone = new_value 
+        elif field == 'department_id': 
+            itemName.department_id = new_value 
+        else: 
+            print('no value') 
+        self.session.commit() 
+        return itemName 
+
     def select_one_user(self, field, value): 
+        user_db = User() 
         if field == 'id': 
-            user_db = self.session.query(User).filter(User.id==int(value)).first() 
+            user_db = self.session.query(User).filter(User.id==value).first() 
+            # user_db = self.session.query(User).filter(User.id==int(value)).first() 
         elif field == 'name': 
             user_db = self.session.query(User).filter(User.name==value).first() 
         elif field == 'email': 
             user_db = self.session.query(User).filter(User.email==value).first() 
+        elif field == 'department_id': 
+            user_db = self.session.query(User).filter(User.department_id==value).first() 
         # TO_DEL: 
         print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
         return user_db 
 
+    def delete_user(self, field, value): 
+        item_db = self.select_one_user(field, value) 
+        self.session.delete(item_db) 
+        self.session.commit() 
 
     def check_pw(self, userEmail, pw): 
         user_db = self.select_one_user('email', userEmail) 

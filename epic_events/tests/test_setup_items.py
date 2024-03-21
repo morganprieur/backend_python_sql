@@ -77,30 +77,41 @@ class MyTest(unittest.TestCase):
         ) 
 		testUser_db = self.manager.select_one_user( 
 			'email', 'test@mail.org') 
-		testUser_db = self.manager.update_user( 
+		testUser_update = self.manager.update_user( 
 			testUser_db.id, 'department_id', 
 			testUser_db.department_id, 1) 
 
 		dept_id = testUser_db.department_id 
+		# print('dept_id : ', dept_id) 
 		assert testUser_db.name == 'user test' 
 		assert testUser_db.department_id == 1 
 
-		testUser_db = self.manager.update_user( 
+		testUser_update = self.manager.update_user( 
 			testUser_db.id, 'department_id', 1, dept_id) 
-		assert testUser_db.name == 'user test' 
-		assert testUser_db.department_id == dept_id 
+		assert testUser_update.name == 'user test' 
+		assert testUser_update.department_id == dept_id 
+		# assert testUser_update.department_id == dept_id 
 
 
 	def test_deletion_dept_and_user(self): 
 		""" Test deletiing one department and the user with relationship.""" 
+		testDept_db = self.manager.select_one_dept('name', 'testTable') 
 		testUser_db = self.manager.select_one_user( 
 			'email', 'test@mail.org') 
+
 		self.manager.delete_dept('name', 'testTable') 
+
 		all_depts = self.manager.select_all_depts() 
-		dept_names_list = [] 
+		depts_names_list = [] 
 		for dept in all_depts: 
-			dept_names_list.append(dept) 
-		assert testUser_db.name not in dept_names_list 
+			depts_names_list.append(dept) 
+		assert testDept_db.name not in depts_names_list 
+
+		all_users = self.manager.select_all_users() 
+		users_names_list = [] 
+		for user in all_users: 
+			users_names_list.append(user) 
+		assert testUser_db.name not in depts_names_list 
 
 		# self.manager.delete_user('name', 'user test') 
 

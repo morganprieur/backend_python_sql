@@ -20,7 +20,8 @@ class Department(Base):
         unique=True 
     ) 
 
-    user = relationship('User', back_populates='department', cascade='all, delete') 
+    user = relationship('User', back_populates='department', 
+        cascade='all, delete') 
 
     def __str__(self): 
         return f'Modèle Département : {self.name}, id : {self.id}.' 
@@ -55,6 +56,7 @@ class User(Base):
     ) 
     #TODO: password type ? 
     password = Column( 
+        # Password, 
         String, 
         unique=True, 
     ) 
@@ -65,6 +67,10 @@ class User(Base):
     department_id = Column( 
         Integer, 
         ForeignKey('departments.id'), 
+    ) 
+    token = Column( 
+        String, 
+        unique=True 
     ) 
 
     department = relationship('Department', back_populates='user') 

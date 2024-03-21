@@ -19,17 +19,8 @@ class Manager():
         self.db_name = os.environ.get("POSTGRES_DB") 
         self.db_url = f"postgresql+psycopg2://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}" 
 
-
     def connect(self): 
-        # db_user = os.environ.get('POSTGRES_USER') 
-        # db_password = os.environ.get("POSTGRES_PASSWORD") 
-        # db_host = os.environ.get("POSTGRES_HOST") 
-        # db_port = os.environ.get("DB_PORT") 
-        # db_name = os.environ.get("POSTGRES_DB") 
-        # db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-        # print(db_url) 
         self.engine = create_engine(self.db_url) 
-
 
     def create_tables(self): 
         try: 
@@ -42,6 +33,7 @@ class Manager():
             Session = sessionmaker(bind=self.engine) 
             self.session = Session() 
 
+    # department # 
     def add_department(self, fields:list): 
         itemName = Department(name=fields[0]) 
         self.session.add(itemName) 
@@ -54,6 +46,7 @@ class Manager():
         self.session.commit() 
         return itemName 
 
+    # TODO: suppr print 
     def select_one_dept(self, field, value): 
         if field == 'name': 
             item_db = self.session.query(Department).filter(Department.name==value).first() 
@@ -73,6 +66,7 @@ class Manager():
         self.session.delete(item_db) 
         self.session.commit() 
 
+    # user # 
     def add_user(self, fields:list): 
         print(fields) 
         userName = User( 
@@ -81,12 +75,51 @@ class Manager():
             password=fields[2], 
             phone=fields[3], 
             department_id=fields[4], 
+            token='string', 
         ) 
         userName.password = self.hash_pw(fields[2], 12) 
-        # print('userName.password : ', userName.password) 
+        payload = {'email': fields[1], 'pass': fields[2]}
+        secret = os.environ.get('JWT_SECRET') 
+        algo = os.environ.get('JWT_ALGO') 
+        data = {'secret': secret, 'algo': algo} 
+        userName.token = self.get_token(payload, data) 
         self.session.add(userName) 
         self.session.commit() 
         return userName 
+
+    # TODO 
+    # def get_token(self, data={'payload': f'{email} {password}', 'secret': 'secret', 'algo': "HS256"}): 
+    def get_token(self, payload, data:dict): 
+        # payload = data['payload'] 
+        secret = data['secret'] 
+        algo = data['algo'] 
+        encoded_jwt = jwt.encode(payload, secret, algo) 
+        print(encoded_jwt) 
+        return encoded_jwt 
+        # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg 
+
+    def verify_token(self, connectEmail, connectPass): 
+        userToken = self.select_one_user('email', connectEmail).token 
+        secret = os.environ.get('JWT_SECRET') 
+        algo = os.environ.get('JWT_ALGO') 
+        userDecode = jwt.decode(userToken, secret, algorithms=[algo]) 
+        # jwt.decode(encoded_jwt, "secret", algorithms=["HS256"])
+        # {'some': 'payload'} 
+        newToken = {'email': connectEmail, 'pass': connectPass} 
+        if newToken == userDecode: 
+            print('token ok (manager)') 
+            return True 
+        else: 
+            print('newToken : ', newToken, ' userToken : ', userToken) 
+            return False 
+    #     payload_data = { 
+    #         'sub': '4242',
+    #         'name': 'Jessica Temporal',
+    #         'nickname': 'Jess'
+    #     } 
+    #     secret = 'my_super_secret'
+    #     token = jwt.encode(payload=payload_data, key=secret)
+    #     print(token)
 
     def hash_pw(self, password, nb:int): 
         salt = bcrypt.gensalt(nb)
@@ -106,25 +139,45 @@ class Manager():
             itemName.phone = new_value 
         elif field == 'department_id': 
             itemName.department_id = new_value 
+        elif field == 'token': 
+            itemName.token = new_value 
         else: 
             print('no value') 
         self.session.commit() 
         return itemName 
 
+    # TODO: suppr print 
     def select_one_user(self, field, value): 
+        print('field : ', field) 
+        print('value : ', value) 
         user_db = User() 
         if field == 'id': 
-            user_db = self.session.query(User).filter(User.id==value).first() 
-            # user_db = self.session.query(User).filter(User.id==int(value)).first() 
+            user_db = self.session.query(User).filter( 
+                User.id==int(value)).first() 
         elif field == 'name': 
-            user_db = self.session.query(User).filter(User.name==value).first() 
+            user_db = self.session.query(User).filter( 
+                User.name==value).first() 
         elif field == 'email': 
-            user_db = self.session.query(User).filter(User.email==value).first() 
+            user_db = self.session.query(User).filter( 
+                User.email==value).first() 
         elif field == 'department_id': 
-            user_db = self.session.query(User).filter(User.department_id==value).first() 
-        # TO_DEL: 
-        print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
+            user_db = self.session.query(User).filter( 
+                User.department_id==value).first() 
+        else: 
+            print('no field') 
+        if user_db is None: 
+            # TODO : afficher de nouveau la question précédente ? 
+            print('Aucun utilisateur avec ces informations') 
+            # return False 
+        else: 
+            print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
         return user_db 
+
+    def select_all_users(self): 
+        items_db = self.session.query(User).all() 
+        for item in items_db:
+            print(f'user trouvé in all : {item.name}, id : {item.id}.') 
+        return items_db 
 
     def delete_user(self, field, value): 
         item_db = self.select_one_user(field, value) 
@@ -133,14 +186,17 @@ class Manager():
 
     def check_pw(self, userEmail, pw): 
         user_db = self.select_one_user('email', userEmail) 
-        hashed = user_db.password 
-        if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
-            print("pw ok") 
-            return True 
-        else: 
-            print('pw not ok') 
+        if user_db is None: 
+            print('user is none') 
             return False 
-
+        else: 
+            hashed = user_db.password 
+            if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
+                print("pw ok") 
+                return True 
+            else: 
+                print('pw not ok') 
+                return False 
 
 
     # def select_one(self, itemName, model, value): 

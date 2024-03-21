@@ -5,6 +5,7 @@ from views import Views
 
 from sqlalchemy.orm import sessionmaker 
 
+# from getpass import getpass 
 import json 
 import os 
 from datetime import datetime 
@@ -25,7 +26,7 @@ class Controller():
         newDept = manager.add_department(['vente']) 
         # DEBUG: 
         # dept_db = manager.select_one_dept('name', 'vente') 
-        updatedDept = manager.update_dept('commerce', ['vente']) 
+        updatedDept = manager.update_dept('commerce', 'vente') 
         upd_dept_db = manager.select_one_dept('name', 'commerce') 
         # DEBUG: Check if the old name doesn't exist anymore: 
         # upd_dept_db_none = manager.select_one_dept('vente')  # None ok 
@@ -35,7 +36,10 @@ class Controller():
         if mode == 'pub': 
             # Type the required credentials: 
             userConnect = view.input_user_connection() 
+            # try: 
             checked = manager.check_pw(userConnect['email'], userConnect['password']) 
+            # except Exception as ex:
+            #     print(ex) 
         else:  
             # file deepcode ignore PT: local project 
             # Get the required credentials from the json data: 
@@ -47,10 +51,15 @@ class Controller():
 
         # print(checked) 
         if not checked: 
-            print('not connected user') 
+            print('Les informations saisies ne sont pas bonnes, merci de réessayer.') 
         else: 
             logged_user = manager.select_one_user('email', userConnect['email'])  
-            print('logged_user : ', logged_user) 
+            tokened = manager.verify_token('admin@mail.org', password) 
+            if not tokened: 
+                print('token not ok') 
+            else: 
+                print('token ok (controller)') 
+                print('logged_user : ', logged_user) 
 
 
         # get_token 

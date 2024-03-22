@@ -2,20 +2,25 @@
 from manager import Manager 
 from models import Base, Client, Contract, Department, Event, User  
 from views import Views 
+from utils.helpers import test_fct 
 
 from sqlalchemy.orm import sessionmaker 
 
 # from getpass import getpass 
-import json 
-import os 
-from datetime import datetime 
 import bcrypt 
+from datetime import datetime, timedelta 
+import json 
+from jwt.exceptions import ExpiredSignatureError 
+import os 
+import time 
+
 from prompt_toolkit import PromptSession 
 session = PromptSession() 
 
 
 class Controller(): 
     print(f'hello controller') 
+    # test_fct() 
 
     def start(self, mode): 
         view = Views() 
@@ -31,41 +36,56 @@ class Controller():
         # DEBUG: Check if the old name doesn't exist anymore: 
         # upd_dept_db_none = manager.select_one_dept('vente')  # None ok 
 
-        superAdmin = manager.add_user(['super_admin', 'admin@mail.org', os.environ.get('USER_1_PW'), '06 12 34 56 78', 1]) 
+        superAdmin = manager.add_user( 
+            ['super_admin', 
+            'admin@mail.org', 
+            os.environ.get('USER_1_PW'), 
+            '06 12 34 56 78', 
+            1 
+        ]) 
+        print('datetime : ', datetime.now().strftime('%f')) 
+        print('datetime : ', datetime.now().timestamp()) 
 
+        time.sleep(5) 
+        print('pause') 
+
+        print('datetime : ', datetime.now().strftime('%f'))  
+        print('datetime : ', datetime.now().timestamp())  
         if mode == 'pub': 
             # Type the required credentials: 
             userConnect = view.input_user_connection() 
-            # try: 
-            checked = manager.check_pw(userConnect['email'], userConnect['password']) 
-            # except Exception as ex:
-            #     print(ex) 
+            # Verify password 
+            checked = manager.check_pw( 
+                userConnect['email'], 
+                userConnect['password'] 
+            ) 
         else:  
             # file deepcode ignore PT: local project 
-            # Get the required credentials from the json data: 
             with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
                 registered = json.load(jsonfile) 
             userConnect = registered['users'][0] 
             password = os.environ.get('USER_1_PW') 
+            # Verify password 
             checked = manager.check_pw(userConnect['email'], password) 
-
-        # print(checked) 
+        # TODO: sortie propre après l'erreur de saisie 
         if not checked: 
             print('Les informations saisies ne sont pas bonnes, merci de réessayer.') 
         else: 
-            logged_user = manager.select_one_user('email', userConnect['email'])  
-            tokened = manager.verify_token('admin@mail.org', password) 
+            logged_user = manager.select_one_user( 
+                'email', userConnect['email']) 
+            # Verify JWT 
+            tokened = manager.verify_token( 
+                userConnect['email'], password) 
+            # TODO: sortie propre après l'échec du token 
             if not tokened: 
-                print('token not ok') 
+                print('Vous n\'avez pas la permission \'effectuer cette action') 
             else: 
-                print('token ok (controller)') 
-                print('logged_user : ', logged_user) 
+                permission = True 
+                return permission 
 
 
-        # get_token 
 
 
-        # # print(newItem.__str__()) 
         # newSaler = manager.add_model_item('sales_user', User, 
         #     ['sales 1', 'sales_1@mail.com', 'S3cr3tp4ss', '01 23 45 67 89', newDept])
         # # manager.select_one(newDept) 

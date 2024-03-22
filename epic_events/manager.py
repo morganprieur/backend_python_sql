@@ -6,7 +6,10 @@ from sqlalchemy.orm import sessionmaker
 
 import os 
 import bcrypt 
+from datetime import datetime, timedelta 
 import jwt 
+from jwt.exceptions import ExpiredSignatureError
+import re 
 
 
 class Manager(): 
@@ -75,51 +78,62 @@ class Manager():
             password=fields[2], 
             phone=fields[3], 
             department_id=fields[4], 
-            token='string', 
+            token='st.ri.ng', 
         ) 
         userName.password = self.hash_pw(fields[2], 12) 
-        payload = {'email': fields[1], 'pass': fields[2]}
-        secret = os.environ.get('JWT_SECRET') 
-        algo = os.environ.get('JWT_ALGO') 
-        data = {'secret': secret, 'algo': algo} 
-        userName.token = self.get_token(payload, data) 
+        # JWT {"exp": datetime.datetime.now(tz=timezone.utc) + datetime.timedelta(seconds=30)} 
+        delta = 2 
+        data = { 
+            'email': fields[1], 
+            'pass': fields[2], 
+        } 
+        userName.token = self.get_token(delta, data) 
         self.session.add(userName) 
         self.session.commit() 
         return userName 
 
-    # TODO 
-    # def get_token(self, data={'payload': f'{email} {password}', 'secret': 'secret', 'algo': "HS256"}): 
-    def get_token(self, payload, data:dict): 
-        # payload = data['payload'] 
-        secret = data['secret'] 
-        algo = data['algo'] 
-        encoded_jwt = jwt.encode(payload, secret, algo) 
-        print(encoded_jwt) 
-        return encoded_jwt 
-        # eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg 
-
-    def verify_token(self, connectEmail, connectPass): 
-        userToken = self.select_one_user('email', connectEmail).token 
+    def get_token(self, delta:int, data:dict): 
+        print('ML97 : ', datetime.now().timestamp()) 
+        payload = { 
+            'email': data['email'], 
+            'pass': data['pass'], 
+            'exp': datetime.now()+timedelta(seconds=delta) 
+        } 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
-        userDecode = jwt.decode(userToken, secret, algorithms=[algo]) 
-        # jwt.decode(encoded_jwt, "secret", algorithms=["HS256"])
-        # {'some': 'payload'} 
-        newToken = {'email': connectEmail, 'pass': connectPass} 
-        if newToken == userDecode: 
-            print('token ok (manager)') 
+        encoded_jwt = jwt.encode(payload, secret, algo) 
+        # print(encoded_jwt) 
+        return encoded_jwt 
+        # tuto : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg 
+
+    def verify_token(self, connectEmail, connectPass): 
+        registeredToken = self.select_one_user('email', connectEmail).token 
+        # print('registeredToken : ', registeredToken) 
+        secret = os.environ.get('JWT_SECRET') 
+        algo = os.environ.get('JWT_ALGO') 
+
+        userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
+        # print('userDecode ML135 : ', userDecode) 
+        userDecode_exp = int(userDecode['exp'])-3600 
+        # print('userDecode_exp ML137 : ', userDecode_exp) 
+
+        connectedToken = { 
+            'email': connectEmail, 
+            'pass': connectPass, 
+            'exp': datetime.now().timestamp() 
+        } 
+        exp = re.sub('\.\d+', '', str(connectedToken['exp'])) 
+        # print('connectedToken_exp : ', exp) 
+        connectedToken['exp'] = exp 
+        connectedToken_exp = connectedToken['exp'] 
+        if {userDecode['email'], userDecode['pass']} == {connectedToken['email'], connectedToken['pass']}: 
+            # ok 
+            print('OK token') 
             return True 
         else: 
-            print('newToken : ', newToken, ' userToken : ', userToken) 
+            # ok 
+            print('NO token') 
             return False 
-    #     payload_data = { 
-    #         'sub': '4242',
-    #         'name': 'Jessica Temporal',
-    #         'nickname': 'Jess'
-    #     } 
-    #     secret = 'my_super_secret'
-    #     token = jwt.encode(payload=payload_data, key=secret)
-    #     print(token)
 
     def hash_pw(self, password, nb:int): 
         salt = bcrypt.gensalt(nb)
@@ -128,6 +142,20 @@ class Manager():
             salt 
         ).decode('utf-8') 
         return hash_password 
+
+    def check_pw(self, userEmail, pw): 
+        user_db = self.select_one_user('email', userEmail) 
+        if user_db is None: 
+            print('user is none') 
+            return False 
+        else: 
+            hashed = user_db.password 
+            if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
+                print("pw ok") 
+                return True 
+            else: 
+                print('pw not ok') 
+                return False 
 
     def update_user(self, id, field, value, new_value): 
         itemName = self.select_one_user('id', id) 
@@ -184,46 +212,6 @@ class Manager():
         self.session.delete(item_db) 
         self.session.commit() 
 
-    def check_pw(self, userEmail, pw): 
-        user_db = self.select_one_user('email', userEmail) 
-        if user_db is None: 
-            print('user is none') 
-            return False 
-        else: 
-            hashed = user_db.password 
-            if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
-                print("pw ok") 
-                return True 
-            else: 
-                print('pw not ok') 
-                return False 
-
-
-    # def select_one(self, itemName, model, value): 
-    #     # vente = Department(name='vente') 
-    #     # session.add(vente) 
-    #     # session.commit() 
-
-    #     # vente.name = 'commerce' 
-    #     # self.session.commit() 
-
-    #     # sales_user = User( 
-    #     #     name='sales 1', 
-    #     #     email='sales_1@mail.com', 
-    #     #     password='S3cr3tp4ss', 
-    #     #     phone='01 23 45 67 89', 
-    #     #     department=item 
-    #     #     # department=vente 
-    #     # ) 
-    #     # self.session.add(sales_user) 
-    #     # self.session.commit() 
-
-    #     print('itemName : ', itemName, ' model : ', model, ' value : ', value) 
-    #     item = model.select_one_item(self, itemName, value) 
-    #     print(item) 
-    #         # itemName = session.query(model).filter(model.attribute==value).first() 
-    #     # vente_db = self.session.query(Department).filter(Department.id==1).first() 
-    #     # print(f'département trouvé : {vente_db.name}, id : {vente_db.id}.') 
 
     # def select_many(self, item): 
     #     users_db = self.session.query(User).filter(User.department==item) 
@@ -247,16 +235,10 @@ class Manager():
         # except Exception as ex: 
         #     print(ex) 
 
-# print('hello manager') 
-
         # Voir si engine s'en occupe ? 
         # if conn is not None: 
         #     conn.close() 
         #     print('connex closed') 
 
         # return self.engine 
-
-
-# if __name__ == "__main__": 
-#     main() 
 

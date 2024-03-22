@@ -33,24 +33,18 @@ class Controller():
         # dept_db = manager.select_one_dept('name', 'vente') 
         updatedDept = manager.update_dept('commerce', 'vente') 
         upd_dept_db = manager.select_one_dept('name', 'commerce') 
-        # DEBUG: Check if the old name doesn't exist anymore: 
-        # upd_dept_db_none = manager.select_one_dept('vente')  # None ok 
 
         superAdmin = manager.add_user( 
             ['super_admin', 
             'admin@mail.org', 
             os.environ.get('USER_1_PW'), 
             '06 12 34 56 78', 
-            1 
+            upd_dept_db.id 
         ]) 
-        print('datetime : ', datetime.now().strftime('%f')) 
-        print('datetime : ', datetime.now().timestamp()) 
 
-        time.sleep(5) 
-        print('pause') 
+        # time.sleep(5) 
+        # print('pause') 
 
-        print('datetime : ', datetime.now().strftime('%f'))  
-        print('datetime : ', datetime.now().timestamp())  
         if mode == 'pub': 
             # Type the required credentials: 
             userConnect = view.input_user_connection() 
@@ -75,12 +69,16 @@ class Controller():
                 'email', userConnect['email']) 
             # Verify JWT 
             tokened = manager.verify_token( 
-                userConnect['email'], password) 
+                userConnect['email'], 
+                password, 
+                logged_user.department.name 
+            ) 
             # TODO: sortie propre après l'échec du token 
             if not tokened: 
                 print('Vous n\'avez pas la permission \'effectuer cette action') 
             else: 
                 permission = True 
+                print('permission ok') 
                 return permission 
 
 

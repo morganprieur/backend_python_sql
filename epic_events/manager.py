@@ -36,7 +36,7 @@ class Manager():
             Session = sessionmaker(bind=self.engine) 
             self.session = Session() 
 
-    # department # 
+    # ==== department ==== # 
     def add_department(self, fields:list): 
         itemName = Department(name=fields[0]) 
         self.session.add(itemName) 
@@ -51,10 +51,15 @@ class Manager():
 
     # TODO: suppr print 
     def select_one_dept(self, field, value): 
+        # print(field) 
+        # print(type(field)) 
+        if field == 'id': 
+            item_db = self.session.query(Department).filter(Department.id==int(value)).first() 
         if field == 'name': 
             item_db = self.session.query(Department).filter(Department.name==value).first() 
         else: 
-            item_db = self.session.query(Department).filter(Department.name==value).first() 
+            print('Ce champ n\'existe pas.')  
+            # item_db = self.session.query(Department).filter(Department.name==value).first() 
         print(f'département trouvé : {item_db.name}, id : {item_db.id}.') 
         return item_db 
 
@@ -69,35 +74,38 @@ class Manager():
         self.session.delete(item_db) 
         self.session.commit() 
 
-    # user # 
+    # ==== user ==== # 
     def add_user(self, fields:list): 
         print(fields) 
+        dept_db = self.select_one_dept('id', fields[4])  
         userName = User( 
             name=fields[0], 
             email=fields[1], 
             password=fields[2], 
             phone=fields[3], 
-            department_id=fields[4], 
+            department_id=dept_db.id, 
             token='st.ri.ng', 
         ) 
         userName.password = self.hash_pw(fields[2], 12) 
-        # JWT {"exp": datetime.datetime.now(tz=timezone.utc) + datetime.timedelta(seconds=30)} 
-        delta = 2 
+        # Get token JWT 
+        # delta = 2  # <-- for 'exp' JWT claim 
         data = { 
             'email': fields[1], 
             'pass': fields[2], 
+            'dept': dept_db.name, 
         } 
-        userName.token = self.get_token(delta, data) 
+        # userName.token = self.get_token(delta, data) 
+        userName.token = self.get_token(data) 
         self.session.add(userName) 
         self.session.commit() 
         return userName 
 
-    def get_token(self, delta:int, data:dict): 
-        print('ML97 : ', datetime.now().timestamp()) 
+    # def get_token(self, delta:int, data:dict): 
+    def get_token(self, data:dict): 
         payload = { 
             'email': data['email'], 
             'pass': data['pass'], 
-            'exp': datetime.now()+timedelta(seconds=delta) 
+            'dept': data['dept'], 
         } 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
@@ -106,27 +114,20 @@ class Manager():
         return encoded_jwt 
         # tuto : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg 
 
-    def verify_token(self, connectEmail, connectPass): 
+    def verify_token(self, connectEmail, connectPass, connectDept): 
         registeredToken = self.select_one_user('email', connectEmail).token 
         # print('registeredToken : ', registeredToken) 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
         userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-        # print('userDecode ML135 : ', userDecode) 
-        userDecode_exp = int(userDecode['exp'])-3600 
-        # print('userDecode_exp ML137 : ', userDecode_exp) 
 
         connectedToken = { 
             'email': connectEmail, 
             'pass': connectPass, 
-            'exp': datetime.now().timestamp() 
+            'dept': connectDept, 
         } 
-        exp = re.sub('\.\d+', '', str(connectedToken['exp'])) 
-        # print('connectedToken_exp : ', exp) 
-        connectedToken['exp'] = exp 
-        connectedToken_exp = connectedToken['exp'] 
-        if {userDecode['email'], userDecode['pass']} == {connectedToken['email'], connectedToken['pass']}: 
+        if {userDecode['email'], userDecode['pass'], userDecode['dept']} == {connectedToken['email'], connectedToken['pass'], connectedToken['dept']}: 
             # ok 
             print('OK token') 
             return True 

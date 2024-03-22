@@ -2,7 +2,7 @@
 from manager import Manager 
 from models import Base, Client, Contract, Department, Event, User  
 from views import Views 
-from utils.helpers import test_fct 
+from utils.helpers import jwt_gestion 
 
 from sqlalchemy.orm import sessionmaker 
 
@@ -28,19 +28,24 @@ class Controller():
         manager.connect() 
         manager.create_tables() 
         manager.create_session() 
-        newDept = manager.add_department(['vente']) 
-        # DEBUG: 
-        # dept_db = manager.select_one_dept('name', 'vente') 
-        updatedDept = manager.update_dept('commerce', 'vente') 
-        upd_dept_db = manager.select_one_dept('name', 'commerce') 
 
-        superAdmin = manager.add_user( 
-            ['super_admin', 
-            'admin@mail.org', 
-            os.environ.get('USER_1_PW'), 
-            '06 12 34 56 78', 
-            upd_dept_db.id 
-        ]) 
+        # # ==== required data ==== # 
+        manager.add_required() 
+        # newDept = manager.add_department(['vente']) 
+        # # DEBUG: 
+        # # dept_db = manager.select_one_dept('name', 'vente') 
+        # updatedDept = manager.update_dept('commerce', 'vente') 
+        # upd_dept_db = manager.select_one_dept('name', 'commerce') 
+
+
+        # superAdmin = manager.add_user( 
+        #     ['super_admin', 
+        #     'admin@mail.org', 
+        #     os.environ.get('USER_1_PW'), 
+        #     '06 12 34 56 78', 
+        #     upd_dept_db.id 
+        # ]) 
+        # # ==== /required data ==== # 
 
         # time.sleep(5) 
         # print('pause') 
@@ -81,6 +86,16 @@ class Controller():
                 print('permission ok') 
                 return permission 
 
+
+        # # Essai décorateur jwt_gestion 
+        # @jwt_gestion 
+        # sales_user = manager.add_user( 
+        #     ['sales_user 1', 
+        #     'sales_1@mail.org', 
+        #     os.environ.get('USER_2_PW'), 
+        #     '06 23 45 67 89', 
+        #     upd_dept_db.id 
+        # ]) 
 
 
 

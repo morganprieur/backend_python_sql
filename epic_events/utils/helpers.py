@@ -1,10 +1,23 @@
 
+import bcrypt 
+import jwt 
 
-def test_fct(): 
-    var = 'test function' 
-    print(var) 
-    return var 
+# def test_fct(): 
+#     var = 'test function' 
+#     print(var) 
+#     return var 
 
+# décorateur qui vérifie le mdp avant de créer un utilisateur 
+def jwt_gestion(fn): 
+    @wraps(fn) 
+    def wrapper(*args, **kwargs): 
+        token = manager.verify_token(connectEmail, connectPass, connectDept) 
+        if token: 
+            print('deco token ok') 
+        else: 
+            print('deco token NOT ok') 
+        return fn(*args, **kwargs) 
+    return wrapper 
 
 # Exemple 
 # def jwt_required_gcp(fn):

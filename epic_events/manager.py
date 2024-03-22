@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 import os 
 import bcrypt 
 from datetime import datetime, timedelta 
+import json 
 import jwt 
 from jwt.exceptions import ExpiredSignatureError
 import re 
@@ -35,6 +36,72 @@ class Manager():
     def create_session(self): 
             Session = sessionmaker(bind=self.engine) 
             self.session = Session() 
+
+    def add_required(self): 
+        """ Register the 'gestion' department and the superuser, 
+            who will add the other departments and users. 
+        """ 
+        # file deepcode ignore PT: local project 
+        with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
+            registered = json.load(jsonfile) 
+        admin_dept = registered['department'][0] 
+        # print(admin_dept) 
+        super_admin = registered['users'][0] 
+
+        gestion_dept = Department(name=admin_dept['name']) 
+        self.session.add(gestion_dept) 
+        self.session.commit() 
+
+        # superAdmin_dept_name = session.query(Department).get(Department.id==1) 
+        # vente.name = 'commerce' 
+        # session.commit() 
+
+        # ==== hash admin pass ==== # 
+        password = os.environ.get('USER_1_PW') 
+        print(password) 
+        salt = bcrypt.gensalt(16)
+        hash_password = bcrypt.hashpw( 
+            password.encode('utf-8'), 
+            salt 
+        ).decode('utf-8') 
+
+        # ==== get token ==== # 
+        dept_name = admin_dept['name'] 
+
+        payload = { 
+            'email': super_admin['email'], 
+            'pass': os.environ.get('USER_1_PW'), 
+            'dept': dept_name, 
+        } 
+        secret = os.environ.get('JWT_SECRET') 
+        algo = os.environ.get('JWT_ALGO') 
+        encoded_jwt = jwt.encode(payload, secret, algo) 
+        # print(encoded_jwt) 
+        # return encoded_jwt 
+
+        superAdmin = User( 
+            name=super_admin['name'], 
+            email=super_admin['email'], 
+            password=hash_password, 
+            phone=super_admin['phone'], 
+            department_id=super_admin['department_id'], 
+            token=encoded_jwt 
+        ) 
+        self.session.add(superAdmin) 
+        self.session.commit() 
+
+
+
+        # sales_user = User( 
+        #     name='sales 1', 
+        #     email='sales_1@mail.com', 
+        #     password='S3cr3tp4ss', 
+        #     phone='01 23 45 67 89', 
+        #     department=vente 
+        # ) 
+        # self.session.add(sales_user) 
+        # self.session.commit() 
+
 
     # ==== department ==== # 
     def add_department(self, fields:list): 
@@ -75,13 +142,16 @@ class Manager():
         self.session.commit() 
 
     # ==== user ==== # 
+    # Essai décorateur jwt_gestion 
+    # @jwt_gestion
     def add_user(self, fields:list): 
         print(fields) 
         dept_db = self.select_one_dept('id', fields[4])  
         userName = User( 
             name=fields[0], 
             email=fields[1], 
-            password=fields[2], 
+            password='password', 
+            # password=fields[2], 
             phone=fields[3], 
             department_id=dept_db.id, 
             token='st.ri.ng', 

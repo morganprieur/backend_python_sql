@@ -6,7 +6,10 @@ from sqlalchemy.orm import sessionmaker
 
 import os 
 import bcrypt 
+from datetime import datetime, timedelta 
 import jwt 
+from jwt.exceptions import ExpiredSignatureError
+import re 
 
 
 class Manager(): 
@@ -19,17 +22,8 @@ class Manager():
         self.db_name = os.environ.get("POSTGRES_DB") 
         self.db_url = f"postgresql+psycopg2://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}" 
 
-
     def connect(self): 
-        # db_user = os.environ.get('POSTGRES_USER') 
-        # db_password = os.environ.get("POSTGRES_PASSWORD") 
-        # db_host = os.environ.get("POSTGRES_HOST") 
-        # db_port = os.environ.get("DB_PORT") 
-        # db_name = os.environ.get("POSTGRES_DB") 
-        # db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-        # print(db_url) 
         self.engine = create_engine(self.db_url) 
-
 
     def create_tables(self): 
         try: 
@@ -42,40 +36,105 @@ class Manager():
             Session = sessionmaker(bind=self.engine) 
             self.session = Session() 
 
-    def add_department_item(self, fields:list): 
+    # ==== department ==== # 
+    def add_department(self, fields:list): 
         itemName = Department(name=fields[0]) 
         self.session.add(itemName) 
         self.session.commit() 
         return itemName 
 
-    def update_dept_item(self, new_value, fields:list): 
-        itemName = self.select_one_dept('name', fields[0]) 
+    def update_dept(self, new_value, name): 
+        itemName = self.select_one_dept('name', name) 
         itemName.name = new_value 
         self.session.commit() 
         return itemName 
 
+    # TODO: suppr print 
     def select_one_dept(self, field, value): 
+        # print(field) 
+        # print(type(field)) 
+        if field == 'id': 
+            item_db = self.session.query(Department).filter(Department.id==int(value)).first() 
         if field == 'name': 
             item_db = self.session.query(Department).filter(Department.name==value).first() 
         else: 
-            item_db = self.session.query(Department).filter(Department.name==value).first() 
+            print('Ce champ n\'existe pas.')  
+            # item_db = self.session.query(Department).filter(Department.name==value).first() 
         print(f'département trouvé : {item_db.name}, id : {item_db.id}.') 
         return item_db 
 
+    def select_all_depts(self): 
+        items_db = self.session.query(Department).all() 
+        for item in items_db:
+            print(f'département trouvé : {item.name}, id : {item.id}.') 
+        return items_db 
+
+    def delete_dept(self, field, value): 
+        item_db = self.select_one_dept(field, value) 
+        self.session.delete(item_db) 
+        self.session.commit() 
+
+    # ==== user ==== # 
     def add_user(self, fields:list): 
         print(fields) 
+        dept_db = self.select_one_dept('id', fields[4])  
         userName = User( 
             name=fields[0], 
             email=fields[1], 
             password=fields[2], 
             phone=fields[3], 
-            department_id=fields[4], 
+            department_id=dept_db.id, 
+            token='st.ri.ng', 
         ) 
         userName.password = self.hash_pw(fields[2], 12) 
-        # print('userName.password : ', userName.password) 
+        # Get token JWT 
+        # delta = 2  # <-- for 'exp' JWT claim 
+        data = { 
+            'email': fields[1], 
+            'pass': fields[2], 
+            'dept': dept_db.name, 
+        } 
+        # userName.token = self.get_token(delta, data) 
+        userName.token = self.get_token(data) 
         self.session.add(userName) 
         self.session.commit() 
         return userName 
+
+    # def get_token(self, delta:int, data:dict): 
+    def get_token(self, data:dict): 
+        payload = { 
+            'email': data['email'], 
+            'pass': data['pass'], 
+            'dept': data['dept'], 
+        } 
+        secret = os.environ.get('JWT_SECRET') 
+        algo = os.environ.get('JWT_ALGO') 
+        encoded_jwt = jwt.encode(payload, secret, algo) 
+        # print(encoded_jwt) 
+        return encoded_jwt 
+        # tuto : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg 
+
+    def verify_token(self, connectEmail, connectPass, connectDept): 
+        registeredToken = self.select_one_user('email', connectEmail).token 
+        # print('registeredToken : ', registeredToken) 
+        secret = os.environ.get('JWT_SECRET') 
+        algo = os.environ.get('JWT_ALGO') 
+
+        userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
+
+        connectedToken = { 
+            'email': connectEmail, 
+            'pass': connectPass, 
+            'dept': connectDept, 
+        } 
+        if {userDecode['email'], userDecode['pass'], userDecode['dept']} == {connectedToken['email'], connectedToken['pass'], connectedToken['dept']}: 
+            # ok 
+            print('OK token') 
+            return True 
+        else: 
+            # ok 
+            print('NO token') 
+            return False 
 
     def hash_pw(self, password, nb:int): 
         salt = bcrypt.gensalt(nb)
@@ -85,55 +144,75 @@ class Manager():
         ).decode('utf-8') 
         return hash_password 
 
-    def select_one_user(self, field, value): 
-        if field == 'id': 
-            user_db = self.session.query(User).filter(User.id==int(value)).first() 
-        elif field == 'name': 
-            user_db = self.session.query(User).filter(User.name==value).first() 
-        elif field == 'email': 
-            user_db = self.session.query(User).filter(User.email==value).first() 
-        # TO_DEL: 
-        print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
-        return user_db 
-
-
     def check_pw(self, userEmail, pw): 
         user_db = self.select_one_user('email', userEmail) 
-        hashed = user_db.password 
-        if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
-            print("pw ok") 
-            return True 
-        else: 
-            print('pw not ok') 
+        if user_db is None: 
+            print('user is none') 
             return False 
+        else: 
+            hashed = user_db.password 
+            if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
+                print("pw ok") 
+                return True 
+            else: 
+                print('pw not ok') 
+                return False 
 
+    def update_user(self, id, field, value, new_value): 
+        itemName = self.select_one_user('id', id) 
+        if field == 'name': 
+            itemName.name = new_value 
+        elif field == 'email': 
+            itemName.email = new_value 
+        elif field == 'phone': 
+            itemName.phone = new_value 
+        elif field == 'department_id': 
+            itemName.department_id = new_value 
+        elif field == 'token': 
+            itemName.token = new_value 
+        else: 
+            print('no value') 
+        self.session.commit() 
+        return itemName 
 
+    # TODO: suppr print 
+    def select_one_user(self, field, value): 
+        print('field : ', field) 
+        print('value : ', value) 
+        user_db = User() 
+        if field == 'id': 
+            user_db = self.session.query(User).filter( 
+                User.id==int(value)).first() 
+        elif field == 'name': 
+            user_db = self.session.query(User).filter( 
+                User.name==value).first() 
+        elif field == 'email': 
+            user_db = self.session.query(User).filter( 
+                User.email==value).first() 
+        elif field == 'department_id': 
+            user_db = self.session.query(User).filter( 
+                User.department_id==value).first() 
+        else: 
+            print('no field') 
+        if user_db is None: 
+            # TODO : afficher de nouveau la question précédente ? 
+            print('Aucun utilisateur avec ces informations') 
+            # return False 
+        else: 
+            print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
+        return user_db 
 
-    # def select_one(self, itemName, model, value): 
-    #     # vente = Department(name='vente') 
-    #     # session.add(vente) 
-    #     # session.commit() 
+    def select_all_users(self): 
+        items_db = self.session.query(User).all() 
+        for item in items_db:
+            print(f'user trouvé in all : {item.name}, id : {item.id}.') 
+        return items_db 
 
-    #     # vente.name = 'commerce' 
-    #     # self.session.commit() 
+    def delete_user(self, field, value): 
+        item_db = self.select_one_user(field, value) 
+        self.session.delete(item_db) 
+        self.session.commit() 
 
-    #     # sales_user = User( 
-    #     #     name='sales 1', 
-    #     #     email='sales_1@mail.com', 
-    #     #     password='S3cr3tp4ss', 
-    #     #     phone='01 23 45 67 89', 
-    #     #     department=item 
-    #     #     # department=vente 
-    #     # ) 
-    #     # self.session.add(sales_user) 
-    #     # self.session.commit() 
-
-    #     print('itemName : ', itemName, ' model : ', model, ' value : ', value) 
-    #     item = model.select_one_item(self, itemName, value) 
-    #     print(item) 
-    #         # itemName = session.query(model).filter(model.attribute==value).first() 
-    #     # vente_db = self.session.query(Department).filter(Department.id==1).first() 
-    #     # print(f'département trouvé : {vente_db.name}, id : {vente_db.id}.') 
 
     # def select_many(self, item): 
     #     users_db = self.session.query(User).filter(User.department==item) 
@@ -157,16 +236,10 @@ class Manager():
         # except Exception as ex: 
         #     print(ex) 
 
-# print('hello manager') 
-
         # Voir si engine s'en occupe ? 
         # if conn is not None: 
         #     conn.close() 
         #     print('connex closed') 
 
         # return self.engine 
-
-
-# if __name__ == "__main__": 
-#     main() 
 

@@ -58,7 +58,7 @@ class Manager():
 
         # ==== hash admin pass ==== # 
         password = os.environ.get('USER_1_PW') 
-        print(password) 
+        # print(password) 
         salt = bcrypt.gensalt(16)
         hash_password = bcrypt.hashpw( 
             password.encode('utf-8'), 

@@ -11,3 +11,7 @@ epic_events/jup.ipynb
 # secret data 
 .env
 data.json 
+
+# For another branch 
+docs/P12-deroulement.png
+

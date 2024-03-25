@@ -48,18 +48,6 @@ class MyTest(unittest.TestCase):
 
 	def test_creation_dept(self): 
 		""" Test adding one department.""" 
-		# manager = Manager() 
-		# manager.connect() 
-		# # manager.create_tables() 
-		# manager.create_session() 
-
-		# file = os.environ.get('FILE_PATH') 
-		# with open(file, 'r') as jsonfile: 
-		# 	registered = json.load(jsonfile) 
-		# 	users = [item for item in registered['users']] 
-		# 	emailList = [item['email'] for item in users] 
-		# print('emailList : ', emailList) 
-
 		# print(dir(self)) 
 		testDept = self.manager.add_department(['testTable']) 
 		testDept_db = self.manager.select_one_dept('name', 'testTable') 

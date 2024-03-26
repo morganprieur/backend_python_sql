@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 import psycopg2 
 from models import Base, Client, Contract, Department, Event, User   
 from sqlalchemy.orm import sessionmaker 
+# from helpers import decorator_hash_pass, hash_pw 
 
 import os 
 import bcrypt 
@@ -26,84 +27,11 @@ class Manager():
     def connect(self): 
         self.engine = create_engine(self.db_url) 
 
-    def create_tables(self): 
-        try: 
-            Base.metadata.drop_all(bind=self.engine) 
-            Base.metadata.create_all(bind=self.engine) 
-        except Exception as ex: 
-            print(ex) 
-
     def create_session(self): 
-            Session = sessionmaker(bind=self.engine) 
-            self.session = Session() 
+        Session = sessionmaker(bind=self.engine) 
+        self.session = Session() 
 
-    def add_required(self): 
-        """ Register the 'gestion' department and the superuser, 
-            who will add the other departments and users. 
-        """ 
-        # file deepcode ignore PT: local project 
-        with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
-            registered = json.load(jsonfile) 
-        admin_dept = registered['department'][0] 
-        # print(admin_dept) 
-        super_admin = registered['users'][0] 
-
-        gestion_dept = Department(name=admin_dept['name']) 
-        self.session.add(gestion_dept) 
-        self.session.commit() 
-
-        # superAdmin_dept_name = session.query(Department).get(Department.id==1) 
-        # vente.name = 'commerce' 
-        # session.commit() 
-
-        # ==== hash admin pass ==== # 
-        password = os.environ.get('USER_1_PW') 
-        print(password) 
-        salt = bcrypt.gensalt(16)
-        hash_password = bcrypt.hashpw( 
-            password.encode('utf-8'), 
-            salt 
-        ).decode('utf-8') 
-
-        # ==== get token ==== # 
-        dept_name = admin_dept['name'] 
-
-        payload = { 
-            'email': super_admin['email'], 
-            'pass': os.environ.get('USER_1_PW'), 
-            'dept': dept_name, 
-        } 
-        secret = os.environ.get('JWT_SECRET') 
-        algo = os.environ.get('JWT_ALGO') 
-        encoded_jwt = jwt.encode(payload, secret, algo) 
-        # print(encoded_jwt) 
-        # return encoded_jwt 
-
-        superAdmin = User( 
-            name=super_admin['name'], 
-            email=super_admin['email'], 
-            password=hash_password, 
-            phone=super_admin['phone'], 
-            department_id=super_admin['department_id'], 
-            token=encoded_jwt 
-        ) 
-        self.session.add(superAdmin) 
-        self.session.commit() 
-
-
-
-        # sales_user = User( 
-        #     name='sales 1', 
-        #     email='sales_1@mail.com', 
-        #     password='S3cr3tp4ss', 
-        #     phone='01 23 45 67 89', 
-        #     department=vente 
-        # ) 
-        # self.session.add(sales_user) 
-        # self.session.commit() 
-
-
-    # ==== department ==== # 
+    # ==== department methods ==== # 
     def add_department(self, fields:list): 
         itemName = Department(name=fields[0]) 
         self.session.add(itemName) 
@@ -118,22 +46,21 @@ class Manager():
 
     # TODO: suppr print 
     def select_one_dept(self, field, value): 
-        # print(field) 
-        # print(type(field)) 
         if field == 'id': 
-            item_db = self.session.query(Department).filter(Department.id==int(value)).first() 
-        if field == 'name': 
-            item_db = self.session.query(Department).filter(Department.name==value).first() 
+            item_db = self.session.query(Department).filter( 
+                Department.id==int(value)).first() 
+        elif field == 'name': 
+            item_db = self.session.query( 
+                Department).filter(Department.name==value).first() 
         else: 
-            print('Ce champ n\'existe pas.')  
-            # item_db = self.session.query(Department).filter(Department.name==value).first() 
-        print(f'département trouvé : {item_db.name}, id : {item_db.id}.') 
+            print(f'Ce champ "{field}" n\'existe pas.')  
+        print(f'département trouvé (manager.select_one_dept) : {item_db.name}, id : {item_db.id}.') 
         return item_db 
 
     def select_all_depts(self): 
         items_db = self.session.query(Department).all() 
         for item in items_db:
-            print(f'département trouvé : {item.name}, id : {item.id}.') 
+            print(f'département trouvé  (manager.select_all_depts) : {item.name}, id : {item.id}.') 
         return items_db 
 
     def delete_dept(self, field, value): 
@@ -142,77 +69,132 @@ class Manager():
         self.session.commit() 
 
     # ==== user ==== # 
-    # Essai décorateur jwt_gestion 
-    # @jwt_gestion
     def add_user(self, fields:list): 
-        print(fields) 
-        dept_db = self.select_one_dept('id', fields[4])  
-        userName = User( 
-            name=fields[0], 
-            email=fields[1], 
-            password='password', 
-            # password=fields[2], 
-            phone=fields[3], 
-            department_id=dept_db.id, 
-            token='st.ri.ng', 
-        ) 
-        userName.password = self.hash_pw(fields[2], 12) 
+        dept_db_id = self.select_one_dept('name', fields[4]).id 
+
+        # Hash pass 
+        hashed_password = self.hash_pw(fields[2], 12) 
+
         # Get token JWT 
-        # delta = 2  # <-- for 'exp' JWT claim 
+        delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
         data = { 
             'email': fields[1], 
             'pass': fields[2], 
-            'dept': dept_db.name, 
+            'dept': fields[4], 
         } 
-        # userName.token = self.get_token(delta, data) 
-        userName.token = self.get_token(data) 
+        user_token = self.get_token(delta, data) 
+        userName = User( 
+            name=fields[0], 
+            email=fields[1], 
+            password=hashed_password, 
+            phone=fields[3], 
+            department_id=dept_db_id, 
+            token=user_token, 
+        ) 
         self.session.add(userName) 
         self.session.commit() 
         return userName 
 
-    # def get_token(self, delta:int, data:dict): 
-    def get_token(self, data:dict): 
+
+    # def get_token(self, data:dict): 
+    def get_token(self, delta:int, data:dict): 
+        print('get_token') 
         payload = { 
             'email': data['email'], 
             'pass': data['pass'], 
             'dept': data['dept'], 
+            'exp': datetime.now()+timedelta(seconds=delta) 
         } 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
         encoded_jwt = jwt.encode(payload, secret, algo) 
-        # print(encoded_jwt) 
         return encoded_jwt 
-        # tuto : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzb21lIjoicGF5bG9hZCJ9.4twFt5NiznN84AWoo1d7KO1T_yoc0Z6XOpOVswacPZg 
+
 
     def verify_token(self, connectEmail, connectPass, connectDept): 
+        """ Check if the user and department are those registered in the db. 
+                If yes: 
+                    Store the role's name of the user. 
+                    Check the token's expiration time. 
+                    if it is NOT past: 
+                        Return the role's permission name for creation user_session by the Controller. 
+                    else: 
+                        Call get_token() for refreshing the token. 
+                        Return tne role's permission for creation of the user_session by the Controller. 
+                else: 
+                    return "None". 
+            Args:
+                connectEmail (string): The email entered by the connected user. 
+                connectPass (string): The password entered by the connected user. 
+                connectDept (string): The name of the department which is registered the user. 
+
+            Returns:
+                string: The name of the user's role. 
+        """ 
         registeredToken = self.select_one_user('email', connectEmail).token 
-        # print('registeredToken : ', registeredToken) 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
         userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
+        print('userDecode ML152 : ', userDecode) 
+        userDecode_exp = int(userDecode.pop('exp'))-3600 
 
         connectedToken = { 
             'email': connectEmail, 
             'pass': connectPass, 
             'dept': connectDept, 
+            'exp': datetime.now().timestamp() 
         } 
-        if {userDecode['email'], userDecode['pass'], userDecode['dept']} == {connectedToken['email'], connectedToken['pass'], connectedToken['dept']}: 
-            # ok 
-            print('OK token') 
-            return True 
+        exp = re.sub('\.\d+', '', str(connectedToken['exp'])) 
+        print('connectedToken : ', connectedToken) 
+        connectedToken['exp'] = exp 
+        connectedToken_exp = connectedToken.pop('exp') 
+
+        # Check login+hash_pw+dept.name: 
+        if userDecode == connectedToken: 
+            print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken) 
+            print('Token user + dept ok. Check for exp time...') 
+
+            # Check the expiration time: 
+            if int(userDecode_exp) < int(connectedToken_exp): 
+                print('Past token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
+                return 'past' 
+            else: 
+                print('ok token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
+                if userDecode['dept'] == 'gestion': 
+                    permission = 'GESTION' 
+                    print('OK token gestion (manager)') 
+                elif userDecode['dept'] == 'commerce': 
+                    permission = 'COMMERCE' 
+                    print('OK token commerce (manager)') 
+                elif userDecode['dept'] == 'support': 
+                    permission = 'SUPPORT' 
+                    print('OK token support (manager)') 
+                else: 
+                    permission = None 
+                    print('token inconnu (manager)') 
+                return permission 
         else: 
             # ok 
-            print('NO token') 
-            return False 
+            print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken["email"], connectedToken["pass"], connectedToken["dept"]) 
+            print('NO token checked (manager)') 
+            return None 
+
 
     def hash_pw(self, password, nb:int): 
+        """ Hash the given password before register it into the DB. 
+            Params: 
+                password (string): the readable password to hash. 
+                nb (int): the number of characters for the salt. 
+            Returns the hashed password. 
+        """ 
         salt = bcrypt.gensalt(nb)
-        hash_password = bcrypt.hashpw( 
+        hashed_password = bcrypt.hashpw( 
             password.encode('utf-8'), 
             salt 
         ).decode('utf-8') 
-        return hash_password 
+        return hashed_password 
+
 
     def check_pw(self, userEmail, pw): 
         user_db = self.select_one_user('email', userEmail) 
@@ -222,13 +204,14 @@ class Manager():
         else: 
             hashed = user_db.password 
             if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
-                print("pw ok") 
+                print("pw ok (manager)") 
                 return True 
             else: 
-                print('pw not ok') 
+                print('pw not ok (manager)') 
                 return False 
 
-    def update_user(self, id, field, value, new_value): 
+
+    def update_user(self, id, field, new_value): 
         itemName = self.select_one_user('id', id) 
         if field == 'name': 
             itemName.name = new_value 
@@ -241,14 +224,13 @@ class Manager():
         elif field == 'token': 
             itemName.token = new_value 
         else: 
-            print('no value') 
+            print('no value (manager.update_user)') 
         self.session.commit() 
         return itemName 
 
+
     # TODO: suppr print 
     def select_one_user(self, field, value): 
-        print('field : ', field) 
-        print('value : ', value) 
         user_db = User() 
         if field == 'id': 
             user_db = self.session.query(User).filter( 
@@ -263,20 +245,22 @@ class Manager():
             user_db = self.session.query(User).filter( 
                 User.department_id==value).first() 
         else: 
-            print('no field') 
+            print('no field recognized (manager.select_one_user)') 
         if user_db is None: 
             # TODO : afficher de nouveau la question précédente ? 
-            print('Aucun utilisateur avec ces informations') 
-            # return False 
+            print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
+            return False 
         else: 
-            print(f'user trouvé : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
+            print(f'user trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
         return user_db 
+
 
     def select_all_users(self): 
         items_db = self.session.query(User).all() 
         for item in items_db:
-            print(f'user trouvé in all : {item.name}, id : {item.id}.') 
+            print(f'user trouvé  (manager.select_all_users) : {item.name}, id : {item.id}.') 
         return items_db 
+
 
     def delete_user(self, field, value): 
         item_db = self.select_one_user(field, value) 

@@ -5,5 +5,10 @@ snyk.exe
 roadmap.md
 questions.md
 
+epic_events/project2.py
+epic_events/jup.ipynb
+
 # secret data 
-.env 
+.env
+data.json 
+

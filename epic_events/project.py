@@ -1,84 +1,30 @@
 
-from sqlalchemy import create_engine 
-import psycopg2 
-from models import Base, Client, Contract, Department, Event, User   
-from sqlalchemy.orm import sessionmaker 
-
-import os 
-
-db_user = os.environ.get('POSTGRES_USER') 
-db_password = os.environ.get("POSTGRES_PASSWORD") 
-db_host = os.environ.get("POSTGRES_HOST") 
-db_port = os.environ.get("DB_PORT") 
-db_name = os.environ.get("POSTGRES_DB") 
-
-db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}" 
-# print(db_url) 
-
-engine = create_engine(db_url) 
-print(engine) 
-
-try: 
-    Base.metadata.drop_all(bind=engine) 
-    Base.metadata.create_all(bind=engine) 
-
-    Session = sessionmaker(bind=engine) 
-    session = Session() 
-
-    vente = Department(name='vente') 
-    session.add(vente) 
-    session.commit() 
-
-    vente.name = 'commerce' 
-    session.commit() 
-
-    sales_user = User( 
-        name='sales 1', 
-        email='sales_1@mail.com', 
-        password='S3cr3tp4ss', 
-        phone='01 23 45 67 89', 
-        department=vente 
-    ) 
-    session.add(sales_user) 
-    session.commit() 
-
-    vente_db = session.query(Department).filter(Department.id == 1).first() 
-    print(f'département trouvé : {vente_db.name}, id : {vente_db.id}.') 
-
-    users_db = session.query(User).filter(User.department==vente) 
-    for user in users_db: 
-        print(f'User trouvé : {user.name}, id : {user.id}, departement : {user.department.name}') 
-
-    # # tuto simpletech 
-    # stock_query = session.query(Stock).join(Warehouse).join(Product) 
-    # stock_chaussure_entrepot_a = stock_query.filter(Product.name=='chaussure', Warehouse.name=='entreprot A').first() 
-    # print(f'Le stock de {stock_chaussure_entrepot_a.product.name} dans {stock_chaussure_entrepot_a.warehouse.name} est de {stock_chaussure_entrepot_a.quantity}.') 
-
-    # conn.commit() 
-
-except Exception as ex: 
-    print(ex) 
-
-print('hello') 
-
-# Voir si engine s'en occupe ? 
-# if conn is not None: 
-#     conn.close() 
-#     print('connex closed') 
+import sentry_sdk
+sentry_sdk.init(
+    dsn="https://92f2fd7678cf64d3efff193b8390cc2e@o4506970696646656.ingest.us.sentry.io/4506970703200256",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+) 
+# import this 
+from controller import Controller 
+from datetime import datetime 
 
 
-if __name__ == "main": 
-    main() 
+def main(mode='pub'): 
+
+    print(f'hello main {datetime.now()}') 
+    # Test Sentry 
+    # division_by_zero = 1 / 0 
+    controller = Controller() 
+    controller.start(mode) 
 
 
+if __name__ == "__main__": 
+    # main('pub') 
+    main('dev') 
 
-# ======== 
-# def start():
-#     engine = create_engine('sqlite:///:memory:')
-
-#     Session = sessionmaker(bind=engine)
-#     session = Session()
-
-#     Base.metadata.create_all(engine)
-#     return engine, session
-# ======== 

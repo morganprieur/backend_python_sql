@@ -30,12 +30,6 @@ class Department(Base):
         return str(self) 
         # return f'User {self.__str__()}' 
 
-    # def select_one_item(self, itemName, value): 
-    #     # print('dept attribute L34 : ', attribute) 
-    #     itemName = self.session.query(Department).filter(Department.name==value).first() 
-    #     return itemName 
-    #     # return self.repr() 
-
 
 class User(Base): 
     __tablename__ = 'users' 
@@ -111,7 +105,7 @@ class Client(Base):
     ) 
     corporation_name = Column( 
         String, 
-        unique=True, 
+        unique=False, 
         index=True 
     ) 
     #TODO Auto *** 
@@ -135,19 +129,18 @@ class Client(Base):
 
     def __repr__(self): 
         return str(self) 
-        # return f'Client {self.name}' 
 
-    def add_item(self, itemName, fields:list): 
-        itemName = Client( 
-            name=fields[0], 
-            email=fields[1], 
-            phone=fields[2], 
-            corporation_name=fields[3], 
-            created_at=fields[4], 
-            updated_at=fields[5], 
-            sales_contact_id=fields[6], 
-        ) 
-        return itemName 
+    # def add_item(self, itemName, fields:list): 
+    #     itemName = Client( 
+    #         name=fields[0], 
+    #         email=fields[1], 
+    #         phone=fields[2], 
+    #         corporation_name=fields[3], 
+    #         created_at=fields[4], 
+    #         updated_at=fields[5], 
+    #         sales_contact_id=fields[6], 
+    #     ) 
+    #     return itemName 
 
 
 class Contract(Base): 
@@ -180,8 +173,11 @@ class Contract(Base):
     clients = relationship("Client", back_populates="contract") 
     events = relationship("Event", back_populates="contracts") 
 
+    def __str__(self): 
+        return f'Modèle Contract : {self.name}, id : {self.id}.' 
+
     def __repr__(self): 
-        return f'Contract {self.id}, client {self.client_id}' 
+        return str(self) 
 
 
 class Event(Base): 
@@ -195,16 +191,14 @@ class Event(Base):
     ) 
     name = Column( 
         String, 
-        unique=True, 
+        unique=False, 
         index=True 
     ) 
     contract_id = Column( 
         Integer, 
-        ForeignKey('contracts.id') 
+        ForeignKey('contracts.id'), 
+        unique=True, 
     ) 
-    # client_contact = Column( 
-    #     string 
-    # ) 
     start_datetime = Column( 
         DateTime 
     ) 
@@ -219,7 +213,7 @@ class Event(Base):
     location = Column( 
         String 
     ) 
-    Attendees = Column( 
+    attendees = Column( 
         Integer 
     ) 
     notes = Column( 
@@ -227,11 +221,13 @@ class Event(Base):
     ) 
 
     user = relationship("User", back_populates="events") 
-    # support_contact = relationship("User", back_populates="events") 
     contracts = relationship("Contract", back_populates="events") 
 
+    def __str__(self): 
+        return f'Modèle événement : {self.name}, id : {self.id}.' 
+
     def __repr__(self): 
-        return f'Event {self.name}' 
+        return str(self) 
 
 
 

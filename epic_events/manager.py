@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 import psycopg2 
 from models import Base, Client, Contract, Department, Event, User   
 from sqlalchemy.orm import sessionmaker 
-# from helpers import decorator_hash_pass, hash_pw 
 
 import os 
 import bcrypt 
@@ -28,6 +27,7 @@ class Manager():
 
     def connect(self): 
         self.engine = create_engine(self.db_url) 
+        # print(conn.info.encoding) 
 
     def create_session(self): 
         Session = sessionmaker(bind=self.engine) 
@@ -112,7 +112,7 @@ class Manager():
 
 
     # ==== user ==== # 
-    def add_user(self, fields:list): 
+    def add_user(self, fields:dict): 
         """ Creates a user in the DB. 
             Args:
                 fields (list): [name, email, hashed password, phone, department's name] 
@@ -127,22 +127,24 @@ class Manager():
         # Get token JWT 
         delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
         data = { 
-            'email': fields[1], 
-            'pass': fields[2], 
-            'dept': fields[4], 
+            'email': fields['email'], 
+            'pass': fields['pass'], 
+            'dept': fields['dept'], 
         } 
         user_token = self.get_token(delta, data) 
         userName = User( 
-            name=fields[0], 
-            email=fields[1], 
+            name=fields['name'], 
+            email=fields['email'], 
             password=hashed_password, 
-            phone=fields[3], 
+            phone=fields['phone'], 
             department_id=dept_db_id, 
             token=user_token, 
         ) 
         self.session.add(userName) 
         self.session.commit() 
-        return userName 
+        item_db = self.select_all_users().last() 
+        return item_db 
+        # return userName 
 
 
     def update_user(self, id, field, new_value): 
@@ -260,7 +262,9 @@ class Manager():
         ) 
         self.session.add(itemName) 
         self.session.commit() 
-        return itemName 
+        item_db = self.select_all_clients().last() 
+        return item_db 
+        # return itemName 
 
 
     # TODO : rester dans l'application si pas de client à retourner.  
@@ -341,7 +345,9 @@ class Manager():
         """ Returns:
                 list: All the Client instances in a list. 
         """ 
+        print('select_all_clients ML348') 
         items_db = self.session.query(Client).all() 
+        # print(items_db) 
         for item in items_db:
             print(f'client trouvé  (manager.select_all_clients) : {item.name}, id : {item.id}.') 
         return items_db 
@@ -390,7 +396,9 @@ class Manager():
         ) 
         self.session.add(itemName) 
         self.session.commit() 
-        return itemName 
+        item_db = self.select_all_contracts().last() 
+        return item_db 
+        # return itemName 
 
 
     # TODO : rester dans l'application si pas de contrat à retourner. 
@@ -418,6 +426,29 @@ class Manager():
                 Contract.client_id==value).first() 
         else: 
             print('no field recognized (manager.select_one_contract)') 
+        if contract_db is None: 
+            # TODO : afficher de nouveau la question précédente ? 
+            print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
+            return False 
+        else: 
+            # print(f'user trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
+            return contract_db 
+
+
+    # TODO : rester dans l'application si pas de contrat à retourner. 
+    def select_last_contract(self, value): 
+        """ Select the last contract of a client created. 
+            One possible field: 
+                'client_name' 
+            Args: 
+                value (string): The value for select the Contract instance. 
+            Returns:
+                object Contract: The selected Contract instance. 
+        """ 
+        contract_db = Contract() 
+        client_db = self.select_one_client('name', value) 
+        contract_db = self.session.query(Contract).filter( 
+            Contract.client_id==client_db.id).last() 
         if contract_db is None: 
             # TODO : afficher de nouveau la question précédente ? 
             print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
@@ -518,7 +549,9 @@ class Manager():
         ) 
         self.session.add(itemName) 
         self.session.commit() 
-        return itemName 
+        item_db = self.select_all_events().last() 
+        return item_db  
+        # return itemName 
 
     # TODO : rester dans l'application si pas de contrat à retourner. 
     def select_one_event(self, field, value): 
@@ -531,7 +564,7 @@ class Manager():
                 field (string): The name of the field to look for. 
                 value (string): The value for select the Event instance. 
             Returns:
-                object Event: The selected Eent instance. 
+                object Event: The selected Event instance. 
         """ 
         event_db = Event() 
         if field == 'id': 
@@ -598,6 +631,70 @@ class Manager():
         for item in items_db:
             print(f'Event trouvé  (manager.select_all_events) : {item.name}, id : {item.id}.') 
         return items_db 
+
+
+    def select_entities_with_criteria(self, entities, criteria, contact_id): 
+        """ Select entity instances with criteria. 
+            Args:
+                entities (str): (in plural) The name of the objects to look for. 
+                criteria (str): The criteria to follow for filtering the instances. 
+            Returns:
+                list: The instances that respect the criteria. 
+        """ 
+        if entities == 'events': 
+            if criteria == 'without support': 
+                events_db = self.session.query(Event).filter( 
+                    Event.support_contact_id==null)  # *** null *** 
+                if events_db is None: 
+                    print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return events_db 
+            elif criteria == 'support id': 
+                events_db = self.session.query(Event).filter( 
+                    Event.support_contact_id==contact_id) 
+                if events_db is None: 
+                    print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return events_db 
+        elif entities == 'contracts': 
+            if criteria == 'sales id': 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.sales_contact_id==id) 
+                if contracts_db is None: 
+                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return contracts_db 
+            if criteria == 'not signed': 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.is_signed==0) 
+                if contracts_db is None: 
+                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return contracts_db 
+            elif criteria == 'not paid': 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.amount-Contract.paid_amount!=0) 
+                if contracts_db is None: 
+                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return contracts_db 
+        elif field == 'clients': 
+            if criteria == 'sales id': 
+                clients_db = self.session.query(Client).filter( 
+                    Client.sales_contact_id==id)
+                if clients_db is None: 
+                    print('Aucun client avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return clients_db 
+        else: 
+            print('no field recognized (manager.select_entities_with_criteria)') 
+
 
 
     # TODO: retour dans l'appli si 'N' 
@@ -683,50 +780,64 @@ class Manager():
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
-        userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-        print('userDecode ML152 : ', userDecode) 
-        userDecode_exp = int(userDecode.pop('exp'))-3600 
+        # userDecode = {} 
+        try: 
+            userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
+            print('userDecode ML784 : ', userDecode) 
+            userDecode_exp = int(userDecode.pop('exp'))-3600 
+            permission = '' 
+            if userDecode['dept'] == 'gestion': 
+                permission = 'GESTION' 
+            elif userDecode['dept'] == 'commerce': 
+                permission = 'COMMERCE' 
+            if userDecode['dept'] == 'support': 
+                permission = 'SUPPORT' 
+            return permission 
+        except ExpiredSignatureError as expired: 
+            print(expired) 
+            # print('userDecode ML788 : ', userDecode) 
+            return 'past' 
 
-        connectedToken = { 
-            'email': connectEmail, 
-            'pass': connectPass, 
-            'dept': connectDept, 
-            'exp': datetime.now().timestamp() 
-        } 
-        exp = re.sub('\.\d+', '', str(connectedToken['exp'])) 
-        print('connectedToken : ', connectedToken) 
-        connectedToken['exp'] = exp 
-        connectedToken_exp = connectedToken.pop('exp') 
+        # connectedToken = { 
+        #     'email': connectEmail, 
+        #     'pass': connectPass, 
+        #     'dept': connectDept, 
+        #     'exp': datetime.now().timestamp() 
+        # } 
+        # exp = re.sub('\.\d+', '', str(connectedToken['exp'])) 
+        # print('connectedToken : ', connectedToken) 
+        # connectedToken['exp'] = exp 
+        # connectedToken_exp = connectedToken.pop('exp') 
 
-        # Check login+hash_pw+dept.name: 
-        if userDecode == connectedToken: 
-            print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken) 
-            print('Token user + dept ok. Check for exp time...') 
+        # # Check login+hash_pw+dept.name: 
+        # if userDecode == connectedToken: 
+        #     print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken) 
+        #     print('Token user + dept ok. Check for exp time...') 
 
-            # Check the expiration time: 
-            if int(userDecode_exp) < int(connectedToken_exp): 
-                print('Past token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
-                return 'past' 
-            else: 
-                print('ok token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
-                if userDecode['dept'] == 'gestion': 
-                    permission = 'GESTION' 
-                    print('OK token gestion (manager)') 
-                elif userDecode['dept'] == 'commerce': 
-                    permission = 'COMMERCE' 
-                    print('OK token commerce (manager)') 
-                elif userDecode['dept'] == 'support': 
-                    permission = 'SUPPORT' 
-                    print('OK token support (manager)') 
-                else: 
-                    permission = None 
-                    print('token inconnu (manager)') 
-                return permission 
-        else: 
-            # ok 
-            print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken["email"], connectedToken["pass"], connectedToken["dept"]) 
-            print('NO token checked (manager)') 
-            return None 
+        #     # Check the expiration time: 
+        #     if int(userDecode_exp) < int(connectedToken_exp): 
+        #         print('Past token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
+        #         return 'past' 
+        #     else: 
+        #         print('ok token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
+        #         if userDecode['dept'] == 'gestion': 
+        #             permission = 'GESTION' 
+        #             print('OK token gestion (manager)') 
+        #         elif userDecode['dept'] == 'commerce': 
+        #             permission = 'COMMERCE' 
+        #             print('OK token commerce (manager)') 
+        #         elif userDecode['dept'] == 'support': 
+        #             permission = 'SUPPORT' 
+        #             print('OK token support (manager)') 
+        #         else: 
+        #             permission = None 
+        #             print('token inconnu (manager)') 
+        #         return permission 
+        # else: 
+        #     # ok 
+        #     print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken["email"], connectedToken["pass"], connectedToken["dept"]) 
+        #     print('NO token checked (manager)') 
+        #     return None 
 
 
     def hash_pw(self, password, nb:int): 

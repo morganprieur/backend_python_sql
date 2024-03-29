@@ -524,89 +524,149 @@ class Controller():
             else: 
                 print(f'Cet objet ({entities}) n\'existe pas.') 
                 return false 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
     # ========= /View all entities ======== # 
  
+
     # TODO: à découper pour les menus : 
     # ========= View filtered entities ======== # 
-    def select_entities_with_criteria(self, entities, criteria): 
+
+    def select_all_users(self): 
+        """ View all users. Permission: Only Gestion users can do this. 
+            Returns:
+                list: The list of all the users registered. 
+        """ 
         if user_session == 'GESTION': 
-            if entities == 'users': 
-                users_db = self.manager.select_all_users() 
-                if users_db is None: 
-                    print('Aucun utilisateur avec ces informations.') 
-                    return False 
-                else: 
-                    print(f'Utilisateurs trouvés : ') 
-                    for user in users_db: 
-                        print(f'{user.id} {user.name} {user.departement}') 
-                    return users_db 
-            if entities == 'events': 
-                if criteria == 'without support': 
-                    events_db = self.manager.select_entities_with_criteria('events', 'without support', None) 
-                    if events_db is None: 
-                        print('Aucun événement avec ces informations.') 
-                        return False 
-                    else: 
-                        print(f'Evénements trouvés : ') 
-                        for event in events_db: 
-                            print(f'{event.id} {event.name} {event.support_contact_id}') 
-                        return events_db 
-                elif criteria == 'support id': 
-                    events_db = self.manager.select_entities_with_criteria('events', 'support id', logged_user.id) 
-                    if events_db is None: 
-                        print('Aucun événement avec ces informations.') 
-                        return False 
-                    else: 
-                        print(f'Evénements trouvés : ') 
-                        for event in events_db: 
-                            print(f'{event.id} {event.name} contact support : {event.support_contact_id}') 
-                        return events_db 
+            users_db = self.manager.select_all_users() 
+            if users_db is None: 
+                print('Aucun utilisateur à afficher.') 
+                return False 
+            else: 
+                print(f'Utilisateurs trouvés : ') 
+                for user in users_db: 
+                    print(f'{user.id} {user.name} {user.departement}') 
+                return users_db 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
 
-        elif user_session == 'COMMERCE': 
-            if entities == 'clients': 
-                clients_db = self.manager.select_entities_with_criteria('clients', 'sales id', logged_user.id) 
-                if clients_db is None: 
-                    print('Aucun client avec ces informations.') 
-                    return False 
-                else: 
-                    print(f'Clients trouvés : ') 
-                    for client in clients_db: 
-                        print(f'{client.id} {client.name} contact commerce : {clients.sales_contact_id}') 
-                    return clients_db 
-            elif entities == 'contracts': 
-                if criteria == 'sales id': 
-                    contracts_db = self.manager.select_entities_with_criteria('contracts', 'sales id', logged_user.id) 
-                    if clients_db is None: 
-                        print('Aucun contrat avec ces informations.') 
-                        return False 
-                    else: 
-                        print(f'Contrats trouvés : ') 
-                        for contract in contracts_db: 
-                            print(f'{contract.id} {contract.clients.name} contact commerce : {contract.clients.sales_contact_id}') 
-                        return contracts_db 
-                if criteria == 'not paid': 
-                    contracts_db = self.manager.select_entities_with_criteria('contracts', 'not paid id', None) 
-                    if clients_db is None: 
-                        print('Aucun client avec ces informations.') 
-                        return False 
-                    else: 
-                        print(f'Contrats trouvés : ') 
-                        for contract in contracts_db: 
-                            print(f'{contract.id} {contract.clients.name} montant : {contract.amount}, montant payé : {contract.paid_amount}') 
-                        return contracts_db 
 
-        elif user_session == 'SUPPORT': 
-            if entities == 'events': 
-                if criteria == 'support id': 
-                    events_db = self.manager.select_entities_with_criteria('events', 'support id', logged_user.id) 
-                    if events_db is None: 
-                        print('Aucun événement avec ces informations.') 
-                        return False 
-                    else: 
-                        print(f'Evénements trouvés : ') 
-                        for event in events_db: 
-                            print(f'{event.id} {event.name} contact support : {event.support_contact_id}') 
-                        return events_db 
+    def select_events_without_support(self): 
+        """ Select all the events those don't have a support contact. 
+            Permission: Only gestion users can do this. 
+            Returns:
+                list: All the selected events. 
+        """ 
+        if user_session == 'GESTION': 
+            events_db = self.manager.select_entities_with_criteria( 
+                'events', 'without support', None 
+            ) 
+            if events_db is None: 
+                print('Tous les événements ont un contact support.') 
+                return False 
+            else: 
+                print(f'Evénements trouvés : ') 
+                for event in events_db: 
+                    print(f'{event.id} {event.name}') 
+                return events_db 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
+
+
+    def select_sales_clients(self): 
+        """ Select all the sales user's clients. 
+            Permission: Only sales users can do this. 
+            Returns:
+                list: All the selected clients. 
+        """ 
+        if user_session == 'COMMERCE': 
+            clients_db = self.manager.select_entities_with_criteria( 
+                'clients', 'sales contact', logged_user.id 
+            ) 
+            if clients_db is None: 
+                print('Vous n\'avez aucun client.') 
+                return False 
+            else: 
+                print(f'Clients trouvés : ') 
+                for client in clients_db: 
+                    print(f'{client.id} {client.name} contact commerce : {clients.sales_contact_id}') 
+                return clients_db 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
+
+
+    def select_sales_contracts(self): 
+        """ Select all the sales user's contracts. 
+            Permission: Only sales users can do this. 
+            Returns:
+                list: All the selected contracts. 
+        """ 
+        if user_session == 'COMMERCE': 
+            contracts_db = self.manager.select_entities_with_criteria( 
+                'contracts', 'sales contact', logged_user.id 
+            ) 
+            if contracts_db is None: 
+                print('Vous n\'avez aucun contrat.') 
+                return False 
+            else: 
+                print(f'Contrats trouvés : ') 
+                for contract in contracts_db: 
+                    print(f'{contract.id} {contract.clients.name} contact commerce : {contract.clients.sales_contact_id}')  # *** 
+                return contracts_db 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
+
+
+    def select_not_paid_contracts(self): 
+        """ Select all the sales user's contracts those don't be entirely paid. 
+            Permission: Only sales users can do this. 
+            Returns:
+                list: All the selected contracts. 
+        """ 
+        if user_session == 'COMMERCE': 
+            contracts_db = self.manager.select_entities_with_criteria( 
+                'contracts', 'not paid id', logged_user.id 
+            ) 
+            if contracts_db is None: 
+                print('Tous vos clients ont réglé leurs contrats.') 
+                return False 
+            else: 
+                print(f'Contrats trouvés : ') 
+                for contract in contracts_db: 
+                    print(f'{contract.id} {contract.clients.name} montant : {contract.amount}, montant payé : {contract.paid_amount}') 
+                return contracts_db 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
+
+
+    def select_support_events(self): 
+        """ Select all the support user's events. 
+            Permission: Only support users can do this. 
+            Returns:
+                list: All the selected events. 
+        """ 
+        if user_session == 'SUPPORT': 
+            events_db = self.manager.select_entities_with_criteria( 
+                'events', 'support id', logged_user.id 
+            ) 
+            if events_db is None: 
+                print('Vous n\'avez aucun événement.') 
+                return False 
+            else: 
+                print(f'Evénements trouvés : ') 
+                for event in events_db: 
+                    print(f'{event.id} {event.name} contact support : {event.support_contact_id}') 
+                return events_db 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return false 
+
     # ========= /View filtered entities ======== # 
 
 

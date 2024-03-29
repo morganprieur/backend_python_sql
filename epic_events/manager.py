@@ -12,7 +12,7 @@ import jwt
 from jwt.exceptions import ExpiredSignatureError
 import re 
 from prompt_toolkit import PromptSession 
-prompt_session = PromptSession() 
+# prompt_session = PromptSession() 
 
 
 class Manager(): 
@@ -100,14 +100,14 @@ class Manager():
                 value (string): The field value to select the item to delete. 
         """ 
         item_db = self.select_one_dept(field, value) 
-        confirmation = prompt_session.prompt(f'\nëtes-vous sûr de vouloir supprimer le département {item_db.name} (id : {item_db.id}) ? (Y/N) ') 
-        if confirmation == 'y' | confirmation == 'Y': 
-            self.session.delete(item_db) 
-            self.session.commit() 
-            print(f'Le département {item_db.name} (id : {item_db.id}) été supprimé.') 
+        # confirmation = prompt_session.prompt(f'\nëtes-vous sûr de vouloir supprimer le département {item_db.name} (id : {item_db.id}) ? (Y/N) ') 
+        # if confirmation == 'y' | confirmation == 'Y': 
+        self.session.delete(item_db) 
+        self.session.commit() 
+        print(f'Le département {item_db.name} (id : {item_db.id}) été supprimé.') 
 
-        else: 
-            print('Vous avez annulé la suppression, le département n\'a pas été supprimé.') 
+        # else: 
+        #     print('Vous avez annulé la suppression, le département n\'a pas été supprimé.') 
 
 
 
@@ -224,14 +224,14 @@ class Manager():
                 value (string): The field value to select for deleting. 
         """ 
         item_db = self.select_one_user(field, value) 
-        confirmation = prompt_session.prompt(f'\nëtes-vous sûr de vouloir supprimer l\'utilisateur {item_db.name} (id : {item_db.id}) ? (Y/N) ') 
-        if confirmation == 'y' | confirmation == 'Y': 
-            self.session.delete(item_db) 
-            self.session.commit() 
-            print(f'L\'utilisateur {item_db.name} (id : {item_db.id}) été supprimé.') 
+        # confirmation = prompt_session.prompt(f'\nëtes-vous sûr de vouloir supprimer l\'utilisateur {item_db.name} (id : {item_db.id}) ? (Y/N) ') 
+        # if confirmation == 'y' | confirmation == 'Y': 
+        self.session.delete(item_db) 
+        self.session.commit() 
+        print(f'L\'utilisateur {item_db.name} (id : {item_db.id}) été supprimé.') 
 
-        else: 
-            print('Vous avez annulé la suppression, l\'utilisateur n\'a pas été supprimé.') 
+        # else: 
+        #     print('Vous avez annulé la suppression, l\'utilisateur n\'a pas été supprimé.') 
 
 
 
@@ -361,13 +361,13 @@ class Manager():
                 value (string): The field value to select for deleting. 
         """ 
         item_db = self.select_one_client(field, value) 
-        confirmation = prompt_session.prompt(f'\nEtes-vous sûr de vouloir supprimer le client {item_db.name} (id : {item_db.id}) ? (Y/N) ') 
-        if confirmation == 'y' | confirmation == 'Y': 
-            self.session.delete(item_db) 
-            self.session.commit() 
-            print(f'Le client {item_db.name} (id : {item_db.id}) été supprimé.') 
-        else: 
-            print('Vous avez annulé la suppression, le client n\'a pas été supprimé.') 
+        # confirmation = prompt_session.prompt(f'\nEtes-vous sûr de vouloir supprimer le client {item_db.name} (id : {item_db.id}) ? (Y/N) ') 
+        # if confirmation == 'y' | confirmation == 'Y': 
+            # self.session.delete(item_db) 
+            # self.session.commit() 
+            # print(f'Le client {item_db.name} (id : {item_db.id}) été supprimé.') 
+        # else: 
+        #     print('Vous avez annulé la suppression, le client n\'a pas été supprimé.') 
 
 
 
@@ -505,11 +505,11 @@ class Manager():
         """ 
         item_db = self.select_one_contract(field, value) 
         # Verifier client.name *** 
-        confirmation = prompt_session.prompt(f'\nEtes-vous sûr de vouloir supprimer le contract {item_db.id} du client : {item_db.clients.name}) ? (Y/N) ') 
+        # confirmation = prompt_session.prompt(f'\nEtes-vous sûr de vouloir supprimer le contract {item_db.id} du client : {item_db.clients.name}) ? (Y/N) ') 
         # if confirmation == 'y' | confirmation == 'Y': 
         self.session.delete(item_db) 
         self.session.commit() 
-        #     print(f'Le contrat {item_db.id} été supprimé.') 
+        print(f'Le contrat {item_db.id} été supprimé.') 
         # else: 
         #     print('Vous avez annulé la suppression, le contrat n\'a pas été supprimé.') 
 
@@ -646,7 +646,7 @@ class Manager():
                 events_db = self.session.query(Event).filter( 
                     Event.support_contact_id==null)  # *** null *** 
                 if events_db is None: 
-                    print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
+                    print('Aucun événement avec ces informations (manager without support)') 
                     return False 
                 else: 
                     return events_db 
@@ -659,7 +659,7 @@ class Manager():
                 else: 
                     return events_db 
         elif entities == 'contracts': 
-            if criteria == 'sales id': 
+            if criteria == 'sales contact': 
                 contracts_db = self.session.query(Contract).filter( 
                     Contract.sales_contact_id==id) 
                 if contracts_db is None: 
@@ -684,7 +684,7 @@ class Manager():
                 else: 
                     return contracts_db 
         elif field == 'clients': 
-            if criteria == 'sales id': 
+            if criteria == 'sales contact': 
                 clients_db = self.session.query(Client).filter( 
                     Client.sales_contact_id==id)
                 if clients_db is None: 
@@ -706,13 +706,13 @@ class Manager():
         """ 
         item_db = self.select_one_event(field, value) 
         # Vérifier contract_id.clients.name *** 
-        confirmation = prompt_session.prompt(f'\nEtes-vous sûr de vouloir supprimer l\'événement {item_db.name} du client : {item_db.contract_id.clients.name}) ? (Y/N) ') 
-        if confirmation == 'y' | confirmation == 'Y': 
-            self.session.delete(item_db) 
-            self.session.commit() 
-            print(f'L\'événement {item_db.name} (id : {item_db.id}) été supprimé.') 
-        else: 
-            print('Vous avez annulé la suppression, l\'événement n\'a pas été supprimé.') 
+        # confirmation = prompt_session.prompt(f'\nEtes-vous sûr de vouloir supprimer l\'événement {item_db.name} du client : {item_db.contract_id.clients.name}) ? (Y/N) ') 
+        # if confirmation == 'y' | confirmation == 'Y': 
+        self.session.delete(item_db) 
+        self.session.commit() 
+        print(f'L\'événement {item_db.name} (id : {item_db.id}) été supprimé.') 
+        # else: 
+        #     print('Vous avez annulé la suppression, l\'événement n\'a pas été supprimé.') 
 
     # user = relationship("User", back_populates="events") 
     # contracts = relationship("Contract", back_populates="events") 

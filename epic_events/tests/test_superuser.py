@@ -88,15 +88,43 @@ class SuperuserTest(unittest.TestCase):
 			# 		print(self.user_session) 
 
 
+	def test_creation_dept(self): 
+		""" Test adding one department. 
+		""" 
+		testDept = self.manager.add_entity('dept', {'name': 'testDept'}) 
+		# testDept_db = self.manager.select_one_dept('name', 'testTable') 
+		assert testDept.name == 'testDept' 
+		items_db = self.manager.select_all_depts() 
+		assert len(items_db) == 4 
 
-	# def test_creation_dept(self): 
-	# 	""" Test adding one department + permission gestion user only. 
-	# 	""" 
-	# 	testDept = self.manager.add_department(['testTable']) 
-	# 	testDept_db = self.manager.select_one_dept('name', 'testTable') 
-	# 	assert testDept.name == 'testTable' 
-	# 	items_db = self.manager.select_all_depts() 
-	# 	assert len(items_db) == 4 
+		self.manager.delete_dept('name', 'testDept') 
+
+
+	# Essai select generique manager L657 : 
+	def test_select_entity(self): 
+		""" Test adding one client and select it with select_one_entity. 
+		""" 
+		testUser = self.manager.select_one_entity('user', 'name', 'sales_user 1') 
+		assert testUser.id == 2 
+		testclient = self.manager.add_client({ 
+			'name': "testClient", 
+			'email': "client1@mail.com", 
+			'phone': "06 09 87 65 43", 
+			'corporation_name': "Entreprise 1", 
+			'sales_contact_name': "sales_user 1" 
+		}) 
+		all_clients = self.manager.select_all_clients() 
+		last_client = all_clients.pop() 
+		testclient_db = self.manager.select_one_entity('client', 'name', 'testClient') 
+		assert testclient_db.id == last_client.id 
+		items_db = self.manager.select_all_clients() 
+		assert len(items_db) == 1 
+
+		self.manager.delete_client('id', last_client.id) 
+
+
+
+	
 
 
 	# 	def test_update_user(self): 

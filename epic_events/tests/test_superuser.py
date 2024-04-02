@@ -13,6 +13,7 @@ from epic_events.manager import Manager
 import unittest 
 import json 
 import os 
+from datetime import datetime 
 
 
 
@@ -26,25 +27,25 @@ class SuperuserTest(unittest.TestCase):
 		self.manager.create_session() 
 
 
-	def test_connexion_superuser(self): 
-		""" Tests connexion, verify password and token 
-		""" 
-		print('test_connex') 
-		# file deepcode ignore PT: local project 
-		with open(f"../epic_events/{os.environ.get('FILE_PATH')}", 'r') as jsonfile: 
-			self.registered = json.load(jsonfile) 
-			# print('self.registered test_superuser L36 : ', self.registered) 
-			print('self.registered["users"] test_superuser L37 : ', self.registered['users']) 
-			userConnect = self.registered['users'][0] 
+	# def test_connexion_superuser(self): 
+	# 	""" Tests connexion, verify password and token 
+	# 	""" 
+	# 	print('test_connex') 
+	# 	# file deepcode ignore PT: local project 
+	# 	with open(f"../epic_events/{os.environ.get('FILE_PATH')}", 'r') as jsonfile: 
+	# 		self.registered = json.load(jsonfile) 
+	# 		# print('self.registered test_superuser L36 : ', self.registered) 
+	# 		print('self.registered["users"] test_superuser L37 : ', self.registered['users']) 
+	# 		userConnect = self.registered['users'][0] 
 
-			# # Verify password 
-			# userConnect['password'] = os.environ.get('USER_1_PW') 
-			# checked = self.manager.check_pw( 
-			# 	userConnect['email'], 
-			# 	userConnect['password'] 
-			# ) 
-			# user_db = self.manager.select_one_user('name', 'super_admin') 
-			# assert checked == user_db.password 
+	# 		# # Verify password 
+	# 		# userConnect['password'] = os.environ.get('USER_1_PW') 
+	# 		# checked = self.manager.check_pw( 
+	# 		# 	userConnect['email'], 
+	# 		# 	userConnect['password'] 
+	# 		# ) 
+	# 		# user_db = self.manager.select_one_user('name', 'super_admin') 
+	# 		# assert checked == user_db.password 
 
 
 
@@ -88,138 +89,106 @@ class SuperuserTest(unittest.TestCase):
 			# 		print(self.user_session) 
 
 
-	def test_creation_dept(self): 
+	def test_1_creation_dept(self): 
 		""" Test adding one department. 
 		""" 
+		print(datetime.now()) 
 		testDept = self.manager.add_entity('dept', {'name': 'testDept'}) 
+		print('testDept : ', testDept) 
 		# testDept_db = self.manager.select_one_dept('name', 'testTable') 
 		assert testDept.name == 'testDept' 
-		items_db = self.manager.select_all_depts() 
+		items_db = self.manager.select_all_entities('depts') 
+		# items_db = self.manager.select_all_depts() 
 		assert len(items_db) == 4 
 
-		self.manager.delete_dept('name', 'testDept') 
+	# 	self.manager.delete_dept('name', 'testDept') 
 
 
-	# Essai select generique manager L657 : 
-	def test_select_entity(self): 
-		""" Test adding one client and select it with select_one_entity. 
+	def test_2_creation_user(self): 
+		""" Test adding one user. 
 		""" 
-		testUser = self.manager.select_one_entity('user', 'name', 'sales_user 1') 
-		assert testUser.id == 2 
-		testclient = self.manager.add_client({ 
-			'name': "testClient", 
-			'email': "client1@mail.com", 
-			'phone': "06 09 87 65 43", 
-			'corporation_name': "Entreprise 1", 
-			'sales_contact_name': "sales_user 1" 
+		# Hash pass 
+		hashed_password = self.manager.hash_pw('pw_testUser', 12) 
+
+        # Get token JWT 
+		delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
+		data = { 
+		    'email': 'test_user@email.org', 
+		    'pass': hashed_password, 
+		    'dept': 'admin', 
+		} 
+		user_token = self.manager.get_token(delta, data) 
+		user_dept = self.manager.select_one_dept('name', 'testDept') 
+
+		testUser = self.manager.add_entity( 'user', { 
+			'name': 'testUser', 
+            'email': 'test_user@email.org', 
+            'password': hashed_password, 
+            'phone': '06 09 87 65 43', 
+            'department_id': user_dept.id, 
+            'token': user_token 
 		}) 
-		all_clients = self.manager.select_all_clients() 
-		last_client = all_clients.pop() 
-		testclient_db = self.manager.select_one_entity('client', 'name', 'testClient') 
-		assert testclient_db.id == last_client.id 
-		items_db = self.manager.select_all_clients() 
+		testUser_db = self.manager.select_one_user('name', 'testUser') 
+		# testUser_db = self.manager.select_one_entity('user', 'name', 'testUser') 
+		assert testUser_db.name == 'testUser' 
+		print(testUser_db) 
+		items_db = self.manager.select_all_entities('users') 
+		assert len(items_db) == 3 
+
+
+	def test_3_creation_client(self): 
+		""" Test adding one client. 
+		""" 
+		testClient = self.manager.add_entity( 'client', { 
+			'name': 'testClient', 
+            'email': 'test_client@email.com', 
+            'phone': '06 13 45 67 89', 
+            'corporation_name': 'Entreprise 2', 
+            'sales_contact_name': 'testUser' 
+		}) 
+		testClient_db = self.manager.select_one_client('name', 'testClient') 
+		assert testClient_db.name == 'testClient' 
+		items_db = self.manager.select_all_entities('clients') 
 		assert len(items_db) == 1 
 
-		self.manager.delete_client('id', last_client.id) 
+
+	def test_4_creation_contract(self): 
+		""" Test adding one contract. 
+		""" 
+		testContract = self.manager.add_entity( 'contract', { 
+			"client_name": "testClient", 
+			"amount": "1000", 
+			"paid_amount": "350", 
+			"is_signed": 1 
+		}) 
+		testContracts_db = self.manager.select_all_entities('contracts') 
+		last_contract_db = testContracts_db.pop() 
+		assert last_contract_db.id == testContract.id 
+		items_db = self.manager.select_all_entities('contracts') 
+		assert len(items_db) == 1 
 
 
-
-	
-
-
-	# 	def test_update_user(self): 
-	# 		testUser = self.manager.add_user([ 
-	# 			'user test', 
-	# 			'test@mail.org', 
-	# 			'test_password', 
-	# 			'01 23 45 67 89', 
-	# 			'testTable' 
-	# 		]) 
-	# 		testUser_db = self.manager.select_one_user('email', 'test@mail.org') 
-	# 		assert testUser_db.id == 2 
-	# 		assert testUser_db.name == 'user test' 
-	# 		assert testUser_db.department_id == 2 
-	# 		commerceDept = testUser_db.department_id 
-
-	# 		# Change user test's department: 
-	# 		gestionDept = self.manager.select_one_dept('name', 'gestion') 
-	# 		testUser_update = self.manager.update_user( 
-	# 			testUser_db.id, 
-	# 			'department_id', 
-	# 			gestionDept 
-	# 		) 
-	# 		assert testUser_db.department_id == 1 
-
-	# 		# Reset user test's original department: 
-	# 		testUser_update = self.manager.update_user( 
-	# 			testUser_db.id, 
-	# 			'department_id', 
-	# 			commerceDept 
-	# 		) 
-	# 		testUser_update_db = self.manager.select_one_user('email', 'test@mail.org') 
-	# 		assert testUser_update_db.name == 'user test' 
-	# 		assert testUser_update_db.department_id == commerceDept 
+	def test_5_creation_event(self): 
+		""" Test adding one event. 
+		""" 
+		testEvent = self.manager.add_entity( 'event', { 
+			"name": "Anniversaire 15 ans d'Oren", 
+			"start_datetime": "2024-04-27 10:00", 
+			"end_datetime": "2024-04-27 19:00", 
+			"location": "Pizzéria, rue Desnouettes, Paris 15", 
+			"attendees": 30, 
+			"notes": "Parking à 1 km : place Herbier. \nArrivées à partir de 11h30, départs doivent être terminés à 18h." 
+		}) 
+		last_event_db = self.manager.select_all_entities('events').pop() 
+		assert testEvent.id == last_event_db.id 
+		items_db = self.manager.select_all_entities('events') 
+		assert len(items_db) == 1 
 
 
-
-
-
-	# def test_creation_user(self): 
-	# 	""" Test adding one user.""" 
-	# 	testUser = self.manager.add_user([ 
-	# 		'user test', 
-	# 		'test@mail.org', 
-	# 		'test_password', 
-    #         '01 23 45 67 89', 
-	# 		'testTable' 
-	# 	]) 
-	# 	testUser_db = self.manager.select_one_user( 
-	# 		'email', 'test@mail.org') 
-	# 	dept_id = testUser_db.department_id 
-
-	# 	testUser_update = self.manager.update_user( 
-	# 		testUser_db.id, 'department_id', 
-	# 		testUser_db.department_id, 1) 
-	# 	assert testUser_db.name == 'user test' 
-	# 	assert testUser_db.department_id == 1 
-
-	# 	testUser_update = self.manager.update_user( 
-	# 		testUser_db.id, 'department_id', 1, dept_id) 
-	# 	testUser_update_db = self.manager.select_one_user('email', 'test@mail.org') 
-	# 	assert testUser_update_db.name == 'user test' 
-	# 	assert testUser_update_db.department_id == dept_id 
-
-
-	# def test_deletion_dept_and_user(self): 
-	# 	""" Test deletiing one department and the user with relationship.""" 
-	# 	testDept_db = self.manager.select_one_dept('name', 'testTable') 
-	# 	testUser_db = self.manager.select_one_user( 
-	# 		'email', 'test@mail.org') 
-	# 	print(testUser_db) 
-
-	# 	self.manager.delete_dept('name', 'testTable') 
-
-	# 	all_depts = self.manager.select_all_depts() 
-	# 	depts_names_list = [] 
-	# 	for dept in all_depts: 
-	# 		depts_names_list.append(dept) 
-	# 	assert testDept_db.name not in depts_names_list 
-
-	# 	all_users = self.manager.select_all_users() 
-	# 	users_names_list = [] 
-	# 	for user in all_users: 
-	# 		users_names_list.append(user) 
-	# 	assert testUser_db.name not in depts_names_list 
-
-	# 	# self.manager.delete_user('name', 'user test') 
-
-
-	# User gestion : 
-	# userConnect = registered['users'][0] 
-	# password = os.environ.get('USER_1_PW') 
-	# User commerce : 
-	# userConnect = registered['users'][1] 
-	# password = os.environ.get('U_2_PW') 
-
+	def test_6_deletion_dept(self): 
+		""" Delete one department deletes the attached users, the attached clients, 
+			the attached contracts and the attached events. 
+		""" 
+		self.manager.delete_dept('name', 'testDept') 
 
 

@@ -93,20 +93,23 @@ class Setup():
         encoded_jwt = jwt.encode(payload, secret, algo) 
         print(encoded_jwt) 
 
+        admin_department = self.session.query(Department).filter(Department.name==super_admin['department_name']).first() 
+
         # ==== register admin user ==== # 
         superAdmin = User( 
             name=super_admin['name'], 
             email=super_admin['email'], 
             password=hash_password_SA, 
             phone=super_admin['phone'], 
-            department_id=super_admin['department_id'], 
+            department_id=admin_department.id, 
             token=encoded_jwt 
         ) 
         self.session.add(superAdmin) 
         self.session.commit() 
 
         # DEBUG 
-        superadmin_dept_db = self.session.query(Department).filter(Department.id==1).first()
+        superadmin_dept_db = self.session.query(Department).filter( 
+            Department.id==1).first()
         print('superadmin_dept_db SL108 : ', superadmin_dept_db) 
         # /superAdmin 
 
@@ -132,13 +135,16 @@ class Setup():
         su_encoded_jwt = jwt.encode(payload, secret, algo) 
         print(su_encoded_jwt) 
 
+        salesUser_department = self.session.query(Department).filter( 
+            Department.name==user_commerce['department_name']).first() 
+
         # ==== register admin user ==== # 
         salesUser = User( 
             name=user_commerce['name'], 
             email=user_commerce['email'], 
             password=hash_password_SU, 
             phone=user_commerce['phone'], 
-            department_id=user_commerce['department_id'], 
+            department_id=salesUser_department.id, 
             token=su_encoded_jwt 
         ) 
         self.session.add(salesUser) 

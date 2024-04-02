@@ -68,8 +68,12 @@ class User(Base):
     ) 
 
     department = relationship('Department', back_populates='user') 
-    clients = relationship("Client", back_populates="user") 
+    clients = relationship("Client", back_populates="user", 
+        cascade='all, delete') 
+    # user = relationship('User', back_populates='department', 
+    #     cascade='all, delete') 
     events = relationship("Event", back_populates="user") 
+    # events = relationship("Event", back_populates="users", nullable=True)  # pas autorisé 
 
     def __str__(self): 
         return f'Modèle User : {self.name}, id : {self.id}.' 
@@ -122,25 +126,15 @@ class Client(Base):
     ) 
 
     user = relationship('User', back_populates="clients") 
-    contract = relationship("Contract", back_populates="clients") 
+    contract = relationship("Contract", back_populates="client", 
+        cascade='all, delete') 
+    # contract = relationship("Contract", back_populates="clients") 
 
     def __str__(self): 
         return f'Modèle Client : {self.name}, id : {self.id}.' 
 
     def __repr__(self): 
         return str(self) 
-
-    # def add_item(self, itemName, fields:list): 
-    #     itemName = Client( 
-    #         name=fields[0], 
-    #         email=fields[1], 
-    #         phone=fields[2], 
-    #         corporation_name=fields[3], 
-    #         created_at=fields[4], 
-    #         updated_at=fields[5], 
-    #         sales_contact_id=fields[6], 
-    #     ) 
-    #     return itemName 
 
 
 class Contract(Base): 
@@ -152,6 +146,7 @@ class Contract(Base):
         index=True 
     ) 
     client_id = Column( 
+        Integer, 
         ForeignKey('clients.id') 
     ) 
     # A diviser par 100 pour retrouver un prix avec centimes 
@@ -170,11 +165,13 @@ class Contract(Base):
         DateTime 
     ) 
 
-    clients = relationship("Client", back_populates="contract") 
-    events = relationship("Event", back_populates="contracts") 
+    client = relationship("Client", back_populates="contract") 
+    # clients = relationship("Client", back_populates="contract") 
+    events = relationship("Event", back_populates="contracts", 
+        cascade='all, delete') 
 
     def __str__(self): 
-        return f'Modèle Contract : {self.name}, id : {self.id}.' 
+        return f'Modèle Contract : id {self.id}, client id : {self.client_id}.' 
 
     def __repr__(self): 
         return str(self) 
@@ -221,6 +218,7 @@ class Event(Base):
     ) 
 
     user = relationship("User", back_populates="events") 
+    # support_contact = relationship("User", back_populates="events") 
     contracts = relationship("Contract", back_populates="events") 
 
     def __str__(self): 

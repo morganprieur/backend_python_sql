@@ -99,7 +99,8 @@ class Controller():
 
             action = session.prompt('\nVoir tous les clients ? ') 
             if (action == 'y') | (action == 'Y'): 
-                all_clients = self.manager.select_all_clients() 
+                all_clients = self.manager.select_all_entities('clients') 
+                # all_clients = self.manager.select_all_clients() 
                 if all_clients == []: 
                     print(f'Aucun client') 
                 else: 
@@ -197,7 +198,7 @@ class Controller():
     #                 start_datetime=fields['start_datetime'], 
     #                 end_datetime=fields['end_datetime'], 
     #                 location=fields['location'], 
-    #                 Attendees=fields['Attendees'], 
+    #                 attendees=fields['attendees'], 
     #                 notes=fields['notes'] 
     #             ) 
     #             new_event_db = self.manager.select_one_event('id', 1) 
@@ -280,7 +281,7 @@ class Controller():
                     start_datetime=fields['start_datetime'], 
                     end_datetime=fields['end_datetime'], 
                     location=fields['location'], 
-                    Attendees=fields['Attendees'], 
+                    attendees=fields['attendees'], 
                     notes=fields['notes'] 
                 ) 
                 new_entity_db = self.manager.select_one_entity( 
@@ -621,7 +622,8 @@ class Controller():
         """ 
         if user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             if entities == clients: 
-                clients_db = self.manager.select_all_clients() 
+                clients_db = self.manager.select_all_entities('clients') 
+                # clients_db = self.manager.select_all_clients() 
                 print(f'Clients trouvés : ') 
                 for client in clients_db: 
                     print(f'{client.name} ({client.id}), {client.corporation_name}') 
@@ -629,13 +631,15 @@ class Controller():
                     print(f'{client.users.name} (id : {client.sales_contact_id})') 
                 return clients_db 
             elif entities == contracts: 
-                contracts_db = self.manager.select_all_contracts() 
+                contracts_db = self.manager.select_all_entities('contracts') 
+                # contracts_db = self.manager.select_all_contracts() 
                 print(f'Contrats trouvés : ') 
                 for contract in contracts_db: 
                     print(f'{contract.id} {contract.client.name}') 
                 return contracts_db 
             elif entities == events: 
-                events_db = self.manager.select_all_events() 
+                events_db = self.manager.select_all_entities('events') 
+                # events_db = self.manager.select_all_events() 
                 print(f'Evénements trouvés : ') 
                 for event in events_db: 
                     print(f'{event.id} {event.name}') 
@@ -654,7 +658,8 @@ class Controller():
                 list: The list of all the users registered. 
         """ 
         if user_session == 'GESTION': 
-            users_db = self.manager.select_all_users() 
+            users_db = self.manager.select_all_entities('users') 
+            # users_db = self.manager.select_all_users() 
             if users_db is None: 
                 print('Aucun utilisateur à afficher.') 
                 return False 
@@ -674,7 +679,8 @@ class Controller():
                 list: The list of all the departments registered. 
         """ 
         if self.user_session == 'GESTION': 
-            depts_db = self.manager.select_all_depts() 
+            depts_db = self.manager.select_all_entities('depts') 
+            # depts_db = self.manager.select_all_depts() 
             if depts_db is None: 
                 print('Aucun département à afficher.') 
                 return False 

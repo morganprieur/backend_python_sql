@@ -11,8 +11,7 @@ import json
 import jwt 
 from jwt.exceptions import ExpiredSignatureError
 import re 
-# from prompt_toolkit import PromptSession 
-# prompt_session = PromptSession() 
+
 
 
 class Manager(): 
@@ -42,7 +41,7 @@ class Manager():
     #         Returns: 
     #             object Department: The just created department. 
     #     """
-    #     itemName = Department(name=fields['name']) 
+    #     itemName = Department(**fields) 
     #     self.session.add(itemName) 
     #     self.session.commit() 
     #     return itemName 
@@ -78,7 +77,6 @@ class Manager():
                 Department).filter(Department.name==value).first() 
         else: 
             print(f'Ce champ "{field}" n\'existe pas.')  
-        # print(f'département trouvé (manager.select_one_dept) : {item_db.name}, id : {item_db.id}.') 
         return item_db 
 
 
@@ -130,12 +128,10 @@ class Manager():
     #     } 
     #     user_token = self.get_token(delta, data) 
     #     userName = User( 
-    #         name=fields['name'], 
-    #         email=fields['email'], 
     #         password=hashed_password, 
-    #         phone=fields['phone'], 
     #         department_id=dept_db_id, 
     #         token=user_token, 
+    #         **fields 
     #     ) 
     #     self.session.add(userName) 
     #     self.session.commit() 
@@ -258,13 +254,10 @@ class Manager():
     #     sales_contact = self.select_one_user('name', 'sales_user 1') 
     #     print('sales_contact_id : ', sales_contact.id) 
     #     itemName = Client( 
-    #         name=fields['name'], 
-    #         email=fields['email'], 
-    #         phone=fields['phone'], 
-    #         corporation_name=fields['corporation_name'], 
     #         created_at=datetime.now(), 
     #         updated_at=datetime.now(), 
-    #         sales_contact_id=sales_contact.id 
+    #         sales_contact_id=sales_contact.id, 
+    #         **fields 
     #     ) 
     #     self.session.add(itemName) 
     #     self.session.commit() 
@@ -390,10 +383,8 @@ class Manager():
     #     client_db = self.select_one_client('name', fields['name']) 
     #     itemName = Contract( 
     #         client_id=client_db.id, 
-    #         amount=fields['amount'], 
-    #         paid_amount=fields['paid_amount'], 
-    #         is_signed=fields['is_signed'], 
-    #         created_at=datetime.now() 
+    #         created_at=datetime.now(), 
+    #         **fields 
     #     ) 
     #     self.session.add(itemName) 
     #     self.session.commit() 
@@ -509,11 +500,11 @@ class Manager():
 
 
     # ==== event ==== # 
-    # def add_event(self, fields:list): 
+    # def add_event(self, fields:dict): 
     #     """ Creates an Event instance, giving the data to register. 
     #         The 'support_contact_id' is let empty. A Gestion user will fill it. 
     #         Args:
-    #             fields (list): [ 
+    #             fields (dict): { 
     #                 'name',
     #                 'contract_id',
     #                 'start_datetime',
@@ -521,7 +512,7 @@ class Manager():
     #                 'location' 
     #                 'attendees' 
     #                 'notes' 
-    #             ] 
+    #             } 
     #         Returns: 
     #             object Event: The just created Event instance. 
     #     """ 
@@ -529,14 +520,7 @@ class Manager():
     #     # client_db = self.select_one_client('name', fields[4]) 
     #     user_db = self.select_one_user('name', fields[4]) 
     #     itemName = Event( 
-    #         name=fields[0], 
-    #         contract_id=fields[1], 
-    #         start_datetime=fields[2], 
-    #         end_datetime=fields[3], 
-    #         # support_contact_id=fields[user_db.id], 
-    #         location=fields[4], 
-    #         attendees=fields[5], 
-    #         notes=fields[6] 
+    #         **fields 
     #     ) 
     #     self.session.add(itemName) 
     #     self.session.commit() 
@@ -717,77 +701,6 @@ class Manager():
             print(f'Cet objet ({entity}) n\'existe pas ML748.') 
             return false 
     
-
-    # def select_one_entity(self, entity, field, value): 
-    #     """ Select one entity instance following a unique field. 
-    #         Possible entities: 
-    #             'dept' (for department), 
-    #             'user', 
-    #             'client', 
-    #             'contract', 
-    #             'event' 
-    #         Possible fields (depending entity): 
-    #             'id' 
-    #             'name', 
-    #             'email', 
-    #             'phone', 
-    #             'client_name', 
-    #             'contract_id', 
-    #         Args:
-    #             entity (string): The name of the model to select. 
-    #             field (string): The name of the field to look for. 
-    #             value (string): The value for select the entity instance. 
-    #         Returns:
-    #             object entity: The selected entity instance. 
-    #     """ 
-    #     # event_db = Event() 
-    #     entities_dict = { 
-    #         'dept': Department, 
-    #         'user': User, 
-    #         'client': Client, 
-    #         'contract': Contract, 
-    #         'event': Event 
-    #     } 
-    #     fields_list = [ 
-    #         'id', 
-    #         'name', 
-    #         'email', 
-    #         'phone', 
-    #         'client_name', 
-    #         'contract_id' 
-    #     ] 
-    #     # fields_dict = { 
-    #     #     'id': entities_dict[entity].id, 
-    #     #     'name': entities_dict[entity].name, 
-    #     #     'email': entities_dict[entity].email, 
-    #     #     'phone': entities_dict[entity].phone, 
-    #     #     'client_name': entities_dict[entity].client_name, 
-    #     #     'contract_id': entities_dict[entity].contract_id 
-    #     # } 
-    #     print('entity ML715 : ', entity) 
-    #     if entity in entities_dict.keys(): 
-    #         # if field in fields_dict.keys(): 
-    #         for f in fields_list: 
-    #         #     if f == field: 
-    #             print(f'field : ', field) 
-    #             if field == 'id': 
-    #                 entity_db = self.session.query(entities_dict[entity]).filter( 
-    #                     entities_dict[entity].id==int(value)).first() 
-    #                 print(f'entité trouvée (ML688) : ', entity_db) 
-    #                 return entity_db 
-    #             elif field == 'contract_id': 
-    #                 entity_db = self.session.query(entities_dict[entity]).filter( 
-    #                     entities_dict[entity].value==int(value)).first() 
-    #                 print(f'entité trouvée (ML693) : ', entity_db) 
-    #                 return entity_db 
-    #             elif field == 'name': 
-    #                 entity_db = self.session.query(entities_dict[entity]).filter( 
-    #                     entities_dict[entity].name==value).first() 
-    #                 print(f'entité trouvée (ML698) : ', entity_db) 
-    #                 return entity_db 
-    #     else: 
-    #         print(f'Cet objet ({entity}) n\'existe pas.') 
-    #         return false 
 
     # ==== /generics ==== # 
 

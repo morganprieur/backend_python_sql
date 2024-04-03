@@ -15,6 +15,12 @@ class Views():
         return user 
 
 
+    def input_create_dept(self): 
+        dept = {} 
+        dept['name'] = session.prompt('\nNom du département : ') 
+        return dept 
+    
+
 
 
 

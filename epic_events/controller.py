@@ -1,4 +1,5 @@
 
+from dashboard import Dashboard 
 from manager import Manager 
 from models import Base, Client, Contract, Department, Event, User  
 from views import Views 
@@ -16,6 +17,7 @@ class Controller():
     print(f'hello controller') 
     # test_fct() 
     def __init__(self):  # , view, manager 
+        self.dashboard = Dashboard() 
         self.views = Views() 
         self.manager = Manager() 
         self.manager.connect() 
@@ -25,88 +27,592 @@ class Controller():
 
 
     # def start(self, mode, user_session=None): 
+    # def start(self, mode, new_session=True): 
     def start(self, mode): 
         # self.user_session = None 
-        test_prompt = session.prompt('test controller : ') 
-        print(test_prompt) 
 
-        # Mode de saisie des infos utilisateur 
-        print('mode de saisie ML41 : ', mode) 
-        userConnect = {} 
-        if mode == 'pub': 
-            # Type the required credentials: 
-            userConnect = self.views.input_user_connection() 
-        else:  
-            # file deepcode ignore PT: local project 
-            with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
-                self.registered = json.load(jsonfile) 
-                # print(self.registered) 
-                userConnect = self.registered['users'][0] 
+        if self.user_session == None: 
+            self.connect_user(mode) 
 
-        # Verify password 
-        userConnect['password'] = os.environ.get('USER_1_PW') 
-        checked = self.manager.check_pw( 
-            userConnect['email'], 
-            userConnect['password'] 
-        ) 
-        if not checked: 
-            # TODO: retour formulaire + compteur (3 fois max) 
-            print('Les informations saisies ne sont pas bonnes, merci de réessayer.') 
+
+        # if new_session: 
+        #     self.dashboard.display_welcome() 
+        # self.dashboard.display_menu() 
+
+
+        # ======== M E N U ======== # 
+
+        # Displays only the useful menus 
+        if self.user_session == 'GESTION': 
+            self.dashboard.display_menu([1, 2, 4, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]) 
+        elif self.user_session == 'COMMERCE': 
+            self.dashboard.display_menu([3, 5, 8, 9, 14, 15, 16, 18, 19, 20, 21, 23, 24, 25, 26]) 
+        elif self.user_session == 'SUPPORT': 
+            self.dashboard.display_menu([10, 14, 15, 16, 18, 19, 20, 21, 27]) 
         else: 
-            logged_user = self.manager.select_one_entity( 
-                'user',  
-                'email', 
-                userConnect['email'] 
-            ) 
-            # logged_user = self.manager.select_one_user( 
-            #     'email', userConnect['email']) 
+            print('Vous devez vous connecter pour pouvoir accéder aux fonctionnalités de l\'application. ') 
+            # self.board.display_menu(items) 
 
-            # Verify JWT 
-            # Check token pour utilisateur connecté + département 
-            self.user_session = self.manager.verify_token( 
-                logged_user.email, 
-                logged_user.password, 
-                logged_user.department.name 
-            ) 
-            print('self.user_session CL65 : ', self.user_session) 
-            # # TODO: sortie propre après l'échec du token 
-            if self.user_session == 'past': 
-                print('self.user_session CL68 : ', self.user_session) 
-                print(logged_user.token) 
-                delta = 8*3600 
-                new_token = self.manager.get_token(delta, { 
-                    'email': logged_user.email, 
-                    'pass': logged_user.password, 
-                    'dept': logged_user.department.name 
-                }) 
-                updated_logged_user = self.manager.update_user(logged_user.id, 'token', new_token) 
-                updated_user_db = self.manager.select_one_entity( 
-                    'user', 
-                    'email', 
-                    logged_user.email 
-                ) 
-                # updated_user_db = self.manager.select_one_user('email', logged_user.email) 
-                print(updated_user_db.token) 
-                if logged_user.department.name == 'gestion': 
-                    self.user_session = 'GESTION' 
-                if logged_user.department.name == 'commerce': 
-                    self.user_session = 'COMMERCE' 
-                if logged_user.department.name == 'support': 
-                    self.user_session = 'SUPPORT' 
-                print(self.user_session) 
+
+        # ==== Registers one dept ==== # 
+        if self.dashboard.ask_for_action == '1': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nEnregistrer un département') 
+                fields = self.views.input_create_dept() 
+                new_item = self.manager.add_entity('dept', fields) 
+                print(f"Le département {new_item.id} {new_item.name} a bien été créé. ") 
             else: 
-                print(self.user_session) 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
 
-            action = session.prompt('\nVoir tous les clients ? ') 
-            if (action == 'y') | (action == 'Y'): 
-                all_clients = self.manager.select_all_entities('clients') 
-                # all_clients = self.manager.select_all_clients() 
-                if all_clients == []: 
-                    print(f'Aucun client') 
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Registers one user ==== # 
+        if self.dashboard.ask_for_action == '2': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nEnregistrer un utilisateur') 
+                fields = self.views.input_create_user() 
+                # Hash password: 
+                fields['password'] = self.manager.hash_pw(fields['entered_password'], 12) 
+                fields.pop('entered_password') 
+                # get token: into the manager 
+                fields['department_id'] = self.manager.select_one_dept('name', fields['department_name']).id 
+                fields.pop('department_name') 
+                # print(fields) 
+
+                new_item = self.manager.add_entity('user', fields) 
+                print(f"L\'utilisateur {new_item.id} {new_item.name} a bien été créé. ") 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Registers one client ==== # 
+        if self.dashboard.ask_for_action == '3': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'COMMERCE': 
+                print('\nEnregistrer un client') 
+                fields = self.views.input_create_client() 
+                fields['sales_contact_id'] = logged_user.id 
+
+                new_item = self.manager.add_entity('client', fields) 
+                print(f"Le client {new_item.name} (ID : {new_item.id}) du contact {new_item.User.name} a bien été créé. ") 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Registers one contract ==== # 
+        if self.dashboard.ask_for_action == '4': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nEnregistrer un contrat') 
+                fields = self.views.input_create_contract() 
+                fields['client_id'] = self.manager.select_one_client('name', fields['client_name']) 
+                fields.pop('client_name') 
+
+                new_item = self.manager.add_entity('contract', fields) 
+                print(f"Le contrat {new_item.id} du client {new_item.client.name} a bien été créé. ") 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Registers one event ==== # 
+        if self.dashboard.ask_for_action == '5': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'COMMERCE': 
+                print('\nEnregistrer un événement') 
+                fields = self.views.input_create_event() 
+
+                new_item = self.manager.add_entity('event', fields) 
+                print(f"L'événement a bien été créé. ") 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Modifies a department ==== # 
+        if self.dashboard.ask_for_action == '6': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nModifier un département') 
+                dept_to_select = self.views.input_select_entity('dept') 
+                dept_to_modify = self.manager.select_one_dept( 
+                    'name', 
+                    dept_to_select['old_value'] 
+                ) 
+                fields = self.views.input_modify_dept(dept_to_modify) 
+
+                # Confirmation : 
+                confirmation = self.views.ask_for_confirmation('modifier', 'dept') 
+
+                if (confirmation == 'y') | (confirmation == 'Y'): 
+                    modified_item = self.manager.update_dept( 
+                        # fields['name_to_replace'], 
+                        dept_to_select['old_value'], 
+                        fields['new_name'] 
+                    ) 
+                    print(f"Le nom du département {modified_item.id} a bien été modifié : {modified_item}. ") 
                 else: 
-                    for client in all_clients: 
-                        print(f'client : {client}') 
+                    print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                    return False 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
 
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Modifies one user ==== # 
+        if self.dashboard.ask_for_action == '7': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nModifier un utilisateur') 
+                user_to_select = self.views.input_select_entity('user') 
+                user_to_modify = self.manager.select_one_user( 
+                    user_to_select['chosen_field'], 
+                    user_to_select['old_value'] 
+                ) 
+
+                fields = self.views.input_modify_user(user_to_modify) 
+                # print('fields avant changemt (controller 7) : ', fields) 
+                fields[fields['field_to_modify']] = fields['new_value'] 
+                # print('fields après changemt (controller 7) : ', fields) 
+
+                # Confirmation : 
+                confirmation = self.views.ask_for_confirmation('modifier', 'user') 
+                if (confirmation == 'y') | (confirmation == 'Y'): 
+                    modified_item = self.manager.update_user( 
+                        user_to_modify.id, 
+                        fields['field_to_modify'], 
+                        fields['new_value'] 
+                    ) 
+                    print(f"L'utilisateur {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                else: 
+                    print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                    return False 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Modifies one client ==== # 
+        if self.dashboard.ask_for_action == '8': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'COMMERCE': 
+                print('\nModifier un client') 
+                client_to_select = self.views.input_select_entity('client') 
+                client_to_modify = self.manager.select_one_client( 
+                    client_to_select['chosen_field'], 
+                    client_to_select['old_value'] 
+                ) 
+
+                fields = self.views.input_modify_client(client_to_modify) 
+                # print('fields avant changemt (controller 8) : ', fields) 
+                fields[fields['field_to_modify']] = fields['new_value'] 
+                # print('fields après changemt (controller 8) : ', fields) 
+
+                # Confirmation : 
+                confirmation = self.views.ask_for_confirmation('modifier', 'client') 
+                if (confirmation == 'y') | (confirmation == 'Y'): 
+                    modified_item = self.manager.update_client( 
+                        client_to_modify.id, 
+                        fields['field_to_modify'], 
+                        fields['new_value'] 
+                    ) 
+                    print(f"Le client a bien été modifié : \"{modified_item}\". ") 
+                else: 
+                    print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                    return False 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Modifies one contract ==== # 
+        if self.dashboard.ask_for_action == '9': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'COMMERCE': 
+                print('\nModifier un contrat') 
+                contract_to_select = self.views.input_select_entity('contract') 
+                contract_to_modify = self.manager.select_one_contract( 
+                    contract_to_select['chosen_field'], 
+                    contract_to_select['old_value'] 
+                ) 
+
+                fields = self.views.input_modify_contract(contract_to_modify) 
+                # print('fields avant changemt (controller 9) : ', fields) 
+                fields[fields['field_to_modify']] = fields['new_value'] 
+                # print('fields après changemt (controller 9) : ', fields) 
+
+                # Confirmation : 
+                confirmation = self.views.ask_for_confirmation('modifier', 'contract') 
+                if (confirmation == 'y') | (confirmation == 'Y'): 
+                    modified_item = self.manager.update_contract( 
+                        contract_to_modify.id, 
+                        fields['field_to_modify'], 
+                        fields['new_value'] 
+                    ) 
+                    print(f"Le contrat a bien été modifié : \"{modified_item}\". ") 
+                else: 
+                    print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                    return False 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Modifies one event ==== # 
+        if self.dashboard.ask_for_action == '10': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nModifier un événement') 
+                event_to_select = self.views.input_select_entity('event') 
+                # user_to_select = self.views.input_select_user() 
+                event_to_modify = self.manager.select_one_event( 
+                    event_to_select['chosen_field'], 
+                    event_to_select['old_value'] 
+                ) 
+
+                fields = self.views.input_modify_event( 
+                    event_to_modify, 
+                    gestion=True 
+                ) 
+                # print('fields avant changemt (controller 10) : ', fields) 
+                fields[fields['field_to_modify']] = fields['new_value'] 
+                # print('fields après changemt (controller 10) : ', fields) 
+
+                # Confirmation : 
+                confirmation = self.views.ask_for_confirmation('modifier', 'event') 
+                if (confirmation == 'y') | (confirmation == 'Y'): 
+                    modified_item = self.manager.update_event( 
+                        event_to_modify.id, 
+                        fields['field_to_modify'], 
+                        fields['new_value'] 
+                    ) 
+                    print(f"L'événement {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                else: 
+                    print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                    return False 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Deletes one user ==== # 
+        if self.dashboard.ask_for_action == '11': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                print('\nSupprimer un utilisateur') 
+                user_to_select = self.views.input_select_entity('user') 
+
+                # Confirmation : 
+                confirmation = self.views.ask_for_confirmation('supprimer', 'user') 
+                if (confirmation == 'y') | (confirmation == 'Y'): 
+                    user_to_delete = self.manager.delete_user( 
+                        user_to_select['chosen_field'], 
+                        user_to_select['old_value'] 
+                    ) 
+                    print(f"L'utilisateur {user_to_select['old_value']} a bien été supprimé. ") 
+                else: 
+                    print('Vous avez annulé la suppression, l\'utilisateur n\'a pas été supprimé.') 
+                    return False 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays all departments ==== # 
+        if self.dashboard.ask_for_action == '12': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                self.display_all_entities('depts') 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays all users ==== # 
+        if self.dashboard.ask_for_action == '13': 
+            self.dashboard.ask_for_action = None 
+
+            if self.user_session == 'GESTION': 
+                self.display_all_entities('isers') 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays all clients ==== # 
+        if self.dashboard.ask_for_action == '14': 
+            self.dashboard.ask_for_action = None 
+
+            if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                self.display_all_entities('clients') 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays all contracts ==== # 
+        if self.dashboard.ask_for_action == '15': 
+            self.dashboard.ask_for_action = None 
+
+            if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                self.display_all_entities('contracts') 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays all events ==== # 
+        if self.dashboard.ask_for_action == '16': 
+            self.dashboard.ask_for_action = None 
+
+            if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                self.display_all_entities('events') 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays a department ==== # 
+        if self.dashboard.ask_for_action == '17': 
+            self.dashboard.ask_for_action = None 
+            print('\nAfficher un département') 
+
+            if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                dept_to_select = self.views.input_select_entity('dept') 
+                dept = self.manager.select_one_dept(dept_to_select['chosen_field'], dept_to_select['old_value']) 
+                self.views.display_entity([dept]) 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays a user ==== # 
+        if self.dashboard.ask_for_action == '18': 
+            self.dashboard.ask_for_action = None 
+            print('\nAfficher un utilisateur') 
+
+            if (self.user_session == 'GESTION') : 
+                user_to_select = self.views.input_select_entity('user') 
+                user = self.manager.select_one_user( 
+                    user_to_select['chosen_field'], 
+                    user_to_select['old_value'] 
+                ) 
+                self.views.display_entity([user]) 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays a client ==== # 
+        if self.dashboard.ask_for_action == '19': 
+            self.dashboard.ask_for_action = None 
+            print('\nAfficher un client') 
+
+            if (self.user_session == 'GESTION')  | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                client_to_select = self.views.input_select_entity('client') 
+                client = self.manager.select_one_client( 
+                    client_to_select['chosen_field'], 
+                    client_to_select['old_value'] 
+                ) 
+                self.views.display_entity([client]) 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays a contract ==== # 
+        if self.dashboard.ask_for_action == '20': 
+            self.dashboard.ask_for_action = None 
+            print('\nAfficher un contrat') 
+
+            if (self.user_session == 'GESTION')  | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                contract_to_select = self.views.input_select_entity('contract') 
+                contract = self.manager.select_one_contract( 
+                    contract_to_select['chosen_field'], 
+                    contract_to_select['old_value'] 
+                ) 
+                self.views.display_entity([contract]) 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays an event ==== # 
+        if self.dashboard.ask_for_action == '21': 
+            self.dashboard.ask_for_action = None 
+            print('\nAfficher un événement') 
+
+            if (self.user_session == 'GESTION')  | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+                event_to_select = self.views.input_select_entity('event') 
+                event = self.manager.select_one_event( 
+                    event_to_select['chosen_field'], 
+                    event_to_select['old_value'] 
+                ) 
+                self.views.display_entity([event]) 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+        # ==== Displays events that don't have support contact ==== # 
+        if self.dashboard.ask_for_action == '22': 
+            self.dashboard.ask_for_action = None 
+            print('\nAfficher les événements sans contact support') 
+
+            if (self.user_session == 'GESTION'): 
+                # event_to_select = self.views.input_select_entity('event') 
+                events = self.manager.select_entities_with_criteria('events', 'without support', logged_user.id) 
+                self.views.display_entity([event]) 
+            else: 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+
+            self.press_enter_to_continue() 
+            self.start(mode) 
+
+
+
+        """ commerce 3, 5, 8, 9, 14, 15, 16, 18, 19, 20, 21, 23, 24, 25, 26 
+
+        '8 : 
+        '9 : 
+        '14 : Afficher tous les client ', 
+        '15 : Afficher tous les contrats ', 
+        '16 : Afficher tous les événements ', 
+
+        '18 : Afficher un utilisateur ', 
+        '19 : Afficher un client ', 
+        '20 : Afficher un contrat ', 
+        '21 : Afficher un événement ', 
+
+        '23 : Afficher les clients d\'un utilisateur commercial ', 
+        '24 : Afficher les contrats d\'un utilisateur commercial ', 
+        '25 : Afficher les contrats non finis de payer ', 
+        '26 : Afficher les contrats non signés ', 
+
+        """ 
+
+
+
+        """ Command to quit the application """ 
+        if self.dashboard.ask_for_action == '0': 
+            self.dashboard.ask_for_action = None 
+            self.close_the_app() 
+
+
+
+
+    def display_all_entities(self, entities): 
+        print(f'\nAfficher tous les {entities_dict[entities]}') 
+
+        entities_dict = { 
+            'depts': 'départements', 
+            'users': 'utilisateurs', 
+            'clients': 'clients', 
+            'contracts': 'contrats', 
+            'events': 'événements' 
+        } 
+        objects = self.manager.select_all_entities(entities) 
+        print(f"Voici la liste des {entities_dict[entities]} : ") 
+        return self.views.display_entity(objects) 
+
+
+
+    # ==== permissions GESTION ==== # 
+    # def create_department(self, entity, fields): 
+    #     if self.user_session == 'GESTION': 
+    #         self.manager.add_entity(entity, fields) 
+    #     else: 
+    #         print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+    #         return False 
+
+
+    # def create_user(self, entity, fields): 
+    #     if self.user_session == 'GESTION': 
+    #         self.manager.add_entity(entity, fields) 
+    #     else: 
+    #         print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+    #         return False 
+    # ======== /session GESTION ======== # 
 
 
     # ======== Create ======== # 
@@ -212,93 +718,6 @@ class Controller():
     #         print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
     #         return False 
 
-
-    # ========= creation factory ======== # 
-    # TODO: prompt data + retour dans l'application if False. 
-    def create_factory(self, entity, fields:dict): 
-        """ Creates a new 'entity', following the prompted data. 
-            Returns: 
-                object 'entity': The just created 'entity' instance, 
-                    or false if the user does not have the permission to create it. 
-        """ 
-        if user_session == 'GESTION': 
-            if entity == 'user': 
-                new_user = self.manager.add_user( 
-                    name=fields['name'], 
-                    email=fields['email'], 
-                    phone=fields['phone'], 
-                    department_name=fields['department_name']  
-                ) 
-                new_entity_db = self.manager.select_one_entity( 
-                    'user', 
-                    'name', 
-                    fields['name'] 
-                ) 
-                # new_entity_db = self.manager.select_one_user('name', fields['name']) 
-                print(f'L\'utilisateur {new_entity_db.name} (id : {new_entity_db.id}) a été créé.') 
-                return new_user 
-            elif entity == 'contract': 
-                new_contract = self.manager.add_contract( 
-                    client_name=fields['client_name'], 
-                    amount=fields['amount'], 
-                    paid_amount=fields['paid_amount'], 
-                    is_signed=fields['is_signed'] 
-                ) 
-                # new_entity_db = self.manager.select_last_entity('contract')  # value : client_name 
-                # new_entity_db = self.manager.select_last_contract(value)  # value : client_name 
-                print(f'Le contrat {new_contract.name} (id : {new_contract.id}) a été créé.') 
-                return new_contract 
-            else: 
-                print(f'Cet objet ({entity}) n\'existe pas.') 
-                return false 
-        elif user_session == 'COMMERCE': 
-            if entity == 'client': 
-                new_client = self.manager.add_client( 
-                    name=fields['name'], 
-                    email=fields['email'], 
-                    phone=fields['phone'], 
-                    corporation_name=fields['corporation_name'], 
-                    sales_contact_id=self.user_session.id 
-                    # sales_contact_id=logged_user.id 
-                ) 
-                new_entity_db = self.manager.select_one_entity( 
-                    'client', 
-                    'name', 
-                    fields['name'] 
-                ) 
-                new_entity_db = self.manager.select_one_entity( 
-                    'client', 
-                    'name', 
-                    fields['name'] 
-                ) 
-                # new_entity_db = self.manager.select_one_client('name', fields['name']) 
-                print(f'Le client {new_entity_db.name} (id : {new_entity_db.id}) a été créé.') 
-                return new_entity_db 
-            elif entity == 'event':  # TODO 
-                new_event = self.manager.add_event( 
-                    name=fields['name'], 
-                    contract_id=fields['contract_id'], 
-                    start_datetime=fields['start_datetime'], 
-                    end_datetime=fields['end_datetime'], 
-                    location=fields['location'], 
-                    attendees=fields['attendees'], 
-                    notes=fields['notes'] 
-                ) 
-                new_entity_db = self.manager.select_one_entity( 
-                    'event', 
-                    'name', 
-                    fields['name'] 
-                ) 
-                # new_entity_db = self.manager.select_one_event('name', fields['name']) 
-                print(f'L\'événement {new_entity_db.name} (id : {new_entity_db.id}) a été créé.') 
-                return new_entity_db 
-            else: 
-                print(f'Cet objet ({entity}) n\'existe pas.') 
-                return false 
-        else: 
-            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
-            return False 
-    # ========= /creation factory ======== # 
 
 
 
@@ -429,186 +848,6 @@ class Controller():
 
 
 
-    # ========= modify factory ======== # 
-    # TODO: prompt data + retour dans l'application if False. 
-    def modify_factory(self, entity, id, field, new_value): 
-        """ Creates a 'modify' request on an 'entity', following the prompted data, and check the 'permission'. 
-            Permission: regarding to the entity, and who is referenced/or not as the entity's contact. 
-            paparms: 
-                entity (str): model of the instance to modify. 
-                id (int): The id of the instance to modify. 
-                field (str): The name of the field to modify. 
-                new_value (str): The new value to register instead. 
-            Returns: 
-                object 'entity': The just modified 'entity' instance, 
-                    or false if the user does not have the permission to modify it. 
-        """ 
-        # TODO 
-        if user_session == 'GESTION': 
-            gestion_entities_dict = { 
-                'dept': self.manager.select_one_entity('department', 'id', id), 
-                # 'dept': self.manager.select_one_dept('id', id), 
-                'user': self.manager.select_one_user('user', 'id', id), 
-                # 'user': self.manager.select_one_user('id', id), 
-                'event': self.manager.select_one_event('event', 'id', id) 
-                # 'event': self.manager.select_one_event('id', id) 
-            } 
-            if entity not in gestion_entities_dict.keys(): 
-                print(f'Cet objet ({entity}) n\'existe pas.') 
-                return false 
-            else: 
-                for entity in gestion_entities_dict.keys(): 
-                    entity_to_modify = gestion_entities_dict[entity] 
-                    confirmation = session.prompt(f'\nVoulez-vous modifier l\'enregistrement {entity_to_modify} ? (y/n) ') 
-                    if (confirmation != 'y') | (confirmation != 'Y'): 
-                        print('Vous avez annulé la modification, l\'enregistrement n\'a pas été modifié.') 
-                    else: 
-                        modified_entity = self.manager.update_entity(id, field, new_value) 
-                        modified_entity_db = self.select_one_entity('id', id) 
-                        return modified_entity_db 
-        elif user_session == 'COMMERCE': 
-            sales_entities_dict = { 
-                'client': self.manager.select_one_entity( 
-                    'client', 
-                    'id', 
-                    id 
-                ), 
-                # 'client': self.manager.select_one_client('id', id), 
-                'contract': self.manager.select_one_entity( 
-                    'contract', 
-                    'id', 
-                    id 
-                ), 
-                # 'contract': self.manager.select_one_contract('id', id), 
-            } 
-            if entity not in sales_entities_dict.keys(): 
-                print(f'Cet objet ({entity}) n\'existe pas.') 
-                return false 
-            else: 
-                for entity in sales_entities_dict.keys(): 
-                    entity_to_modify = sales_entities_dict[entity] 
-                    confirmation = session.prompt(f'\nVoulez-vous modifier l\'enregistrement {entity_to_modify} ? (y/n) ') 
-                    if (confirmation != 'y') | (confirmation != 'Y'): 
-                        print('Vous avez annulé la modification, l\'enregistrement n\'a pas été modifié.') 
-                    else: 
-                        modified_entity = self.manager.update_entity(id, field, new_value) 
-                        modified_entity_db = self.select_one_entity('id', id) 
-                        return modified_entity_db 
-        elif user_session == 'SUPPORT': 
-            support_entities_dict = { 
-                'event': self.manager.select_one_entity( 
-                    'event', 
-                    'id', 
-                    id 
-                ) 
-                # 'event': self.manager.select_one_event('id', id) 
-            } 
-            if entity not in support_entities_dict.keys(): 
-                print(f'Cet objet ({entity}) n\'existe pas.') 
-                return false 
-            else: 
-                for entity in support_entities_dict.keys(): 
-                    entity_to_modify = support_entities_dict[entity] 
-                    confirmation = session.prompt(f'\nVoulez-vous modifier l\'enregistrement {entity_to_modify} ? (y/n) ') 
-                    if (confirmation != 'y') | (confirmation != 'Y'): 
-                        print('Vous avez annulé la modification, l\'enregistrement n\'a pas été modifié.') 
-                    else: 
-                        modified_entity = self.manager.update_entity(id, field, new_value) 
-                        modified_entity_db = self.select_one_entity('id', id) 
-                        return modified_entity_db 
-        else: 
-            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
-            return false 
-
-        # if user_session == 'GESTION': 
-        #     if entity == 'user': 
-        #         entity_to_modify = self.manager.select_one_user('id', 1) 
-        #         confirmation = session.prompt(f'\nVoulez-vous modifier l\'utilisateur {entity_to_modify.name} (id : {entity_to_modify.id}) ? (y/n) ') 
-        #         if (confirmation != 'y') | (confirmation != 'Y'): 
-        #             print('Vous avez annulé la modification, l\'utilisateur n\'a pas été modifié.') 
-        #         else: 
-        #             modified_entity = self.manager.update_user(id, field, new_value) 
-        #             modified_entity_db = self.manager.select_one_user('id', id) 
-        #             print(f'L\'utilisateur {modified_entity_db} été modifié.') 
-        #             return modified_entity_db 
-        #     elif entity == 'event': 
-        #         entity_to_modify = self.manager.select_one_event(field, value) 
-        #         confirmation = session.prompt(f'\nVoulez-vous modifier l\'événement {entity_to_modify.name} (id : {entity_to_modify.id}) ? (y/n) ') 
-        #         if (confirmation != 'y') | (confirmation != 'Y'): 
-        #             print('Vous avez annulé la modification, l\'événement n\'a pas été modifié.') 
-        #         else: 
-        #             modified_entity = self.manager.update_event(id, 'support_contact_id', new_value) 
-        #             modified_entity_db = self.manager.select_one_event('id', id) 
-        #             print(f'L\'événement {modified_entity_db.name} (id : {modified_entity_db.id}) été modifié : contact support id {modified_entity_db.support_contact_id}, nom {modified_entity_db.users.name}.') 
-        #             return modified_entity_db 
-            # else: 
-            #     print(f'Cet objet ({entity}) n\'existe pas.') 
-            #     return false 
-        # elif user_session == 'COMMERCE': 
-        #     if entity == 'client': 
-        #         entity_to_modify = self.manager.select_one_client('id', id) 
-        #         responsible_sales_contact = entity_to_modify.sales_contact_id 
-        #         if responsible_sales_contact != self.user_session.id: 
-        #         # if responsible_sales_contact != logged_user.id: 
-        #             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action (Commercial responsable du client).') 
-        #             return False 
-        #         else: 
-        #             confirmation = session.prompt(f'\nVoulez-vous modifier le client {entity_to_modify.name} (id : {entity_to_modify.id}) ? (y/n) ') 
-        #             if (confirmation != 'y') | (confirmation != 'Y'): 
-        #                 print('Vous avez annulé la modification, le client n\'a pas été modifié.') 
-        #             else: 
-        #                 modified_entity = self.manager.update_client(id, field, new_value) 
-        #                 modified_entity_db = self.manager.select_one_client('id', id) 
-        #                 print(f'Le client {modified_entity_db.name} (id : {id}) été modifié.') 
-        #                 return modified_entity_db 
-        #     elif entity == 'contract': 
-        #         entity_to_modify = self.manager.select_one_contract('id', id) 
-        #         client_contract_id = entity_to_modify.client_id 
-        #         client_db = self.manager.select_one_client('id', client_contract_id) 
-        #         responsible_sales_contact = client_db.sales_contact_id 
-        #         # responsible_sales_contact = self.manager.select_one_contract('id', 1).clients.sales_contact_id 
-        #         if responsible_sales_contact != self.user_session.id: 
-        #         # if responsible_sales_contact != logged_user.id: 
-        #             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action (Commercial responsable du client).') 
-        #             return False 
-        #         else: 
-        #             confirmation = session.prompt(f'\nVoulez-vous modifier le contrat {entity_to_modify} concernant le client {entity_to_modify.clients.name}) ? (y/n) ') 
-        #             if (confirmation != 'y') | (confirmation != 'Y'): 
-        #                 print('Vous avez annulé la modification, le contrat n\'a pas été modifié.') 
-        #             else: 
-        #                 modified_entity = self.manager.update_contract(id, field, new_value) 
-        #                 modified_entity_db = self.manager.select_one_contract('id', id) 
-        #                 print(f'Le contrat numéro {modified_entity_db} été modifié.') 
-        #                 return modified_entity_db 
-            # else: 
-            #     print(f'Cet objet ({entity}) n\'existe pas.') 
-            #     return false 
-        
-        # elif user_session == 'SUPPORT': 
-        #     if entity == 'event': 
-        #         entity_to_modify = self.manager.select_one_event('id', id) 
-        #         responsible_support_contact = entity_to_modify.support_contact_id 
-        #         if responsible_support_contact != user_session.id: 
-        #             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action (Support responsable de l\'événement).') 
-        #             return False 
-        #         else: 
-        #             confirmation = session.prompt(f'\nVoulez-vous modifier l\'événement {entity_to_modify.name} (id : {entity_to_modify.id}) ? (y/n) ') 
-        #             if (confirmation != 'y') | (confirmation != 'Y'): 
-        #                 print('Vous avez annulé la modification, l\'événement n\'a pas été modifié.') 
-        #             else: 
-        #                 modified_entity = self.manager.update_event(id, field, new_value) 
-        #                 modified_entity_db = self.manager.select_one_event('id', id) 
-        #                 print(f'L\'événement {modified_entity_db} été modifié.') 
-        #                 return modified_entity_db 
-        #     else: 
-        #         print(f'Cet objet ({entity}) n\'existe pas.') 
-        #         return false 
-        # else: 
-        #     print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
-        #     return false 
-    # ========= /modify factory ======== # 
-
-
     # ========= View all entities ======== # 
     # TODO: prompt data + retour dans l'application if False. 
     def view_all_factory(self, entities): 
@@ -696,89 +935,6 @@ class Controller():
     # ========= /View all entities ======== # 
 
 
-    # ========= View one entity ======== # 
-    def view_one_entity(self, entity, field, value): 
-        """ View one entity, selected with one unique field. All the users can do this, as "read only" displaying. 
-            Args:
-                entity (str): The entity to view. 
-                field (str): The unique field on which to select the entity. 
-                value (str): The value to look for. 
-            Returns:
-                object instance: The entity instance retrieved or None. 
-        """ 
-        permissions = ['GESTION', 'COMMERCE', 'SUPPORT'] 
-        if self.user_session.dept not in permissions: 
-            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action, contactez un admin. ') 
-            return false 
-        else: 
-            if entity == 'department': 
-                if self.user_session.dept != permissions['0']: 
-                    print('Vous n\'avez pas l\'autorisation d\'effectuer cette action, contactez un admin. ') 
-                    return false 
-                else: 
-                    dept_db = self.manager.select_one_entity( 
-                        'dept', 
-                        field, 
-                        value 
-                    ) 
-                    # dept_db = self.manager.select_one_dept(field, value) 
-                    if dept_db is None: 
-                        print(f'Il n\'y a pas de département avec ces informations. ') 
-                    else: 
-                        print(f'Département trouvé : {dept_db}') 
-            if entity == 'user': 
-                if self.user_session.dept != 'GESTION': 
-                    print('Vous n\'avez pas l\'autorisation d\'effectuer cette action, contactez un admin. ') 
-                    return false 
-                else: 
-                    user_db = self.manager.select_one_entity( 
-                        'user', 
-                        field, 
-                        value 
-                    ) 
-                    # user_db = self.manager.select_one_user(field, value) 
-                    if user_db is None: 
-                        print(f'Il n\'y a pas d\'utilisateur avec ces informations. ') 
-                    else: 
-                        print(f'Utilisateur trouvé : {user_db}') 
-            if entity == 'client': 
-                client_db = self.manager.select_one_entity( 
-                    'client', 
-                    field, 
-                    value 
-                ) 
-                # client_db = self.manager.select_one_client(field, value) 
-                if client_db is None: 
-                    print(f'Il n\'y a pas de client avec ces informations. ') 
-                else: 
-                    print(f'Client trouvé : {client_db}') 
-            if entity == 'contract': 
-                contract_db = self.manager.select_one_entity( 
-                    'contract', 
-                    field, 
-                    value 
-                ) 
-                # contract_db = self.manager.select_one_contract(field, value) 
-                if contract_db is None: 
-                    print(f'Il n\'y a pas de contract avec ces informations. ') 
-                else: 
-                    print(f'Contract trouvé : {contract_db}') 
-            if entity == 'event': 
-                event_db = self.manager.select_one_( 
-                    'contract', 
-                    field, 
-                    value 
-                ) 
-                # event_db = self.manager.select_one_contract(field, value) 
-                if event_db is None: 
-                    print(f'Il n\'y a pas d\'événement avec ces informations. ') 
-                else: 
-                    print(f'Evénement trouvé : {event_db}') 
-            else: 
-                print(f'Cet objet ({entity}) n\'existe pas.') 
-                return false 
-    # ========= /View one entity ======== # 
- 
 
     # TODO: à découper pour les menus : 
     # ========= View filtered entities ======== # 
@@ -853,7 +1009,7 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return false 
 
-
+    #  + not signed contracts 
     def view_not_paid_contracts(self): 
         """ Select all the sales user's contracts those don't be entirely paid. 
             Permission: Only sales users can do this. 
@@ -904,47 +1060,121 @@ class Controller():
     # ========= /View filtered entities ======== # 
 
 
-    # ========= delete entities ======== # 
-    def delete_one_entity(self, entity, id): 
-        if self.user_session.dept != 'GESTION': 
-            print(f'Vous n\'avez pas l\'autorisation d\'effectuer cette action. Contactez un admin.') 
+    # # ========= delete entities ======== # 
+    # def delete_one_entity(self, entity, id): 
+    #     if self.user_session.dept != 'GESTION': 
+    #         print(f'Vous n\'avez pas l\'autorisation d\'effectuer cette action. Contactez un admin.') 
+    #     else: 
+    #         if entity == 'users': 
+    #             entity_to_delete = self.manager.select_one_( 
+    #                 'user', 
+    #                 'id', 
+    #                 id 
+    #             ) 
+    #             # entity_to_delete = self.manager.select_one_user('id', id) 
+    #             confirmation = session.prompt(f'Êtes-vous sûr de vouloir supprimer cet objet {entity_to_delete} ? Y/N ') 
+    #             if (confirmation != 'y') | (confirmation != 'Y'): 
+    #                 print(f'Vous avez annulé la suppression, l\'objet {entity_to_delete} n\'a pas été supprimé.') 
+    #             else: 
+    #                 self.manager.delete_user('id', id) 
+    #                 # all_users_db = self.manager.select_all_users() 
+    #                 self.view_all_factory('users') 
+    #         if entity == 'departments': 
+    #             entity_to_delete = self.manager.select_one_( 
+    #                 'dept', 
+    #                 'id', 
+    #                 id 
+    #             ) 
+    #             # entity_to_delete = self.manager.select_one_dept('id', id) 
+    #             users_impacted = self.manager.select_entities_with_criteria('users', 'department', id) 
+    #             print(f'! ATTENTION ! Cette action entraînera la suppression d\'utilisateurs.') 
+    #             confirmation = session.prompt(f''' 
+    #                 Êtes-vous sûr de vouloir supprimer ce département {entity_to_delete} et les utilisateurs {users_impacted} ? Y/N 
+    #                 ''') 
+    #             if (confirmation != 'y') | (confirmation != 'Y'): 
+    #                 print(f'Vous avez annulé la suppression, le département et les utilisateurs {entity_to_delete} n\'ont pas été supprimés.') 
+    #             else: 
+    #                 self.manager.delete_dept('id', id) 
+    #                 # all_users_db = self.manager.select_all_users() 
+    #                 self.view_all_factory('departments') 
+
+    # # ========= /delete entities ======== # 
+
+
+    # === actions ==== # 
+    def connect_user(self, mode): 
+        # Mode de saisie des infos utilisateur 
+        print('mode de saisie ML41 : ', mode) 
+        userConnect = {} 
+        if mode == 'pub': 
+            # Type the required credentials: 
+            userConnect = self.views.input_user_connection() 
+        else:  
+            # file deepcode ignore PT: local project 
+            with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
+                self.registered = json.load(jsonfile) 
+                # print(self.registered) 
+                userConnect = self.registered['users'][0] 
+
+        # Verify password 
+        userConnect['password'] = os.environ.get('USER_1_PW') 
+        checked = self.manager.check_pw( 
+            userConnect['email'], 
+            userConnect['password'] 
+        ) 
+        if not checked: 
+            # TODO: retour formulaire + compteur (3 fois max) 
+            print('Les informations saisies ne sont pas bonnes, merci de réessayer.') 
         else: 
-            if entity == 'users': 
-                entity_to_delete = self.manager.select_one_( 
-                    'user', 
-                    'id', 
-                    id 
-                ) 
-                # entity_to_delete = self.manager.select_one_user('id', id) 
-                confirmation = session.prompt(f'Êtes-vous sûr de vouloir supprimer cet objet {entity_to_delete} ? Y/N ') 
-                if (confirmation != 'y') | (confirmation != 'Y'): 
-                    print(f'Vous avez annulé la suppression, l\'objet {entity_to_delete} n\'a pas été supprimé.') 
-                else: 
-                    self.manager.delete_user('id', id) 
-                    # all_users_db = self.manager.select_all_users() 
-                    self.view_all_factory('users') 
-            if entity == 'departments': 
-                entity_to_delete = self.manager.select_one_( 
-                    'dept', 
-                    'id', 
-                    id 
-                ) 
-                # entity_to_delete = self.manager.select_one_dept('id', id) 
-                users_impacted = self.manager.select_entities_with_criteria('users', 'department', id) 
-                print(f'! ATTENTION ! Cette action entraînera la suppression d\'utilisateurs.') 
-                confirmation = session.prompt(f''' 
-                    Êtes-vous sûr de vouloir supprimer ce département {entity_to_delete} et les utilisateurs {users_impacted} ? Y/N 
-                    ''') 
-                if (confirmation != 'y') | (confirmation != 'Y'): 
-                    print(f'Vous avez annulé la suppression, le département et les utilisateurs {entity_to_delete} n\'ont pas été supprimés.') 
-                else: 
-                    self.manager.delete_dept('id', id) 
-                    # all_users_db = self.manager.select_all_users() 
-                    self.view_all_factory('departments') 
+            logged_user = self.manager.select_one_user( 
+                'email', userConnect['email']) 
+            # new_session = False 
 
-    # ========= /delete entities ======== # 
+            # Verify JWT 
+            # Check token pour utilisateur connecté + département 
+            self.user_session = self.manager.verify_token( 
+                logged_user.email, 
+                logged_user.password, 
+                logged_user.department.name 
+            ) 
+            print('self.user_session CL65 : ', self.user_session) 
+            # # TODO: sortie propre après l'échec du token 
+            if self.user_session == 'past': 
+                print('self.user_session CL68 : ', self.user_session) 
+                print(logged_user.token) 
+                delta = 8*3600 
+                new_token = self.manager.get_token(delta, { 
+                    'email': logged_user.email, 
+                    'pass': logged_user.password, 
+                    'dept': logged_user.department.name 
+                }) 
+                updated_logged_user = self.manager.update_user(logged_user.id, 'token', new_token) 
+                updated_user_db = self.manager.select_one_user('email', logged_user.email) 
+                print(updated_user_db.token) 
+                if logged_user.department.name == 'gestion': 
+                    self.user_session = 'GESTION' 
+                if logged_user.department.name == 'commerce': 
+                    self.user_session = 'COMMERCE' 
+                if logged_user.department.name == 'support': 
+                    self.user_session = 'SUPPORT' 
+                print(self.user_session) 
+            else: 
+                print(self.user_session) 
+            self.dashboard.display_welcome() 
 
 
+
+
+    @staticmethod 
+    def press_enter_to_continue(): 
+        session.prompt('Appuyez sur entrée pour continuer ') 
+
+    """ Command to quit the application """ 
+    @staticmethod 
+    def close_the_app(): 
+        print('\nFermeture de l\'application. Bonne fin de journée !') 
+
+    # === /actions ==== # 
 
 
 
@@ -1011,4 +1241,7 @@ def copy_start(self, new_session=False):
                 self.press_enter_to_continue() 
                 self.start() 
 # ==== /Pour aide navigation et menus ==== # 
+
+
+
 

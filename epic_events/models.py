@@ -24,11 +24,17 @@ class Department(Base):
         cascade='all, delete') 
 
     def __str__(self): 
-        return f'Modèle Département : {self.name}, id : {self.id}.' 
+        return f'Département : {self.name} (id : {self.id}).' 
 
     def __repr__(self): 
         return str(self) 
         # return f'User {self.__str__()}' 
+
+    def to_dict(self): 
+        return { 
+            'id': self.id,
+            'name': self.name
+        } 
 
 
 class User(Base): 
@@ -76,11 +82,22 @@ class User(Base):
     # events = relationship("Event", back_populates="users", nullable=True)  # pas autorisé 
 
     def __str__(self): 
-        return f'Modèle User : {self.name}, id : {self.id}.' 
+        return f'User (id : {self.id}) : {self.name}, {self.email}, hash mot de passe : {self.password}, téléphone : {self.phone}, département {self.department_id} {self.department.name}.' 
 
     def __repr__(self): 
         return str(self) 
-        # return f'User {self.name}' 
+        # return f'User {self.name}'
+
+    def to_dict(self): 
+        return { 
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'password': self.password,
+            'phone': self.phone,
+            'department_id': self.department_id,
+            'token': self.token
+        } 
 
 
 class Client(Base): 
@@ -131,10 +148,25 @@ class Client(Base):
     # contract = relationship("Contract", back_populates="clients") 
 
     def __str__(self): 
-        return f'Modèle Client : {self.name}, id : {self.id}.' 
+        return f'Client : {self.name} (id : {self.id}), contacts : {self.email} {self.phone}, entreprise : {self.corporation_name}, créé le {self.created_at}, mis à jour le {self.updated_at}, contact commerce : {self.user.name} (id : {self.user.id}).' 
 
     def __repr__(self): 
         return str(self) 
+
+
+    def to_dict(self): 
+        return { 
+            'id': self.id, 
+            'name': self.name, 
+            'email': self.email, 
+            'phone': self.phone, 
+            'corporation_name': self.corporation_name, 
+            'created_at': self.created_at, 
+            'updated_at': self.updated_at, 
+            'sales_contact_id': self.sales_contact_id 
+        } 
+
+
 
 
 class Contract(Base): 
@@ -171,7 +203,7 @@ class Contract(Base):
         cascade='all, delete') 
 
     def __str__(self): 
-        return f'Modèle Contract : id {self.id}, client id : {self.client_id}.' 
+        return f'Contract : id {self.id}, client id : {self.client_id}.' 
 
     def __repr__(self): 
         return str(self) 
@@ -222,11 +254,31 @@ class Event(Base):
     contracts = relationship("Contract", back_populates="events") 
 
     def __str__(self): 
-        return f'Modèle événement : {self.name}, id : {self.id}.' 
+        if not self.support_contact_id: 
+            support_contact_id = '' 
+        else: 
+            support_contact_id = self.support_contact_id 
+        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}, lieu : {self.location}, invotés : {self.attendees}, notes : {self.notes}).' 
 
     def __repr__(self): 
         return str(self) 
 
+    def to_dict(self): 
+        if not self.support_contact_id: 
+            support_contact_id = '' 
+        else: 
+            support_contact_id = self.support_contact_id 
+        return { 
+            'id': self.name, 
+            'name': self.name, 
+            'contract_id': self.contract_id, 
+            'start_datetime': self.start_datetime, 
+            'end_datetime': self.end_datetime, 
+            'support_contact_id': support_contact_id, 
+            'location': self.location, 
+            'attendees': self.attendees, 
+            'notes': self.notes, 
+        } 
 
 
 

@@ -46,18 +46,25 @@ class Manager():
     #     self.session.commit() 
     #     return itemName 
 
-    def update_dept(self, new_value, name): 
-        """ Modifies a registered department with the new name. 
+    def update_dept(self, old_name, new_value): 
+        """ Modifies a registered department with the new value. 
+            For the department table, it is possible to update only the name. 
             Args:
-                new_value (string): The new name to register. 
-                name (string): The name to replace by the new_value. 
-            Returns:
+                id (string): The ID to look for. 
+                field (string): The field to replace by the new_value. 
+                new_value (string): The new value to register. 
+            Returns: 
                 object Department: The updated instance of Department. 
         """ 
-        itemName = self.select_one_dept('name', name) 
-        itemName.name = new_value 
-        self.session.commit() 
-        return itemName 
+        itemName = self.select_one_dept('name', old_name) 
+        if itemName is None: 
+            print('itemName is none ML63') 
+        else: 
+            itemName.name = new_value 
+            self.session.commit() 
+            modified_item = self.select_one_dept('id', itemName.id) 
+            return modified_item 
+            # return itemName 
 
 
     def select_one_dept(self, field, value): 
@@ -72,7 +79,8 @@ class Manager():
         if field == 'id': 
             item_db = self.session.query(Department).filter( 
                 Department.id==int(value)).first() 
-        elif field == 'name': 
+        item_db = Department 
+        if field == 'name': 
             item_db = self.session.query( 
                 Department).filter(Department.name==value).first() 
         else: 
@@ -155,6 +163,9 @@ class Manager():
             itemName.name = new_value 
         elif field == 'email': 
             itemName.email = new_value 
+        elif field == 'password': 
+            hashed_password = self.hash_pw(new_value, 12) 
+            itemName.password = hashed_password 
         elif field == 'phone': 
             itemName.phone = new_value 
         elif field == 'department_id': 
@@ -560,41 +571,38 @@ class Manager():
             return event_db 
 
 
-    # def update_event(self, id, field, new_value): 
-    #     """ Modifies a field of an Event instance, following its id. 
-    #         Possible fields: 
-    #             name 
-    #             contract_id 
-    #             support_contact_id 
-    #             location 
-    #             attendees 
-    #             notes 
-    #         Args:
-    #             id (int): The id of the registered Event instance. 
-    #             field (string): The name of the field to modify. 
-    #             new_value (string): The new value to register. 
-    #         Returns:
-    #             object Event: The just updated Event instance. 
-    #     """ 
-    #     print('update_event') 
-    #     itemName = self.select_one_event('id', id) 
-    #     if field == 'name': 
-    #         itemName.name = new_value 
-    #     elif field == 'contract_id': 
-    #         itemName.contract_id = new_value 
-    #     elif field == 'support_contact_name': 
-    #         support_contact_db = self.select_one_user('name', new_value) 
-    #         itemName.support_contact_id = support_contact_db.id 
-    #     elif field == 'location': 
-    #         itemName.location = new_value 
-    #     elif field == 'attendees': 
-    #         itemName.attendees = int(new_value) 
-    #     elif field == 'notes': 
-    #         itemName.notes = new_value 
-    #     else: 
-    #         print('no value (manager.update_event)') 
-    #     self.session.commit() 
-    #     return itemName 
+    def update_event(self, id, field, new_value): 
+        """ Modifies a field of an Event instance, following its id. 
+            Possible fields: 
+                id 
+                name 
+                contract_id 
+            Args:
+                id (int): The id of the registered Event instance. 
+                field (string): The name of the field to modify. 
+                new_value (string): The new value to register. 
+            Returns:
+                object Event: The just updated Event instance. 
+        """ 
+        print('update_event') 
+        itemName = self.select_one_event('id', id) 
+        if field == 'name': 
+            itemName.name = new_value 
+        elif field == 'contract_id': 
+            itemName.contract_id = new_value 
+        elif field == 'support_contact_name': 
+            support_contact_db = self.select_one_user('name', new_value) 
+            itemName.support_contact_id = support_contact_db.id 
+        elif field == 'location': 
+            itemName.location = new_value 
+        elif field == 'attendees': 
+            itemName.attendees = int(new_value) 
+        elif field == 'notes': 
+            itemName.notes = new_value 
+        else: 
+            print('no value (manager.update_event)') 
+        self.session.commit() 
+        return itemName 
 
 
     # def select_all_events(self): 
@@ -635,6 +643,13 @@ class Manager():
 
             elif entity == 'user': 
                 print(f'entity => user') 
+                # get token: 
+                fields['token'] = self.get_token(2, { 
+                    'email': fields['email'], 
+                    'pass': fields['password'], 
+                    # 'password': fields['password'], 
+                    'dept': fields['department_id']} 
+                ) 
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
@@ -680,7 +695,7 @@ class Manager():
             return last_item_db 
         else: 
             print(f'Cet objet ({entity}) n\'existe pas (manager.add_entity 729).') 
-            return false 
+            return False 
 
 
     def select_all_entities(self, entity): 
@@ -699,14 +714,19 @@ class Manager():
             return items_list_db 
         else: 
             print(f'Cet objet ({entity}) n\'existe pas ML748.') 
-            return false 
+            return False 
     
-
     # ==== /generics ==== # 
 
 
     def select_entities_with_criteria(self, entities, criteria, contact_id): 
         """ Select entity instances with criteria. 
+            Possible criteria: 
+                'without support' (events, for gestion)  
+                'support contact' (events, for support) 
+                'sales contact' (clients / contracts, for commerce) 
+                'not signed' (contracts, for commerce) 
+                'not paid' (contracts, for commerce) 
             Args:
                 entities (str): (in plural) The name of the objects to look for. 
                 criteria (str): The criteria to follow for filtering the instances. 
@@ -722,7 +742,7 @@ class Manager():
                     return False 
                 else: 
                     return events_db 
-            elif criteria == 'support id': 
+            elif criteria == 'support contact': 
                 events_db = self.session.query(Event).filter( 
                     Event.support_contact_id==contact_id) 
                 if events_db is None: 
@@ -817,7 +837,8 @@ class Manager():
             with X hours before expiration. 
             Args:
                 delta (int): The number of seconds before expiration. 
-                data (dict): The payload data for the creation of the token. 
+                data (dict): The payload data for the creation of the token: 
+                    email, password, department. 
             Returns:
                 string: The token to register for later use. 
         """ 

@@ -14,22 +14,6 @@ class Dashboard():
         \n\n\tDans le menu, vous pouvez à tout moment utiliser les Commandes interface : \
         \n\033[1m* pour revenir au menu principal \n0 pour sortir\033[0m' 
 
-    # gestion_menu = { 
-    #     '1': 'Créer un département', 
-    #     '2': 'Créer un utilisateur', 
-    #     '3': 'Créer un contrat', 
-    #     '4': 'Afficher tous les départements', 
-    #     '5': 'Afficher tous les utilisateurs', 
-    #     '6': 'Afficher tous les clients', 
-    #     '7': 'Afficher tous les contrats', 
-    #     '8': 'Afficher tous les événements', 
-    #     '9': 'Afficher les sans contact support', 
-    #     '10': 'Modifier un département', 
-    #     '11': 'Modifier un utilisateur', 
-    #     '12': 'Modifier un événement', 
-    # } 
-
-
 
     menu = [ 
         '\n', 
@@ -51,7 +35,7 @@ class Dashboard():
         '13 : Afficher tous les utilisateurs ', 
         '14 : Afficher tous les client ', 
         '15 : Afficher tous les contrats ', 
-        '16 : Afficher tous les événeùents ', 
+        '16 : Afficher tous les événements ', 
 
         '\n17 : Afficher un département ', 
         '18 : Afficher un utilisateur ', 

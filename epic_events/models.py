@@ -258,7 +258,8 @@ class Event(Base):
             support_contact_id = '' 
         else: 
             support_contact_id = self.support_contact_id 
-        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}, lieu : {self.location}, invotés : {self.attendees}, notes : {self.notes}).' 
+        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support ID : {support_contact_id}, lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
+        # return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}), lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
 
     def __repr__(self): 
         return str(self) 

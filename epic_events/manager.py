@@ -13,7 +13,6 @@ from jwt.exceptions import ExpiredSignatureError
 import re 
 
 
-
 class Manager(): 
     print('hello manager') 
     def __init__(self): 
@@ -26,26 +25,201 @@ class Manager():
 
     def connect(self): 
         self.engine = create_engine(self.db_url) 
-        # print(conn.info.encoding) 
 
     def create_session(self): 
         Session = sessionmaker(bind=self.engine) 
         self.session = Session() 
 
 
-    # ==== department methods ==== # 
-    # def add_department(self, fields:dict): 
-    #     """ Creates and registers a department. 
-    #         Args: 
-    #             fields (list): The unique field must be: 'name' as a string. 
-    #         Returns: 
-    #             object Department: The just created department. 
-    #     """
-    #     itemName = Department(**fields) 
-    #     self.session.add(itemName) 
-    #     self.session.commit() 
-    #     return itemName 
+    # ==== generics ==== # 
+    def add_entity(self, entity, fields:dict): 
+        """ Generic method that creates an entity. 
+            Args:
+                entity (str): The table in which to create an item. 
+                fields (dict): The data to register. 
+            Returns:
+                entity object: The just created entity item. 
+        """ 
+        print('add_entity') 
+        entities_dict = { 
+            'dept': Department, 
+            'user': User, 
+            'client': Client, 
+            'contract': Contract, 
+            'event': Event, 
+        } 
+        items_db = [] 
 
+        if entity in entities_dict: 
+            if entity == 'dept': 
+                # print('entity => dept') 
+                itemName = entities_dict[entity](**fields) 
+                self.session.add(itemName) 
+                self.session.commit() 
+                items_db = self.select_all_entities('depts') 
+
+            elif entity == 'user': 
+                # print(f'entity => user') 
+                # get token: 
+                fields['token'] = self.get_token(2, { 
+                    'email': fields['email'], 
+                    'pass': fields['password'], 
+                    'dept': fields['department_id']} 
+                ) 
+                itemName = entities_dict[entity](**fields) 
+                self.session.add(itemName) 
+                self.session.commit() 
+                items_db = self.select_all_entities('users') 
+
+            elif entity == 'client': 
+                # print('entity => client') 
+                sales_contact = self.select_one_user('name', fields['sales_contact_name']) 
+                fields.pop('sales_contact_name') 
+                itemName = entities_dict[entity]( 
+                    sales_contact_id=sales_contact.id, 
+                    **fields 
+                ) 
+                self.session.add(itemName) 
+                self.session.commit() 
+                items_db = self.select_all_entities('clients') 
+
+            elif entity == 'contract': 
+                # print('entity => contract') 
+                client = self.select_one_client('name', fields['client_name']) 
+                fields.pop('client_name') 
+                itemName = entities_dict[entity]( 
+                    client_id=client.id, 
+                    **fields 
+                ) 
+                self.session.add(itemName) 
+                self.session.commit() 
+                items_db = self.select_all_entities('contracts') 
+
+            elif entity == 'event': 
+                # print('entity => event') 
+                contracts_db = self.select_all_entities('contracts') 
+                last_contract_db = contracts_db.pop() 
+                itemName = entities_dict[entity]( 
+                    contract_id=last_contract_db.id, 
+                    **fields 
+                ) 
+                self.session.add(itemName) 
+                self.session.commit() 
+                items_db = self.select_all_entities('events') 
+
+            last_item_db = items_db.pop() 
+            return last_item_db 
+        else: 
+            print(f'Cet objet ({entity}) n\'existe pas (manager.add_entity 729).') 
+            return False 
+
+
+    def select_all_entities(self, entity): 
+        """ Generic method that selects all items of one table. /!\ entity in plural /!\ 
+            Args:
+                entity (str): The table to select, in plural. 
+            Returns:
+                list or False: The items selected, of False if the entity name doesn't exist. 
+        """ 
+        print('select_all_entities') 
+        entities_dict = { 
+            'depts': Department, 
+            'users': User, 
+            'clients': Client, 
+            'contracts': Contract, 
+            'events': Event 
+        } 
+
+        if entity in entities_dict.keys(): 
+            items_list_db = self.session.query(entities_dict[entity]).all() 
+            for item in items_list_db: 
+                print(f'{entity} trouvé  (manager.select_all_entities) : {item}.') 
+            return items_list_db 
+        else: 
+            print(f'Cet objet ({entity}) n\'existe pas ML748.') 
+            return False 
+
+
+    def select_entities_with_criteria(self, entities, criteria, contact_id): 
+        """ Select entity instances with criteria. 
+            Possible criteria: 
+                'without support' (events, for gestion)  
+                'support contact' (events, for support) 
+                'sales clients' (clients / contracts, for commerce) 
+                'not signed' (contracts, for commerce) 
+                'not paid' (contracts, for commerce) 
+            Args:
+                entities (str): (in plural) The name of the objects to look for. 
+                criteria (str): The criteria to follow for filtering the instances. 
+            Returns:
+                list: The instances that respect the criteria. 
+        """ 
+        if entities == 'events': 
+            if criteria == 'without support': 
+                events_db = self.session.query(Event).filter( 
+                    Event.support_contact_id==null)  # *** null *** 
+                if events_db is None: 
+                    print('Aucun événement avec ces informations (manager without support)') 
+                    return False 
+                else: 
+                    return events_db 
+            elif criteria == 'support contact': 
+                events_db = self.session.query(Event).filter( 
+                    Event.support_contact_id==contact_id) 
+                if events_db is None: 
+                    print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return events_db 
+        elif entities == 'contracts': 
+            if criteria == 'sales contact': 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.sales_contact_id==id) 
+                if contracts_db is None: 
+                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return contracts_db 
+            if criteria == 'not signed': 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.is_signed==0) 
+                if contracts_db is None: 
+                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return contracts_db 
+            elif criteria == 'not paid': 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.amount-Contract.paid_amount!=0) 
+                if contracts_db is None: 
+                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return contracts_db 
+        elif field == 'clients': 
+            if criteria == 'sales contact': 
+                clients_db = self.session.query(Client).filter( 
+                    Client.sales_contact_id==id)
+                if clients_db is None: 
+                    print('Aucun client avec ces informations (manager.select_entities_with_criteria)') 
+                    return False 
+                else: 
+                    return clients_db 
+        elif field == 'users': 
+            if criteria == 'department': 
+                users_db = self.session.query(Client).filter( 
+                    Client.department_id==id)
+                if users_db is None: 
+                    print('Aucun utilisateur impacté par la suppression de ce département (manager.select_entities_with_criteria).') 
+                    return False 
+                else: 
+                    return users_db 
+        else: 
+            print('no field recognized (manager.select_entities_with_criteria)') 
+    # ==== /generics ==== # 
+
+
+    # ==== department methods ==== # 
     def update_dept(self, old_name, new_value): 
         """ Modifies a registered department with the new value. 
             For the department table, it is possible to update only the name. 
@@ -64,7 +238,6 @@ class Manager():
             self.session.commit() 
             modified_item = self.select_one_dept('id', itemName.id) 
             return modified_item 
-            # return itemName 
 
 
     def select_one_dept(self, field, value): 
@@ -86,68 +259,10 @@ class Manager():
         else: 
             print(f'Ce champ "{field}" n\'existe pas.')  
         return item_db 
-
-
-
-    # def select_all_depts(self): 
-    #     """ Returns:
-    #             list: All the departments in a list of isntances. 
-    #     """ 
-    #     items_db = self.session.query(Department).all() 
-    #     for item in items_db:
-    #         print(f'département trouvé  (manager.select_all_depts) : {item.name}, id : {item.id}.') 
-    #     return items_db 
-
-
-    # TODO: retour dans l'appli si 'N' 
-    def delete_dept(self, field, value): 
-        """ Delete one registered department, following a unique field. 
-            Args:
-                field (string): The field name on which select the item. 
-                value (string): The field value to select the item to delete. 
-        """ 
-        print('delete_dept') 
-        item_db = self.select_one_dept(field, value) 
-        self.session.delete(item_db) 
-        self.session.commit() 
-        print(f'Le département {item_db.name} (id : {item_db.id}) été supprimé.') 
-
+    # ==== /department methods ==== # 
 
 
     # ==== user ==== # 
-    # def add_user(self, fields:dict): 
-    #     """ Creates a user in the DB. 
-    #         Args:
-    #             fields (list): [name, email, hashed password, phone, department's name] 
-    #         Returns:
-    #             object User: The just created User instance. 
-    #     """ 
-    #     dept_db_id = self.select_one_dept('name', fields[4]).id 
-
-    #     # Hash pass 
-    #     hashed_password = self.hash_pw(fields[2], 12) 
-
-    #     # Get token JWT 
-    #     delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
-    #     data = { 
-    #         'email': fields['email'], 
-    #         'pass': fields['pass'], 
-    #         'dept': fields['dept'], 
-    #     } 
-    #     user_token = self.get_token(delta, data) 
-    #     userName = User( 
-    #         password=hashed_password, 
-    #         department_id=dept_db_id, 
-    #         token=user_token, 
-    #         **fields 
-    #     ) 
-    #     self.session.add(userName) 
-    #     self.session.commit() 
-    #     item_db = self.select_all_users().last() 
-    #     return item_db 
-    #     # return userName 
-
-
     def update_user(self, id, field, new_value): 
         """ Modifies a field of a user instance, following its id. 
             Args:
@@ -220,16 +335,6 @@ class Manager():
         return user_db 
 
 
-    # def select_all_users(self): 
-    #     """ Returns:
-    #             list: All the user instances in a list. 
-    #     """ 
-    #     items_db = self.session.query(User).all() 
-    #     for item in items_db:
-    #         print(f'user trouvé  (manager.select_all_users) : {item.name}, id : {item.id}.') 
-    #     return items_db 
-
-
     def delete_user(self, field, value): 
         """ Delete one registered user, following a unique field. 
             Args:
@@ -242,43 +347,10 @@ class Manager():
         self.session.delete(item_db) 
         self.session.commit() 
         print(f'L\'utilisateur {item_db.name} (id : {item_db.id}) a été supprimé.') 
-
+    # ==== /user ==== # 
 
 
     # ==== client ==== # 
-    # def add_client(self, fields:dict): 
-    #     """ Creates a Client instance, giving the data to register. 
-    #         The datetime fields are automatically filled. 
-    #         Fields: 
-    #             name 
-    #             email 
-    #             phone 
-    #             corporation_name 
-    #             sales_contact_id*. 
-    #         * The "sales_contact_id" is the connected user's id. 
-    #         Args:
-    #             fields (list): The data to register, or the data to retreive another data to register. 
-    #         Returns: 
-    #             (object Client): The just created Client instance. 
-    #     """ 
-    #     print(fields) 
-    #     sales_contact = self.select_one_user('name', 'sales_user 1') 
-    #     print('sales_contact_id : ', sales_contact.id) 
-    #     itemName = Client( 
-    #         created_at=datetime.now(), 
-    #         updated_at=datetime.now(), 
-    #         sales_contact_id=sales_contact.id, 
-    #         **fields 
-    #     ) 
-    #     self.session.add(itemName) 
-    #     self.session.commit() 
-    #     items_list_db = self.select_all_clients()  # .last() 
-    #     item_db = items_list_db.pop() 
-    #     return item_db 
-    #     # return itemName 
-
-
-    # # TODO : rester dans l'application si pas de client à retourner.  
     def select_one_client(self, field, value): 
         """ Select one client instance following a unique field. 
             Possible fields : 
@@ -315,9 +387,6 @@ class Manager():
             # print(f'user trouvé (manager.select_one_client) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
             return client_db 
 
-        # user = relationship('User', back_populates="clients") 
-        # contract = relationship("Contract", back_populates="clients") 
-
 
     def update_client(self, id, field, new_value): 
         """ Modifies a field of a Client instance, following its id. 
@@ -350,61 +419,10 @@ class Manager():
             print('no value (manager.update_client)') 
         self.session.commit() 
         return itemName 
-
-
-    # def select_all_clients(self): 
-    #     """ Returns:
-    #             list: All the Client instances in a list. 
-    #     """ 
-    #     print('select_all_clients ML348') 
-    #     items_db = self.session.query(Client).all() 
-    #     # print(items_db) 
-    #     for item in items_db:
-    #         print(f'client trouvé  (manager.select_all_clients) : {item.name}, id : {item.id}.') 
-    #     return items_db 
-
-
-    # TODO: retour dans l'appli si 'N' 
-    def delete_client(self, field, value): 
-        """ Delete a Client following a unique field. 
-            Args:
-                field (string): The field name to select. 
-                value (string): The field value to select for deleting. 
-        """ 
-        item_db = self.select_one_client(field, value) 
-        self.session.delete(item_db) 
-        self.session.commit() 
-        print(f'Le client {item_db.name} (id : {item_db.id}) été supprimé.') 
-        
+    # ==== /client ==== # 
 
 
     # ==== contract ==== # 
-    # def add_contract(self, fields:dict): 
-    #     """ Creates a Contract instance, giving the data to register. The datetime field is automatically filled. 
-    #         Args:
-    #             fields (list): [ 
-    #                 'client_name',
-    #                 'amount',
-    #                 'paid_amount',
-    #                 'is_signed' 
-    #             ] 
-    #         Returns: 
-    #             (object Contract): The just created Contract instance. 
-    #     """ 
-    #     client_db = self.select_one_client('name', fields['name']) 
-    #     itemName = Contract( 
-    #         client_id=client_db.id, 
-    #         created_at=datetime.now(), 
-    #         **fields 
-    #     ) 
-    #     self.session.add(itemName) 
-    #     self.session.commit() 
-    #     item_db = self.select_all_contracts().last() 
-    #     return item_db 
-    #     # return itemName 
-
-
-    # # TODO : rester dans l'application si pas de contrat à retourner. 
     def select_one_contract(self, field, value): 
         """ Select one contract instance following a unique field. 
             Possible field: 
@@ -421,33 +439,6 @@ class Manager():
                 Contract.id==int(value)).first() 
         else: 
             print('no field recognized (manager.select_one_contract)') 
-        if contract_db is None: 
-            # TODO : afficher de nouveau la question précédente ? 
-            print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
-            return False 
-        else: 
-            # print(f'user trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
-            return contract_db 
-
-
-    # TODO : rester dans l'application si pas de contrat à retourner. 
-    def select_last_contract(self, client_name): 
-        """ Select the last contract of a client created. 
-            One possible field: 
-                'client_name' 
-            Args: 
-                value (string): The value for select the Contract instance. 
-            Returns:
-                object Contract: The selected Contract instance. 
-        """ 
-        contract_db = Contract() 
-        client_db = self.select_one_client('name', client_name) 
-        # last_contract_db = self.session.query(Contract).filter( 
-        #     Contract.client_id==client_db.id).last() 
-        contracts_db = self.session.query(Contract).filter( 
-            Contract.client_id==client_db.id) 
-        print('contracts_db ML447 : ', contracts_db) 
-        # last_contract_db = contracts_db.last() 
         if contract_db is None: 
             # TODO : afficher de nouveau la question précédente ? 
             print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
@@ -483,64 +474,10 @@ class Manager():
             print('no value (manager.update_contract)') 
         self.session.commit() 
         return itemName 
-
-
-    # def select_all_contracts(self): 
-    #     """ Returns:
-    #             list: All the Contract instances in a list. 
-    #     """ 
-    #     items_db = self.session.query(Contract).all() 
-    #     for item in items_db:
-    #         print(f'contract trouvé  (manager.select_all_contracts) : {item.name}, id : {item.id}.') 
-    #     return items_db 
-
-
-    # TODO: retour dans l'appli si 'N' 
-    def delete_contract(self, field, value): 
-        """ Delete a Contract following a unique field. 
-            Args:
-                field (string): The field name to select. 
-                value (string): The field value to select for deleting. 
-        """ 
-        item_db = self.select_one_contract(field, value) 
-        # Verifier client.name *** 
-        self.session.delete(item_db) 
-        self.session.commit() 
-        print(f'Le contrat {item_db.id} été supprimé.') 
-
+    # ==== /contract ==== # 
 
 
     # ==== event ==== # 
-    # def add_event(self, fields:dict): 
-    #     """ Creates an Event instance, giving the data to register. 
-    #         The 'support_contact_id' is let empty. A Gestion user will fill it. 
-    #         Args:
-    #             fields (dict): { 
-    #                 'name',
-    #                 'contract_id',
-    #                 'start_datetime',
-    #                 'end_datetime' 
-    #                 'location' 
-    #                 'attendees' 
-    #                 'notes' 
-    #             } 
-    #         Returns: 
-    #             object Event: The just created Event instance. 
-    #     """ 
-    #       print('add_event') 
-    #     # client_db = self.select_one_client('name', fields[4]) 
-    #     user_db = self.select_one_user('name', fields[4]) 
-    #     itemName = Event( 
-    #         **fields 
-    #     ) 
-    #     self.session.add(itemName) 
-    #     self.session.commit() 
-    #     item_db = self.select_all_events().last() 
-    #     return item_db  
-    #     # return itemName 
-
-
-    # # TODO : rester dans l'application si pas d'événemt à retourner. 
     def select_one_event(self, field, value): 
         """ Select one Event instance following a unique field. 
             Possible fields: 
@@ -552,23 +489,29 @@ class Manager():
             Returns:
                 object Event: The selected Event instance. 
         """ 
-        print('select_one_event') 
+        print('select_one_event (manager)') 
+        print('field (manager) : ', field) 
+        print('value (manager) : ', value) 
         event_db = Event() 
         if field == 'id': 
             event_db = self.session.query(Event).filter( 
                 Event.id==int(value)).first() 
+        elif field == 'name': 
+            event_db = self.session.query(Event).filter( 
+                Event.name==value).first() 
         elif field == 'contract_id': 
             event_db = self.session.query(Event).filter( 
                 Event.contract_id==value).first() 
         else: 
             print('no field recognized (manager.select_one_event)') 
-        if event_db is None: 
-            # TODO : afficher de nouveau la question précédente ? 
-            print('Aucun événement avec ces informations (manager.select_one_event)') 
-            return False 
-        else: 
-            # print(f'event trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
-            return event_db 
+        # if event_db is None: 
+        #     # TODO : afficher de nouveau la question précédente ? 
+        #     print('Aucun événement avec ces informations (manager.select_one_event)') 
+        #     return False 
+        # else: 
+        #     # print(f'event trouvé (manager.select_one_user) : {event_db.name}, id : {event_db.id}, mail : {event_db.email}, pass : {event_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
+        #     print(f'event trouvé (manager.select_one_event) : {event_db.name} (id : {event_db.id}), contrat : {event_db.contract_id}, début : {event_db.start_datetime}, fin : {event_db.end_datetime}, contact support {event_db.user.name} (ID : {support_contact_id}, lieu : {event_db.location}, invités : {event_db.attendees}, notes : {event_db.notes}).' ) 
+        return event_db 
 
 
     def update_event(self, id, field, new_value): 
@@ -603,231 +546,7 @@ class Manager():
             print('no value (manager.update_event)') 
         self.session.commit() 
         return itemName 
-
-
-    # def select_all_events(self): 
-    #     """ Returns:
-    #             list: All the Event instances in a list. 
-    #     """ 
-    #       print('select_all_events') 
-    #     items_db = self.session.query(Event).all() 
-    #     for item in items_db:
-    #         print(f'Event trouvé  (manager.select_all_events) : {item.name}, id : {item.id}.') 
-    #     return items_db 
     # ==== /event ==== # 
-
-
-    # ==== generics ==== # 
-    # TODO: ajouter les autres entiés 
-    def add_entity(self, entity, fields:dict): 
-        print('add_entity') 
-        entities_dict = { 
-            'dept': Department, 
-            'user': User, 
-            'client': Client, 
-            'contract': Contract, 
-            'event': Event, 
-        } 
-        items_db = [] 
-        if entity in entities_dict: 
-
-            if entity == 'dept': 
-                print('entity => dept') 
-                itemName = entities_dict[entity](**fields) 
-                self.session.add(itemName) 
-                self.session.commit() 
-                items_db = self.select_all_entities('depts') 
-                # print('items_db : ', items_db) 
-                # last_item_db = items_db.pop() 
-                # return last_item_db 
-
-            elif entity == 'user': 
-                print(f'entity => user') 
-                # get token: 
-                fields['token'] = self.get_token(2, { 
-                    'email': fields['email'], 
-                    'pass': fields['password'], 
-                    # 'password': fields['password'], 
-                    'dept': fields['department_id']} 
-                ) 
-                itemName = entities_dict[entity](**fields) 
-                self.session.add(itemName) 
-                self.session.commit() 
-                items_db = self.select_all_entities('users') 
-
-            elif entity == 'client': 
-                print('entity => client') 
-                sales_contact = self.select_one_user('name', fields['sales_contact_name']) 
-                fields.pop('sales_contact_name') 
-                itemName = entities_dict[entity]( 
-                    sales_contact_id=sales_contact.id, 
-                    **fields 
-                ) 
-                self.session.add(itemName) 
-                self.session.commit() 
-                items_db = self.select_all_entities('clients') 
-
-            elif entity == 'contract': 
-                print('entity => contract') 
-                client = self.select_one_client('name', fields['client_name']) 
-                fields.pop('client_name') 
-                itemName = entities_dict[entity]( 
-                    client_id=client.id, 
-                    **fields 
-                ) 
-                self.session.add(itemName) 
-                self.session.commit() 
-                items_db = self.select_all_entities('contracts') 
-
-            elif entity == 'event': 
-                print('entity => event') 
-                contracts_db = self.select_all_entities('contracts') 
-                last_contract_db = contracts_db.pop() 
-                itemName = entities_dict[entity]( 
-                    contract_id=last_contract_db.id, 
-                    **fields 
-                ) 
-                self.session.add(itemName) 
-                self.session.commit() 
-                items_db = self.select_all_entities('events') 
-
-            last_item_db = items_db.pop() 
-            return last_item_db 
-        else: 
-            print(f'Cet objet ({entity}) n\'existe pas (manager.add_entity 729).') 
-            return False 
-
-
-    def select_all_entities(self, entity): 
-        print('select_all_entities') 
-        entities_dict = { 
-            'depts': Department, 
-            'users': User, 
-            'clients': Client, 
-            'contracts': Contract, 
-            'events': Event 
-        } 
-        if entity in entities_dict.keys(): 
-            items_list_db = self.session.query(entities_dict[entity]).all() 
-            for item in items_list_db: 
-                print(f'{entity} trouvé  (manager.select_all_entities) : {item}.') 
-            return items_list_db 
-        else: 
-            print(f'Cet objet ({entity}) n\'existe pas ML748.') 
-            return False 
-    
-    # ==== /generics ==== # 
-
-
-    def select_entities_with_criteria(self, entities, criteria, contact_id): 
-        """ Select entity instances with criteria. 
-            Possible criteria: 
-                'without support' (events, for gestion)  
-                'support contact' (events, for support) 
-                'sales contact' (clients / contracts, for commerce) 
-                'not signed' (contracts, for commerce) 
-                'not paid' (contracts, for commerce) 
-            Args:
-                entities (str): (in plural) The name of the objects to look for. 
-                criteria (str): The criteria to follow for filtering the instances. 
-            Returns:
-                list: The instances that respect the criteria. 
-        """ 
-        if entities == 'events': 
-            if criteria == 'without support': 
-                events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==null)  # *** null *** 
-                if events_db is None: 
-                    print('Aucun événement avec ces informations (manager without support)') 
-                    return False 
-                else: 
-                    return events_db 
-            elif criteria == 'support contact': 
-                events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==contact_id) 
-                if events_db is None: 
-                    print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return events_db 
-        elif entities == 'contracts': 
-            if criteria == 'sales contact': 
-                contracts_db = self.session.query(Contract).filter( 
-                    Contract.sales_contact_id==id) 
-                if contracts_db is None: 
-                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return contracts_db 
-            if criteria == 'not signed': 
-                contracts_db = self.session.query(Contract).filter( 
-                    Contract.is_signed==0) 
-                if contracts_db is None: 
-                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return contracts_db 
-            elif criteria == 'not paid': 
-                contracts_db = self.session.query(Contract).filter( 
-                    Contract.amount-Contract.paid_amount!=0) 
-                if contracts_db is None: 
-                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return contracts_db 
-        elif field == 'clients': 
-            if criteria == 'sales contact': 
-                clients_db = self.session.query(Client).filter( 
-                    Client.sales_contact_id==id)
-                if clients_db is None: 
-                    print('Aucun client avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return clients_db 
-        elif field == 'users': 
-            if criteria == 'department': 
-                users_db = self.session.query(Client).filter( 
-                    Client.department_id==id)
-                if users_db is None: 
-                    print('Aucun utilisateur impacté par la suppression de ce département (manager.select_entities_with_criteria).') 
-                    return False 
-                else: 
-                    return users_db 
-        else: 
-            print('no field recognized (manager.select_entities_with_criteria)') 
-
-
-
-    # # TODO: retour dans l'appli si 'N' 
-    # def delete_event(self, field, value): 
-    #     """ Delete an Event following a unique field. 
-    #         Args:
-    #             field (string): The field name to select. 
-    #             value (string): The field value to select for deleting. 
-    #     """ 
-    #       print('delete_event') 
-    #     item_db = self.select_one_event(field, value) 
-    #     # Vérifier contract_id.clients.name *** 
-    #     self.session.delete(item_db) 
-    #     self.session.commit() 
-    #     print(f'L\'événement {item_db.name} (id : {item_db.id}) été supprimé.') 
-
-    # user = relationship("User", back_populates="events") 
-    # contracts = relationship("Contract", back_populates="events") 
-
-
-
-
-
-    # def select_many(self, item): 
-    #     users_db = self.session.query(User).filter(User.department==item) 
-    #     # users_db = self.session.query(User).filter(User.department==vente) 
-    #     for user in users_db: 
-    #         print(f'User trouvé : {user.name}, id : {user.id}, departement : {user.department.name}') 
-
-    #     clients_saler_1 = self.session.query(Client).filter(Client.sales_contact_id==item) 
-    #     for client in clients_saler_1: 
-    #         print(f'Client trouvé : {client.name}, id : {client.id}, contact commercial : {client.sales_contact_id, }, créé le {client.created_at}.') 
 
 
     # ======== # ======== Utils ======== # ======== # 
@@ -838,7 +557,7 @@ class Manager():
             Args:
                 delta (int): The number of seconds before expiration. 
                 data (dict): The payload data for the creation of the token: 
-                    email, password, department. 
+                    email, pass, dept (name). 
             Returns:
                 string: The token to register for later use. 
         """ 
@@ -955,6 +674,14 @@ class Manager():
 
 
     def check_pw(self, userEmail, pw): 
+        """ Verify if the hashed entered password is the same of the registered one. 
+            params: 
+                userEmail (str): the entered email 
+                pw (str): the entered password 
+            returns: 
+            (bool): True if the user exists and the entered pw is correct, 
+                    False else. 
+        """ 
         user_db = self.select_one_user('email', userEmail) 
         if user_db is None: 
             print('user is none') 
@@ -969,25 +696,4 @@ class Manager():
                 return False 
 
     # ======== /Utils ======== # 
-
-
-
-    def other(self, item): 
-        print('other') 
-        #     # # tuto simpletech 
-        #     # stock_query = session.query(Stock).join(Warehouse).join(Product) 
-        #     # stock_chaussure_entrepot_a = stock_query.filter(Product.name=='chaussure', Warehouse.name=='entreprot A').first() 
-        #     # print(f'Le stock de {stock_chaussure_entrepot_a.product.name} dans {stock_chaussure_entrepot_a.warehouse.name} est de {stock_chaussure_entrepot_a.quantity}.') 
-
-        #     # conn.commit() 
-
-        # except Exception as ex: 
-        #     print(ex) 
-
-        # Voir si engine s'en occupe ? 
-        # if conn is not None: 
-        #     conn.close() 
-        #     print('connex closed') 
-
-        # return self.engine 
 

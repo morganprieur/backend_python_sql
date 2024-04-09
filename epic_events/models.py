@@ -68,6 +68,7 @@ class User(Base):
         Integer, 
         ForeignKey('departments.id'), 
     ) 
+    # TODO: à mettre dans un fichier chiffré 
     token = Column( 
         String, 
         unique=True 
@@ -76,10 +77,7 @@ class User(Base):
     department = relationship('Department', back_populates='user') 
     clients = relationship("Client", back_populates="user", 
         cascade='all, delete') 
-    # user = relationship('User', back_populates='department', 
-    #     cascade='all, delete') 
     events = relationship("Event", back_populates="user") 
-    # events = relationship("Event", back_populates="users", nullable=True)  # pas autorisé 
 
     def __str__(self): 
         return f'User (id : {self.id}) : {self.name}, {self.email}, hash mot de passe : {self.password}, téléphone : {self.phone}, département {self.department_id} {self.department.name}.' 
@@ -198,7 +196,6 @@ class Contract(Base):
     ) 
 
     client = relationship("Client", back_populates="contract") 
-    # clients = relationship("Client", back_populates="contract") 
     events = relationship("Event", back_populates="contracts", 
         cascade='all, delete') 
 
@@ -250,7 +247,6 @@ class Event(Base):
     ) 
 
     user = relationship("User", back_populates="events") 
-    # support_contact = relationship("User", back_populates="events") 
     contracts = relationship("Contract", back_populates="events") 
 
     def __str__(self): 
@@ -258,7 +254,8 @@ class Event(Base):
             support_contact_id = '' 
         else: 
             support_contact_id = self.support_contact_id 
-        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}, lieu : {self.location}, invotés : {self.attendees}, notes : {self.notes}).' 
+        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support ID : {support_contact_id}, lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
+        # return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}), lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
 
     def __repr__(self): 
         return str(self) 

@@ -38,7 +38,7 @@ class Dashboard():
         '16 : Afficher tous les événements ', 
 
         '\n17 : Afficher un département ', 
-        '18 : Afficher un utilisateur ', 
+        '18 : Afficher un utilisateur (ID, nom et département)', 
         '19 : Afficher un client ', 
         '20 : Afficher un contrat ', 
         '21 : Afficher un événement ', 
@@ -46,12 +46,12 @@ class Dashboard():
         '\n22 : Afficher les événements sans contact support ', 
         '23 : Afficher les clients d\'un utilisateur commercial ', 
         '24 : Afficher les contrats d\'un utilisateur commercial ', 
-        '25 : Afficher les contrats non finis de payer ', 
+        '25 : Afficher les contrats non fini de payer ', 
         '26 : Afficher les contrats non signés ', 
         '27 : Afficher les événements d\'un utilisateur support ' 
     ] 
 
-    display_rescue = [ 
+    rescue_menu = [ 
         '--------', 
         '\033[1mCommandes interface :\033[0m ', 
         '* pour revenir au menu principal ', 
@@ -68,13 +68,14 @@ class Dashboard():
 
 
     def display_menu(self, items: list): 
-        """ Display the menu for chosing which action the user wants to do. 
+        """ Displays the menu for the user can chose which action to perform. 
+            The menu's options depend on the role (= department) of the 
+            connected user. 
         """ 
-
         print('\n* * * * * * * * * * * * * * * * *') 
         for item in items: 
             print(self.menu[item]) 
-        for r in self.display_rescue: 
+        for r in self.rescue_menu: 
             print(r) 
         self.ask_for_action = session.prompt('\nChoisir une action : ') 
         print('') 

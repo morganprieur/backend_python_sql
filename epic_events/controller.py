@@ -115,6 +115,8 @@ class Controller():
         if self.dashboard.ask_for_action == '6': 
             self.dashboard.ask_for_action = None 
 
+            self.modify_dept() 
+
             self.press_enter_to_continue() 
             self.start(mode) 
 
@@ -485,8 +487,8 @@ class Controller():
             print('\nModifier un département') 
             dept_to_select = self.views.input_select_entity('dept') 
             dept_to_modify = self.manager.select_one_dept( 
-                'name', 
-                dept_to_select['old_value'] 
+                dept_to_select['chosen_field'], 
+                dept_to_select['value_to_select'] 
             ) 
             fields = self.views.input_modify_dept(dept_to_modify) 
 
@@ -495,8 +497,8 @@ class Controller():
 
             if (confirmation == 'y') | (confirmation == 'Y'): 
                 modified_item = self.manager.update_dept( 
-                    # fields['name_to_replace'], 
-                    dept_to_select['old_value'], 
+                    dept_to_modify, 
+                    dept_to_select['value_to_select'], 
                     fields['new_name'] 
                 ) 
                 print(f"Le nom du département {modified_item.id} a bien été modifié : {modified_item}. ") 
@@ -513,13 +515,18 @@ class Controller():
             print('\nModifier un utilisateur') 
             user_to_select = self.views.input_select_entity('user') 
             user_to_modify = self.manager.select_one_user( 
-                user_to_select['chosen_field'], 
-                user_to_select['old_value'] 
+                user_to_select['field_to_select'], 
+                user_to_select['value_to select'] 
             ) 
 
-            fields = self.views.input_modify_user(user_to_modify) 
-            # print('fields avant changemt (controller 7) : ', fields) 
-            fields[fields['field_to_modify']] = fields['new_value'] 
+            # fields = self.views.input_modify_user(user_to_modify) 
+            # if self.user_session == 'GESTION': 
+            #     gestion = True 
+            fields = self.views.input_modify_entity( 
+                'user', 
+                user_to_modify 
+            ) 
+            print('fields : ', fields) 
 
             # TODO: verif 
             if fields['field_to_modify'] == 'password': 
@@ -532,19 +539,22 @@ class Controller():
                     'dept': user_to_modify.departments.name 
                 } 
                 new_token = self.manager.get_token(2, data) 
-                fields['new_value'] = new_token  
+                fields['new_value'] = new_token 
+            
+            # print('fields avant changemt (controller 7) : ', fields) 
+            fields[fields['field_to_modify']] = fields['new_value'] 
 
             # Confirmation : 
             confirmation = self.views.ask_for_confirmation('modifier', 'user') 
             if (confirmation == 'y') | (confirmation == 'Y'): 
                 modified_item = self.manager.update_user( 
-                    user_to_modify.id, 
+                    user_to_modify, 
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
                 print(f"L'utilisateur {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
             else: 
-                print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                print('Vous avez annulé la modification, l\'utilisateur n\'a pas été modifié.') 
                 return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -556,11 +566,18 @@ class Controller():
             print('\nModifier un client') 
             client_to_select = self.views.input_select_entity('client') 
             client_to_modify = self.manager.select_one_client( 
-                client_to_select['chosen_field'], 
-                client_to_select['old_value'] 
+                client_to_select['field_to_select'], 
+                client_to_select['value_to_select'] 
             ) 
 
-            fields = self.views.input_modify_client(client_to_modify) 
+            # fields = self.views.input_modify_client(client_to_modify) 
+            # if self.user_session == 'GESTION': 
+            #     gestion = True 
+            fields = self.views.input_modify_entity( 
+                'client', 
+                client_to_modify 
+            ) 
+
             # print('fields avant changemt (controller 8) : ', fields) 
             fields[fields['field_to_modify']] = fields['new_value'] 
             # print('fields après changemt (controller 8) : ', fields) 
@@ -569,13 +586,13 @@ class Controller():
             confirmation = self.views.ask_for_confirmation('modifier', 'client') 
             if (confirmation == 'y') | (confirmation == 'Y'): 
                 modified_item = self.manager.update_client( 
-                    client_to_modify.id, 
+                    client_to_modify, 
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
                 print(f"Le client a bien été modifié : \"{modified_item}\". ") 
             else: 
-                print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                print('Vous avez annulé la modification, le client n\'a pas été modifié.') 
                 return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -587,11 +604,18 @@ class Controller():
             print('\nModifier un contrat') 
             contract_to_select = self.views.input_select_entity('contract') 
             contract_to_modify = self.manager.select_one_contract( 
-                contract_to_select['chosen_field'], 
-                contract_to_select['old_value'] 
+                contract_to_select['field_to_select'], 
+                contract_to_select['value_to_select'] 
             ) 
 
             fields = self.views.input_modify_contract(contract_to_modify) 
+            # if self.user_session == 'GESTION': 
+            #     gestion = True 
+            fields = self.views.input_modify_entity( 
+                'contract', 
+                contract_to_modify 
+            ) 
+
             # print('fields avant changemt (controller 9) : ', fields) 
             fields[fields['field_to_modify']] = fields['new_value'] 
             # print('fields après changemt (controller 9) : ', fields) 
@@ -600,13 +624,13 @@ class Controller():
             confirmation = self.views.ask_for_confirmation('modifier', 'contract') 
             if (confirmation == 'y') | (confirmation == 'Y'): 
                 modified_item = self.manager.update_contract( 
-                    contract_to_modify.id, 
+                    contract_to_modify, 
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
                 print(f"Le contrat a bien été modifié : \"{modified_item}\". ") 
             else: 
-                print('Vous avez annulé la modification, le département n\'a pas été modifié.') 
+                print('Vous avez annulé la modification, le contrat n\'a pas été modifié.') 
                 return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -621,8 +645,8 @@ class Controller():
             print('\nModifier un événement') 
             event_to_select = self.views.input_select_entity('event') 
             event_to_modify = self.manager.select_one_event( 
-                event_to_select['chosen_field'], 
-                event_to_select['old_value'] 
+                event_to_select['field_to_select'], 
+                event_to_select['value_to_select'] 
             ) 
             # print('event_to_select (controller) : ', event_to_select) 
             # print('event_to_modify (controller) : ', event_to_modify) 
@@ -635,18 +659,6 @@ class Controller():
                 gestion=gestion 
             ) 
             print('fields : ', fields) 
-            # if self.user_session == 'GESTION': 
-            #     fields = self.views.input_modify_event( 
-            #         'event', 
-            #         event_to_modify, 
-            #         gestion=True 
-            #     ) 
-
-            # if self.user_session == 'SUPPORT': 
-            #     fields = self.views.input_modify_event( 
-            #         event_to_modify, 
-            #         gestion=False 
-            #     ) 
 
             # print('fields avant changemt (controller 10) : ', fields) 
             fields[fields['field_to_modify']] = fields['new_value'] 
@@ -656,7 +668,7 @@ class Controller():
             confirmation = self.views.ask_for_confirmation('modifier', 'event') 
             if (confirmation == 'y') | (confirmation == 'Y'): 
                 modified_item = self.manager.update_event( 
-                    event_to_modify.id, 
+                    event_to_modify, 
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 

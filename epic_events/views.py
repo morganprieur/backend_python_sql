@@ -42,11 +42,11 @@ class Views():
             'event': 'l\'événement', 
         }
         entity_dict = {} 
-        if entity == 'dept': 
-            entity_dict['old_value'] = session.prompt('\nNom du département à sélectionner : ') 
-        else: 
-            entity_dict['chosen_field'] = session.prompt(f'\nSur quel champ voulez-vous sélectionner {entity_str[entity]} ? ') 
-            entity_dict['old_value'] = session.prompt('\nValeur à sélectionner : ') 
+        # if entity == 'dept': 
+        #     entity_dict['old_value'] = session.prompt('\nNom du département à sélectionner : ') 
+        # else: 
+        entity_dict['chosen_field'] = session.prompt(f'\nSur quel champ voulez-vous sélectionner {entity_str[entity]} ? ') 
+        entity_dict['value_to_select'] = session.prompt('\nValeur à sélectionner : ') 
         return entity_dict 
 
 
@@ -66,12 +66,11 @@ class Views():
                 supprimer, modifier. 
             Possible entities: 
                 dept, user, client, contract, event. 
-        Args:
-            action (str): The verb of the action to perform. 
-            entity (str): The entity to delete or modify. 
-
-        Returns:
-            str: The answer of the user. 
+            Args:
+                action (str): The verb of the action to perform. 
+                entity (str): The entity to delete or modify. 
+            Returns:
+                str: The answer of the user. 
         """ 
         entity_dict = { 
             'dept': 'ce département', 
@@ -80,7 +79,7 @@ class Views():
             'contract': 'ce contrat', 
             'event': 'cet événement'
         } 
-        confirmation = session.prompt(f'\nëtes-vous sûr de vouloir {action} {entity} ? (Y/N) ') 
+        confirmation = session.prompt(f'\nëtes-vous sûr de vouloir {action} {entity_dict["dept"]} ? (Y/N) ') 
         return confirmation 
     # ==== generics ==== # 
 

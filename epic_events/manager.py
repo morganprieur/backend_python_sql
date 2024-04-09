@@ -220,19 +220,20 @@ class Manager():
 
 
     # ==== department methods ==== # 
-    def update_dept(self, old_name, new_value): 
+    def update_dept(self, itemName, old_name, new_value): 
         """ Modifies a registered department with the new value. 
             For the department table, it is possible to update only the name. 
             Args:
+                itemName (object): The object (Department) to modify. 
                 id (string): The ID to look for. 
                 field (string): The field to replace by the new_value. 
                 new_value (string): The new value to register. 
             Returns: 
                 object Department: The updated instance of Department. 
         """ 
-        itemName = self.select_one_dept('name', old_name) 
+        # itemName = self.select_one_dept('name', old_name) 
         if itemName is None: 
-            print('itemName is none ML63') 
+            print('itemName is none ML236') 
         else: 
             itemName.name = new_value 
             self.session.commit() 
@@ -249,31 +250,33 @@ class Manager():
             Returns:
                 object Department: The selected instance of Department. 
         """ 
+        item_db = Department 
         if field == 'id': 
             item_db = self.session.query(Department).filter( 
                 Department.id==int(value)).first() 
-        item_db = Department 
-        if field == 'name': 
+        elif field == 'name': 
             item_db = self.session.query( 
                 Department).filter(Department.name==value).first() 
         else: 
-            print(f'Ce champ "{field}" n\'existe pas.')  
+            print(f'Ce champ "{field}" n\'existe pas.') 
         return item_db 
     # ==== /department methods ==== # 
 
 
     # ==== user ==== # 
-    def update_user(self, id, field, new_value): 
+    # def update_user(self, id, field, new_value): 
+    def update_user(self, itemName, field, new_value): 
         """ Modifies a field of a user instance, following its id. 
             Args:
-                id (int): The id of the registered user instance. 
+                # id (int): The id of the registered user instance. 
+                itemName (object): The registered user object to modify. 
                 field (string): The name of the field to modify. 
                 new_value (string): The new value to register. 
             Returns:
                 object User: The just updated User instance. 
         """ 
         print('update_user') 
-        itemName = self.select_one_user('id', id) 
+        # itemName = self.select_one_user('id', id) 
         if field == 'name': 
             itemName.name = new_value 
         elif field == 'email': 
@@ -388,7 +391,8 @@ class Manager():
             return client_db 
 
 
-    def update_client(self, id, field, new_value): 
+    # def update_client(self, id, field, new_value): 
+    def update_client(self, itemName, field, new_value): 
         """ Modifies a field of a Client instance, following its id. 
             Possible fields: 
                 name
@@ -397,13 +401,14 @@ class Manager():
                 corporation_name
                 sales_contact_name 
             Args:
-                id (int): The id of the registered Client instance. 
+                # id (int): The id of the registered Client instance. 
+                itemName (object): The registered Client instance to modify. 
                 field (string): The name of the field to modify. 
                 new_value (string): The new value to register. 
             Returns:
                 object Client: The just updated Client instance. 
         """ 
-        itemName = self.select_one_user('id', id) 
+        # itemName = self.select_one_user('id', id) 
         if field == 'name': 
             itemName.name = new_value 
         elif field == 'email': 
@@ -448,20 +453,22 @@ class Manager():
             return contract_db 
 
 
-    def update_contract(self, id, field, new_value): 
+    # def update_contract(self, id, field, new_value): 
+    def update_contract(self, itemName, field, new_value): 
         """ Modifies a field of a Contract instance, following its id. 
             Possible fields: 
                 amount 
                 paid_amount 
                 is_signed 
             Args:
-                id (int): The id of the registered Contract instance. 
+                # id (int): The id of the registered Contract instance. 
+                itemName (object): The registered Contract instance to modify. 
                 field (string): The name of the field to modify. 
                 new_value (string): The new value to register. 
             Returns:
                 object Contract: The just updated Contract instance. 
         """ 
-        itemName = self.select_one_user('id', id) 
+        # itemName = self.select_one_user('id', id) 
         if field == 'amount': 
             itemName.amount = new_value 
         elif field == 'paid_amount': 
@@ -514,21 +521,23 @@ class Manager():
         return event_db 
 
 
-    def update_event(self, id, field, new_value): 
+    # def update_event(self, id, field, new_value): 
+    def update_event(self, itemName, field, new_value): 
         """ Modifies a field of an Event instance, following its id. 
             Possible fields: 
                 id 
                 name 
                 contract_id 
             Args:
-                id (int): The id of the registered Event instance. 
+                # id (int): The id of the registered Event instance. 
+                itemName (object): The registered Event instance to modify. 
                 field (string): The name of the field to modify. 
                 new_value (string): The new value to register. 
             Returns:
                 object Event: The just updated Event instance. 
         """ 
         print('update_event') 
-        itemName = self.select_one_event('id', id) 
+        # itemName = self.select_one_event('id', id) 
         if field == 'name': 
             itemName.name = new_value 
         elif field == 'contract_id': 

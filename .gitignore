@@ -11,4 +11,5 @@ epic_events/jup.ipynb
 # secret data 
 .env
 data.json 
+epic_events/users_clear.csv
 

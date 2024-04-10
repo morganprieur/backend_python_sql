@@ -310,7 +310,7 @@ class Manager():
                 object User: The selected User instance. 
         """ 
         print('select_one_user') 
-        # user_db = User() 
+        user_db = User() 
         if field == 'id': 
             user_db = self.session.query(User).filter( 
                 User.id==int(value)).first() 
@@ -336,7 +336,7 @@ class Manager():
             # print(f'user trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
             return user_db 
         # print(f'user events.attendees ML206 : {item_db.events}') 
-        return user_db 
+        # return user_db 
 
 
     def delete_user(self, field, value): 
@@ -583,16 +583,32 @@ class Manager():
         algo = os.environ.get('JWT_ALGO') 
         encoded_jwt = jwt.encode(payload, secret, algo) 
 
-        if not self.export_token(encoded_jwt): 
+        if not self.register_token(encoded_jwt): 
             return False 
         else: 
             return True  
         # return encoded_jwt 
 
 
-    def export_token(self, token, email): 
-        # Register the token in a crypted file 
-        # file deepcode ignore PT: local project 
+    def register_token(self, token, email): 
+        """ Register the token in a crypted file. 
+            Process: 
+                - Generate the key for the application 
+                - Register the key into a file 
+                    (once at the setup, and change it afteer some delay) 
+                - Get the key for crypt/decrypt the data. 
+                - Crypt the data while seting up the application. 
+                - Decrypt the crypted data from the crypted file in order to update them. 
+                - Loop through the data to look for the email. 
+                    if found: replace the regsitered token by the given. 
+                    else: add the email/token to the list of data. 
+                - Crypt the updated data. 
+                - register the updated data into the crypted file. 
+                No return. 
+            Args: 
+                token (str): The new token to register. 
+                email (str): The email to find or regsiter into the crypted file. 
+        """ 
         # f = open(os.environ.get('TOKEN_PATH'),'r') 
         # # f.write(token) 
         # f.write(userToken) 
@@ -600,10 +616,31 @@ class Manager():
 
         # key generation 
         key = Fernet.generate_key() 
-        # regsiters the key in a file
-        # with open('filekey.key', 'wb') as filekey:
+        # uses the generated key
+        cipher_suite = Fernet(key) 
+        # regsiters the key in a file 
+        # file deepcode ignore PT: local project 
         with open(os.environ.get('JWT_KEY_PATH'), 'wb') as filekey: 
             filekey.write(key) 
+
+        userToken = {} 
+        userToken['email'] = 'test@email.com' 
+        userToken['token'] = "new_to.ke.n1" 
+
+        # Ouvrir le fichier key en lecture 
+        # l'utiliser pour ouvrir/lire le fichier users chiffré 
+        # déchiffrer les données 
+        # ouvrir le fichier clear en écriture 
+        # enregistrer les données déchiffrées dans le fhichier clear 
+        # utiliser la clé pour ouvrir/lire le fichier users_clear 
+        # SI le mail de l'utilisateur est dedans : 
+        #   changer le token 
+        # SINON : 
+        #   ajouter le nouveau mail/token au fichier 
+        # chiffrer le tout 
+        # ouvrir le fichier users en écriture en bytes 
+        # enregistrer le hash dans le fichier 
+        # effacer le fichier clear 
 
         userToken = {} 
         userToken['email'] = email 
@@ -613,9 +650,6 @@ class Manager():
         # opens the key
         with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
             key = keyfile.read()
-        
-        # uses the generated key
-        cipher_suite = Fernet(key)
         
         # opens the original file to encrypt
         # with open('nba.csv', 'rb') as file:
@@ -652,23 +686,31 @@ class Manager():
 
     def verify_token(self, connectEmail, connectPass, connectDept): 
         """ Check if the user and department are those registered in the db. 
-                If yes: 
-                    Store the role's name of the user. 
-                    Check the token's expiration time. 
-                    if it is NOT past: 
-                        Return the role's permission name for creation user_session by the Controller. 
-                    else: 
-                        Call get_token() for refreshing the token. 
-                        Return tne role's permission for creation of the user_session by the Controller. 
-                else: 
-                    return "None". 
-            Args:
+            If yes: 
+                Store the department's name of the user. 
+                Verify the crypted data: 
+                - decrypt the data with the registered key. 
+                - Loop through the decrupted data to look for the connectEmail. 
+                IF FOUND: check if the token complies with the given data. 
+                    IF YES: Check the token's expiration time. 
+                        IF it is NOT PAST: Return the role's permission name 
+                            for creation user_session by the Controller. 
+                        ELSE: 
+                            Call get_token() for refreshing the token 
+                                (and update + crypt it into the crypted file). 
+                            Return tne role's permission for creation of the 
+                                user_session by the Controller. 
+                    ELSE: return a message 'Not correct token'. 
+                ELSE: return None. 
+            ELSE: return None. 
+            Args: 
                 connectEmail (string): The email entered by the connected user. 
                 connectPass (string): The password entered by the connected user. 
                 connectDept (string): The name of the department which is registered the user. 
-
             Returns:
-                string: The name of the user's role. 
+                str: The name of the user's role 
+                or message (str) 
+                or None 
         """ 
         registeredToken = self.select_one_user('email', connectEmail).token 
         secret = os.environ.get('JWT_SECRET') 

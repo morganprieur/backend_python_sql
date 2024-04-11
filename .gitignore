@@ -7,6 +7,8 @@ questions.md
 
 epic_events/project2.py
 epic_events/jup.ipynb
+epic_events/users.json
+epic_events/users2.csv
 
 # secret data 
 .env

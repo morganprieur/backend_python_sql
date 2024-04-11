@@ -68,11 +68,11 @@ class User(Base):
         Integer, 
         ForeignKey('departments.id'), 
     ) 
-    # TODO: à mettre dans un fichier chiffré 
-    token = Column( 
-        String, 
-        unique=True 
-    ) 
+    # # TODO: à mettre dans un fichier chiffré 
+    # token = Column( 
+    #     String, 
+    #     unique=True 
+    # ) 
 
     department = relationship('Department', back_populates='user') 
     clients = relationship("Client", back_populates="user", 

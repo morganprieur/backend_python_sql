@@ -60,12 +60,13 @@ class Manager():
 
             elif entity == 'user': 
                 # get token: 
+                # TODO: modifier get_token pour utiliser le fichier chiffré 
                 # fields['token'] = self.get_token(2, { 
-                token = self.get_token(2, entity.email, { 
+                token = self.get_token(2, { 
                     'email': fields['email'], 
                     'pass': fields['password'], 
-                    'dept': fields['department_id']} 
-                ) 
+                    'dept': fields['department_id'] 
+                }) 
                 
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
@@ -116,7 +117,7 @@ class Manager():
 
 
     def select_all_entities(self, entity): 
-        """ Generic method that selects all items of one table. /!\ entity in plural /!\ 
+        """ Generic method that selects all items of one table. /!/ entity in plural /!/ 
             Args:
                 entity (str): The table to select, in plural. 
             Returns:
@@ -560,10 +561,10 @@ class Manager():
 
 
     # ================ Utils ================ # 
-    
-    def get_token(self, delta:int, email, data:dict): 
+    # TODO: manage regsiter_token 
+    def get_token(self, delta:int, data:dict): 
         """ Creates a token for the new user, that indicates his.her department, 
-            with X hours before expiration. 
+            with <delta> hours before expiration. 
             Args:
                 delta (int): The number of seconds before expiration. 
                 username (str): The name of the user. 
@@ -583,10 +584,11 @@ class Manager():
         algo = os.environ.get('JWT_ALGO') 
         encoded_jwt = jwt.encode(payload, secret, algo) 
 
-        if not self.register_token(encoded_jwt): 
-            return False 
-        else: 
-            return True  
+        # if not self.register_token(encoded_jwt): 
+        #     return False 
+        # else: 
+        #     return True  
+        # TODO: danger, voir comment faire (setup / utilisation appli) 
         # return encoded_jwt 
 
 
@@ -614,14 +616,12 @@ class Manager():
         # f.write(userToken) 
         # f.close() 
 
-        # key generation 
-        key = Fernet.generate_key() 
-        # uses the generated key
+        # get key 
+        with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
+            key = keyfile.read() 
+
+        # uses the registered key
         cipher_suite = Fernet(key) 
-        # regsiters the key in a file 
-        # file deepcode ignore PT: local project 
-        with open(os.environ.get('JWT_KEY_PATH'), 'wb') as filekey: 
-            filekey.write(key) 
 
         userToken = {} 
         userToken['email'] = 'test@email.com' 
@@ -642,30 +642,22 @@ class Manager():
         # enregistrer le hash dans le fichier 
         # effacer le fichier clear 
 
-        userToken = {} 
-        userToken['email'] = email 
-        userToken['token'] = new_token 
 
-
-        # opens the key
-        with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
-            key = keyfile.read()
-        
-        # opens the original file to encrypt
-        # with open('nba.csv', 'rb') as file:
-        with open(os.environ.get('TOKEN_PATH'), 'rb') as file:
-            registered = file.read()
+        # # opens the original file to encrypt
+        # # with open('nba.csv', 'rb') as file:
+        # with open(os.environ.get('TOKEN_PATH'), 'rb') as file:
+        #     registered = file.read()
             
-        # encrypts the file 
-        if type(registered) == str: 
-            encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
-        elif type(registered) == byte: 
-            encrypted = cipher_suite.encrypt(registered) 
+        # # encrypts the file 
+        # if type(registered) == str: 
+        #     encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
+        # elif type(registered) == byte: 
+            # encrypted = cipher_suite.encrypt(registered) 
         
-        # opens the file in write mode and
-        # writes the encrypted data
-        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
-            encrypted_file.write(encrypted) 
+        # # opens the file in write mode and
+        # # writes the encrypted data
+        # with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+        #     encrypted_file.write(encrypted) 
 
 
         # # with open(os.environ.get('TOKEN_PATH'), "r") as file: 

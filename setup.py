@@ -69,7 +69,21 @@ class Setup():
         # /support dept 
         # ==== /add departments ==== # 
 
-        # ==== /add users ==== # 
+        # ==== tokens management ==== # 
+        # def get_key(): 
+        #     """ Generate a key and regsiter it into a file. 
+        #         Returns:
+        #             bool: True if the process has been done. 
+        #     """ 
+        # key generation 
+        key = Fernet.generate_key() 
+        # regsiters the key in a file
+        with open(os.environ.get('JWT_KEY_PATH'), 'wb') as filekey: 
+            filekey.write(key) 
+                # return True 
+        # ==== /tokens management ==== # 
+
+        # ==== add users ==== # 
         # superAdmin 
         # ==== hash admin pass ==== # 
         password = os.environ.get('USER_1_PW') 
@@ -80,77 +94,101 @@ class Setup():
             salt 
         ).decode('utf-8') 
 
-        # ==== get token admin ==== # 
-        dept_name = admin_dept['name'] 
-        payload = { 
-            'email': super_admin['email'], 
-            'pass': os.environ.get('USER_1_PW'), 
-            'dept': dept_name, 
-            'exp': datetime.now()+timedelta(seconds=5) 
-        } 
-        secret = os.environ.get('JWT_SECRET') 
-        algo = os.environ.get('JWT_ALGO') 
-        encoded_jwt = jwt.encode(payload, secret, algo) 
-        print(encoded_jwt) 
-
-        admin_department = self.session.query(Department).filter(Department.name==super_admin['department_name']).first() 
-
         # ==== register admin user ==== # 
+        admin_department = self.session.query(Department).filter(Department.name==super_admin['department_name']).first() 
         superAdmin = User( 
             name=super_admin['name'], 
             email=super_admin['email'], 
             password=hash_password_SA, 
             phone=super_admin['phone'], 
-            department_id=admin_department.id, 
-            token=encoded_jwt 
+            department_id=admin_department.id  # , 
+            # token=encoded_jwt 
         ) 
         self.session.add(superAdmin) 
         self.session.commit() 
+        # ==== /register admin user ==== # 
+
+        # ==== get + register admin token ==== # 
+        adminUser = self.session.query(User).filter(User.name==superAdmin['name']).first() 
+        token = self.get_token(2, { 
+            'email': adminUser.email, 
+            'pass': adminUser.password, 
+            'dept': adminUser.departments.name 
+        }) 
+        # token = self.get_token(2, entity.email, { 
+        #     'email': fields['email'], 
+        #     'pass': fields['password'], 
+        #     'dept': fields['department_id'] 
+        # }) 
+        print(token) 
+        usersTokens = []  
+        usersTokens.append([adminUser.email, token]) 
+
+        # Encrypt the token 
+        encrypted = cipher_suite.encrypt(usersTokens) 
+        # Register the encrypted token 
+        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+            encrypted_file.write(encrypted) 
+
+        # ==== /get + register admin token ==== # 
 
         # DEBUG 
         superadmin_dept_db = self.session.query(Department).filter( 
             Department.id==1).first()
-        print('superadmin_dept_db SL108 : ', superadmin_dept_db) 
+        print('superadmin_dept_db SL136 : ', superadmin_dept_db) 
         # /superAdmin 
 
-        # salesUser  # à retirer 
-        # ==== hash salesUser pass ==== # 
-        password = os.environ.get('U_2_PW') 
-        salt = bcrypt.gensalt(16)
-        hash_password_SU = bcrypt.hashpw( 
-            password.encode('utf-8'), 
-            salt 
-        ).decode('utf-8') 
+        # # salesUser  # à retirer 
+        # # ==== hash salesUser pass ==== # 
+        # password = os.environ.get('U_2_PW') 
+        # salt = bcrypt.gensalt(16)
+        # hash_password_SU = bcrypt.hashpw( 
+        #     password.encode('utf-8'), 
+        #     salt 
+        # ).decode('utf-8') 
 
-        # ==== get token admin ==== # 
-        sales_dept_name = sales_dept['name'] 
+        # # ==== get token sales user ==== # 
+        # sales_dept_name = sales_dept['name'] 
+        # payload = { 
+        #     'email': user_commerce['email'], 
+        #     'pass': os.environ.get('U_2_PW'), 
+        #     'dept': sales_dept_name, 
+        #     'exp': datetime.now()+timedelta(seconds=5) 
+        # } 
+        # secret = os.environ.get('JWT_SECRET') 
+        # algo = os.environ.get('JWT_ALGO') 
+        # su_encoded_jwt = jwt.encode(payload, secret, algo) 
+        # print(su_encoded_jwt) 
+
+        # salesUser_department = self.session.query(Department).filter( 
+        #     Department.name==user_commerce['department_name']).first() 
+
+        # # ==== register sales user ==== # 
+        # salesUser = User( 
+        #     name=user_commerce['name'], 
+        #     email=user_commerce['email'], 
+        #     password=hash_password_SU, 
+        #     phone=user_commerce['phone'], 
+        #     department_id=salesUser_department.id  # , 
+        #     # token=su_encoded_jwt 
+        # ) 
+        # self.session.add(salesUser) 
+        # self.session.commit() 
+        # # /salesUser  # à retirer 
+
+
+    def get_token(self, delta:int, data:dict): 
+        dept_name = admin_dept['name'] 
         payload = { 
-            'email': user_commerce['email'], 
-            'pass': os.environ.get('U_2_PW'), 
-            'dept': sales_dept_name, 
-            'exp': datetime.now()+timedelta(seconds=5) 
+            'email': super_admin['email'], 
+            'pass': os.environ.get('USER_1_PW'), 
+            'dept': dept_name, 
+            'exp': datetime.now()+timedelta(hours=5) 
+            # 'exp': datetime.now()+timedelta(seconds=5) 
         } 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
-        su_encoded_jwt = jwt.encode(payload, secret, algo) 
-        print(su_encoded_jwt) 
-
-        salesUser_department = self.session.query(Department).filter( 
-            Department.name==user_commerce['department_name']).first() 
-
-        # ==== register admin user ==== # 
-        salesUser = User( 
-            name=user_commerce['name'], 
-            email=user_commerce['email'], 
-            password=hash_password_SU, 
-            phone=user_commerce['phone'], 
-            department_id=salesUser_department.id, 
-            token=su_encoded_jwt 
-        ) 
-        self.session.add(salesUser) 
-        self.session.commit() 
-        # /salesUser  # à retirer 
-
+        encoded_jwt = jwt.encode(payload, secret, algo) 
 
 if __name__ == "__main__": 
     setup = Setup() 

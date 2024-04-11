@@ -91,6 +91,33 @@ Développer une application (en CLI) de gestion de clientèle (CRM), avec Python
 
         - **Vérifier que les fichiers `data.json` et `.env` sont bien ajoutés au fichier `.gitignore`.** 
 
+        + Tokens 
+            Les tokens créés lors de l'installation sont enregistrés chiffrés dans un fichier. La clé utilisée est enregistrée dans un fichier pour être accessible quand on en a besoin (chiffrer / déchiffrer les données). 
+            + A l'installation (fichier setup.py) : 
+                - générer la clé (une seule fois pour toute l'application, à renouveler si elle est corrompue ou toutes les X semaines). 
+                - enregistrer la clé dans un fichier `<nom_du_fichier>.key`. 
+                - récupérer la clé pour pouvoir l'utiliser. 
+                - chifrrer les données d'origine et les enregistrer dans le fichier chiffré `<fichier_chiffre>.csv`. 
+            + Pour mettre à jour ou ajouter un token : 
+                - Déchiffrer les données du fichier chiffré avec la clé. 
+                - parcourir les données déchiffrées pour chercher le mail. 
+                - SI trouvé : remplacer le token enregistré par le nouveau, 
+                    SINON : ajouter le binome mail/token à la liste des données. 
+                - chiffrer les données màj. 
+                - enregistrer les données màj chiffrées dans le fichier chiffré. 
+            + Pour vérifier un token (prérequis : le mail et le mot de pass sont bons) : 
+                - Déchiffrer les données du fichier chiffré avec la clé. 
+                - parcourir les données déchiffrées pour chercher le mail. 
+                    SI trouvé : vérifier le token (manager.verify_token()) 
+                        SI ok : vérifier la date du token 
+                            SI PAS PASSE : accepter la connexion de 
+                                l'utilisateur 
+                            SINON : appeler manager.get_token() pour 
+                                rafraichir le token (et l'enregistrer dans le fichier chiffré) 
+                        SINON : message "Token non conforme" 
+                    SINON : None. 
+
+
     + Création et peuplement des tables    
         - lancer le script setup.py depuis le dossier parent :     
             `cd ..`    

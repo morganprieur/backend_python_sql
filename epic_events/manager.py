@@ -59,13 +59,15 @@ class Manager():
                 items_db = self.select_all_entities('depts') 
 
             elif entity == 'user': 
-                # print(f'entity => user') 
                 # get token: 
-                fields['token'] = self.get_token(2, { 
+                # TODO: modifier get_token pour utiliser le fichier chiffré 
+                # fields['token'] = self.get_token(2, { 
+                token = self.get_token(2, { 
                     'email': fields['email'], 
                     'pass': fields['password'], 
-                    'dept': fields['department_id']} 
-                ) 
+                    'dept': fields['department_id'] 
+                }) 
+                
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
@@ -115,7 +117,7 @@ class Manager():
 
 
     def select_all_entities(self, entity): 
-        """ Generic method that selects all items of one table. /!\ entity in plural /!\ 
+        """ Generic method that selects all items of one table. /!/ entity in plural /!/ 
             Args:
                 entity (str): The table to select, in plural. 
             Returns:
@@ -309,7 +311,7 @@ class Manager():
                 object User: The selected User instance. 
         """ 
         print('select_one_user') 
-        # user_db = User() 
+        user_db = User() 
         if field == 'id': 
             user_db = self.session.query(User).filter( 
                 User.id==int(value)).first() 
@@ -335,7 +337,7 @@ class Manager():
             # print(f'user trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
             return user_db 
         # print(f'user events.attendees ML206 : {item_db.events}') 
-        return user_db 
+        # return user_db 
 
 
     def delete_user(self, field, value): 
@@ -558,13 +560,14 @@ class Manager():
     # ==== /event ==== # 
 
 
-    # ======== # ======== Utils ======== # ======== # 
-    
+    # ================ Utils ================ # 
+    # TODO: manage regsiter_token 
     def get_token(self, delta:int, data:dict): 
         """ Creates a token for the new user, that indicates his.her department, 
-            with X hours before expiration. 
+            with <delta> hours before expiration. 
             Args:
                 delta (int): The number of seconds before expiration. 
+                username (str): The name of the user. 
                 data (dict): The payload data for the creation of the token: 
                     email, pass, dept (name). 
             Returns:
@@ -580,28 +583,126 @@ class Manager():
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
         encoded_jwt = jwt.encode(payload, secret, algo) 
-        return encoded_jwt 
+
+        # if not self.register_token(encoded_jwt): 
+        #     return False 
+        # else: 
+        #     return True  
+        # TODO: danger, voir comment faire (setup / utilisation appli) 
+        # return encoded_jwt 
+
+
+    def register_token(self, token, email): 
+        """ Register the token in a crypted file. 
+            Process: 
+                - Generate the key for the application 
+                - Register the key into a file 
+                    (once at the setup, and change it afteer some delay) 
+                - Get the key for crypt/decrypt the data. 
+                - Crypt the data while seting up the application. 
+                - Decrypt the crypted data from the crypted file in order to update them. 
+                - Loop through the data to look for the email. 
+                    if found: replace the regsitered token by the given. 
+                    else: add the email/token to the list of data. 
+                - Crypt the updated data. 
+                - register the updated data into the crypted file. 
+                No return. 
+            Args: 
+                token (str): The new token to register. 
+                email (str): The email to find or regsiter into the crypted file. 
+        """ 
+        # f = open(os.environ.get('TOKEN_PATH'),'r') 
+        # # f.write(token) 
+        # f.write(userToken) 
+        # f.close() 
+
+        # get key 
+        with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
+            key = keyfile.read() 
+
+        # uses the registered key
+        cipher_suite = Fernet(key) 
+
+        userToken = {} 
+        userToken['email'] = 'test@email.com' 
+        userToken['token'] = "new_to.ke.n1" 
+
+        # Ouvrir le fichier key en lecture 
+        # l'utiliser pour ouvrir/lire le fichier users chiffré 
+        # déchiffrer les données 
+        # ouvrir le fichier clear en écriture 
+        # enregistrer les données déchiffrées dans le fhichier clear 
+        # utiliser la clé pour ouvrir/lire le fichier users_clear 
+        # SI le mail de l'utilisateur est dedans : 
+        #   changer le token 
+        # SINON : 
+        #   ajouter le nouveau mail/token au fichier 
+        # chiffrer le tout 
+        # ouvrir le fichier users en écriture en bytes 
+        # enregistrer le hash dans le fichier 
+        # effacer le fichier clear 
+
+
+        # # opens the original file to encrypt
+        # # with open('nba.csv', 'rb') as file:
+        # with open(os.environ.get('TOKEN_PATH'), 'rb') as file:
+        #     registered = file.read()
+            
+        # # encrypts the file 
+        # if type(registered) == str: 
+        #     encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
+        # elif type(registered) == byte: 
+            # encrypted = cipher_suite.encrypt(registered) 
+        
+        # # opens the file in write mode and
+        # # writes the encrypted data
+        # with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+        #     encrypted_file.write(encrypted) 
+
+
+        # # with open(os.environ.get('TOKEN_PATH'), "r") as file: 
+        # with open(os.environ.get('TOKEN_PATH'), "rb") as file: 
+        #     registered = json.load(file) 
+        #     print('registered 1 : ', registered) 
+        #     users = registered['users'] 
+        #     for reg in users: 
+        #         print('reg : ', reg) 
+        #         if email in reg['email']: 
+        #             users.pop(users.index(reg)) 
+        #     users.append(userToken) 
+        #     print('registered 2 : ', registered) 
+        # with open(os.environ.get('TOKEN_PATH'), "w") as file: 
+        #     json.dump(registered, file, indent=4) 
+        # return True 
 
 
     def verify_token(self, connectEmail, connectPass, connectDept): 
         """ Check if the user and department are those registered in the db. 
-                If yes: 
-                    Store the role's name of the user. 
-                    Check the token's expiration time. 
-                    if it is NOT past: 
-                        Return the role's permission name for creation user_session by the Controller. 
-                    else: 
-                        Call get_token() for refreshing the token. 
-                        Return tne role's permission for creation of the user_session by the Controller. 
-                else: 
-                    return "None". 
-            Args:
+            If yes: 
+                Store the department's name of the user. 
+                Verify the crypted data: 
+                - decrypt the data with the registered key. 
+                - Loop through the decrupted data to look for the connectEmail. 
+                IF FOUND: check if the token complies with the given data. 
+                    IF YES: Check the token's expiration time. 
+                        IF it is NOT PAST: Return the role's permission name 
+                            for creation user_session by the Controller. 
+                        ELSE: 
+                            Call get_token() for refreshing the token 
+                                (and update + crypt it into the crypted file). 
+                            Return tne role's permission for creation of the 
+                                user_session by the Controller. 
+                    ELSE: return a message 'Not correct token'. 
+                ELSE: return None. 
+            ELSE: return None. 
+            Args: 
                 connectEmail (string): The email entered by the connected user. 
                 connectPass (string): The password entered by the connected user. 
                 connectDept (string): The name of the department which is registered the user. 
-
             Returns:
-                string: The name of the user's role. 
+                str: The name of the user's role 
+                or message (str) 
+                or None 
         """ 
         registeredToken = self.select_one_user('email', connectEmail).token 
         secret = os.environ.get('JWT_SECRET') 
@@ -624,47 +725,6 @@ class Manager():
             print(expired) 
             # print('userDecode ML788 : ', userDecode) 
             return 'past' 
-
-        # connectedToken = { 
-        #     'email': connectEmail, 
-        #     'pass': connectPass, 
-        #     'dept': connectDept, 
-        #     'exp': datetime.now().timestamp() 
-        # } 
-        # exp = re.sub('\.\d+', '', str(connectedToken['exp'])) 
-        # print('connectedToken : ', connectedToken) 
-        # connectedToken['exp'] = exp 
-        # connectedToken_exp = connectedToken.pop('exp') 
-
-        # # Check login+hash_pw+dept.name: 
-        # if userDecode == connectedToken: 
-        #     print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken) 
-        #     print('Token user + dept ok. Check for exp time...') 
-
-        #     # Check the expiration time: 
-        #     if int(userDecode_exp) < int(connectedToken_exp): 
-        #         print('Past token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
-        #         return 'past' 
-        #     else: 
-        #         print('ok token time', userDecode, userDecode_exp, connectedToken, connectedToken_exp) 
-        #         if userDecode['dept'] == 'gestion': 
-        #             permission = 'GESTION' 
-        #             print('OK token gestion (manager)') 
-        #         elif userDecode['dept'] == 'commerce': 
-        #             permission = 'COMMERCE' 
-        #             print('OK token commerce (manager)') 
-        #         elif userDecode['dept'] == 'support': 
-        #             permission = 'SUPPORT' 
-        #             print('OK token support (manager)') 
-        #         else: 
-        #             permission = None 
-        #             print('token inconnu (manager)') 
-        #         return permission 
-        # else: 
-        #     # ok 
-        #     print('connected : ', userDecode["email"], userDecode["pass"], userDecode["dept"], ' registered : ' , connectedToken["email"], connectedToken["pass"], connectedToken["dept"]) 
-        #     print('NO token checked (manager)') 
-        #     return None 
 
 
     def hash_pw(self, password, nb:int): 

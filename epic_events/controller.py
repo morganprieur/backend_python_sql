@@ -15,8 +15,7 @@ session = PromptSession()
 
 class Controller(): 
     print(f'hello controller') 
-    # test_fct() 
-    def __init__(self):  # , view, manager 
+    def __init__(self): 
         self.dashboard = Dashboard() 
         self.views = Views() 
         self.manager = Manager() 
@@ -60,22 +59,6 @@ class Controller():
             self.dashboard.ask_for_action = None 
 
             self.register_user() 
-            # if self.user_session == 'GESTION': 
-            #     print('\nEnregistrer un utilisateur') 
-            #     fields = self.views.input_create_user() 
-            #     # Hash password: 
-            #     fields['password'] = self.manager.hash_pw(fields['entered_password'], 12) 
-            #     fields.pop('entered_password') 
-            #     # get token: into the manager 
-            #     fields['department_id'] = self.manager.select_one_dept('name', fields['department_name']).id 
-            #     fields.pop('department_name') 
-            #     # print(fields) 
-
-            #     new_item = self.manager.add_entity('user', fields) 
-            #     print(f"L\'utilisateur {new_item.id} {new_item.name} a bien été créé. ") 
-            # else: 
-            #     print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
-            #     return False 
 
             self.press_enter_to_continue() 
             self.start(mode) 
@@ -648,8 +631,6 @@ class Controller():
                 event_to_select['field_to_select'], 
                 event_to_select['value_to_select'] 
             ) 
-            # print('event_to_select (controller) : ', event_to_select) 
-            # print('event_to_modify (controller) : ', event_to_modify) 
 
             if self.user_session == 'GESTION': 
                 gestion = True 

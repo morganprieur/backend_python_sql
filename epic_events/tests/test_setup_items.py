@@ -34,55 +34,67 @@ class SetupTest(unittest.TestCase):
 		self.manager.create_session() 
 
 
-	# def test_created_depts(self): 
-	# 	""" Test departments created by the setup.py script.""" 
-	# 	dept_gestion_db = self.manager.select_one_dept('name', 'gestion') 
-	# 	dept_commerce_db = self.manager.select_one_dept('name', 'commerce') 
-	# 	dept_support_db = self.manager.select_one_dept('name', 'support') 
-	# 	assert dept_gestion_db.name == 'gestion' 
-	# 	assert dept_commerce_db.name == 'commerce' 
-	# 	assert dept_support_db.name == 'support' 
-	# 	items_db = self.manager.select_all_depts() 
-	# 	assert len(items_db) == 3 
+	def test_created_depts(self): 
+		""" Test departments created by the setup.py script.""" 
+		dept_gestion_db = self.manager.select_one_dept('name', 'gestion') 
+		dept_commerce_db = self.manager.select_one_dept('name', 'commerce') 
+		dept_support_db = self.manager.select_one_dept('name', 'support') 
+		assert dept_gestion_db.name == 'gestion' 
+		assert dept_commerce_db.name == 'commerce' 
+		assert dept_support_db.name == 'support' 
+		items_db = self.manager.select_all_entities('depts') 
+		assert len(items_db) == 4 
 
 
-	# def test_created_user(self): 
-	# 	""" Test user created by the setup.py script.""" 
-	# 	testUser_db = self.manager.select_one_user( 
-	# 		'email', 'admin@mail.org' 
-	# 	) 
-	# 	assert testUser_db.id == 1 
-	# 	assert testUser_db.name == 'super_admin' 
-	# 	assert testUser_db.department_id == 1 
+	def test_created_user(self): 
+		""" Test user created by the setup.py script.""" 
+		testUser_db = self.manager.select_one_user( 
+			'email', 'admin@mail.org' 
+		) 
+		assert testUser_db.id == 1 
+		assert testUser_db.name == 'super_admin' 
+		assert testUser_db.department_id == 1 
 
-
-	def test_encrypted_token(self): 
+	
+	def decrypt_token(self, email, token): 
+		# opens the key 
+		# file deepcode ignore PT: local project 
 		with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
 			key = keyfile.read() 
-			print('key : ', key) 
+			# print('key : ', key) 
 		# uses the registered key
 		cipher_suite = Fernet(key) 
-		# file deepcode ignore PT/test: local project 
-		with open(os.environ.get('TOKEN_PATH'), 'rb') as file: 
-			registered = file.read() 
-			print(registered) 
-			print(type(registered))  # csv.reader 
-		# déchiffrer les données de file 
-		# plain_text = cipher_suite.decrypt(cipher_text) 
-		plain_text = cipher_suite.decrypt(registered).decode('utf-8') 
-		# plain_text = list(plain_text) 
-		print('plain_text : ', plain_text) 
-		print('type(plain_text) : ', type(plain_text)) 
+		# with open(os.environ.get('TOKEN_PATH'), 'rb') as file: 
+		with open('../users2.csv', 'rb') as file: 
+			registered_bytes = file.read() 
+			print("registered_bytes : ", registered_bytes) 
+			# print(type(registered_bytes)) 
+			plain_text = cipher_suite.decrypt(registered_bytes) 
+			print("plain_text : ", plain_text) 
+			# print(type(plain_text)) 
+			# registered = ast.literal_eval(a.decode('utf-8'))
+			registered = ast.literal_eval(plain_text.decode('utf-8'))
+			# registered = json.loads(plain_text.decode('utf-8')) 
+			print("registered : ", registered)  # dict 
+			# print(type(registered)) 
+			# déchiffrer les données de file 
+			# plain_text = cipher_suite.decrypt(cipher_text) 
+			# plain_text = cipher_suite.decrypt(registered).decode('utf-8') 
+			# [x.decode("utf8") for x in data.split(b"\x00") if len(x)] 
+			# plaint_text_list = [x.decode("utf8") for x in plain_text.split(b"\x00") if len(x)] 
 
-		plain_text_split = plain_text.split('\n') 
-		for row in plain_text_split: 
-			print(row) 
-			row_split = row.split(',') 
-			for i in range(len(row_split)): 
-				if i == 2: 
-					print(row_split[10:]) 
-					# assert row_split[1] == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG1haWwub3JnIiwicGFzcyI6Imhhc2gucGFzcy53b3JkIiwiZGVwdCI6Imdlc3Rpb24iLCJleHAiOjE3MTI3NzczNTR9.baKJaIzWocCWjtJxFAID5VTdHCs3F0WzFbjaGJHaeFg' 
-					assert part[10:] == 'bjaGJHaeFg' 
+			users = registered['users'] 
+			for row in users: 
+				print(row) 
+				if email in row: 
+					print('présent : ', row['email'], row['token']) 
+					assert email == row['email'] 
+				else: 
+					print('non présent : ', row['email'], row['token']) 
+					assert email not in row 
+					assert token not in row 
+
+
 
 	# def test_deletion_dept_and_user(self): 
 	# 	""" Test deletiing one department and the user with relationship.""" 

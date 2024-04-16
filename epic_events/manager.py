@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 import os 
 import bcrypt 
+from cryptography.fernet import Fernet 
 from datetime import datetime, timedelta 
 import json 
 import jwt 
@@ -34,13 +35,14 @@ class Manager():
 
 
     # ==== generics ==== # 
+    # TODO: users : retirer token de la bdd et de la création 
     def add_entity(self, entity, fields:dict): 
         """ Generic method that creates an entity. 
-            Args:
+            Args: 
                 entity (str): The table in which to create an item. 
                 fields (dict): The data to register. 
-            Returns:
-                entity object: The just created entity item. 
+            Returns: 
+                entity object: The last created entity item. 
         """ 
         print('add_entity') 
         entities_dict = { 
@@ -61,19 +63,30 @@ class Manager():
                 items_db = self.select_all_entities('depts') 
 
             elif entity == 'user': 
-                # get token: 
-                # TODO: modifier get_token pour utiliser le fichier chiffré 
-                # fields['token'] = self.get_token(2, { 
-                token = self.get_token(2, { 
-                    'email': fields['email'], 
-                    'pass': fields['password'], 
-                    'dept': fields['department_id'] 
-                }) 
-                
+                """ A User instance needs to get the password hashed. 
+                    The controller does it. 
+                """ 
+                fields['department_id'] = self.select_one_dept('name', fields['department_name']).id 
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
-                # TODO: register token 
+
+                # ======== TODO: à déplacer dans login ======== # 
+                # get token: 
+                token = self.get_token(2, { 
+                    'email': fields['email'], 
+                    'pass': fields['password'], 
+                    'dept': fields['department_id'], 
+                    'type': 'token' 
+                }) 
+
+                # register token 
+                if self.register_token(fields['email'], token): 
+                    print('Token créé et enregistré. ') 
+                else: 
+                    capture_message('Un problème est survenu lors de la création \
+                        ou l\'enregistrement du token. ') 
+                # ======== TODO: à déplacer dans login ======== # 
 
                 items_db = self.select_all_entities('users') 
 
@@ -81,6 +94,8 @@ class Manager():
                 # print('entity => client') 
                 sales_contact = self.select_one_user('name', fields['sales_contact_name']) 
                 fields.pop('sales_contact_name') 
+                fields['created_at'] = datetime.now() 
+                fields['updated_at'] = datetime.now() 
                 itemName = entities_dict[entity]( 
                     sales_contact_id=sales_contact.id, 
                     **fields 
@@ -91,8 +106,15 @@ class Manager():
 
             elif entity == 'contract': 
                 # print('entity => contract') 
+                # print('fields ML103 : ', fields) 
                 client = self.select_one_client('name', fields['client_name']) 
+                # print('client ML 105 : ', client) 
                 fields.pop('client_name') 
+                if (fields['is_signed'] == 'Y') | (fields['is_signed'] == 'y'): 
+                    fields['is_signed'] = True 
+                else: 
+                    fields['is_signed'] = False 
+                fields['created_at'] = datetime.now() 
                 itemName = entities_dict[entity]( 
                     client_id=client.id, 
                     **fields 
@@ -103,12 +125,7 @@ class Manager():
 
             elif entity == 'event': 
                 # print('entity => event') 
-                contracts_db = self.select_all_entities('contracts') 
-                last_contract_db = contracts_db.pop() 
-                itemName = entities_dict[entity]( 
-                    contract_id=last_contract_db.id, 
-                    **fields 
-                ) 
+                itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
                 items_db = self.select_all_entities('events') 
@@ -238,7 +255,6 @@ class Manager():
             Returns: 
                 object Department: The updated instance of Department. 
         """ 
-        # itemName = self.select_one_dept('name', old_name) 
         if itemName is None: 
             print('itemName is none ML236') 
         else: 
@@ -393,7 +409,7 @@ class Manager():
         if client_db is None: 
             # TODO : afficher de nouveau la question précédente ? 
             print('Aucun client avec ces informations (manager.select_one_client)') 
-            return False 
+            return None 
         else: 
             # print(f'user trouvé (manager.select_one_client) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
             return client_db 
@@ -570,13 +586,15 @@ class Manager():
     # TODO: change timedelta seconds to hours *** 
     def get_token(self, delta:int, data:dict): 
         """ Creates a token for the new user, that indicates his.her department, 
-            with <delta> hours before expiration. 
-            Args:
+            with <delta> seconds before expiration. 
+            The type of token can be: 
+                'token' of 'refresh' 
+            Args: 
                 delta (int): The number of seconds before expiration. 
                 username (str): The name of the user. 
                 data (dict): The payload data for the creation of the token: 
-                    email, pass, dept (name). 
-            Returns:
+                    email, pass, dept (name), wich type of token. 
+            Returns: 
                 string: The token to register for later use. 
         """ 
         print('get_token') 
@@ -584,6 +602,7 @@ class Manager():
             'email': data['email'], 
             'pass': data['pass'], 
             'dept': data['dept'], 
+            'type': data['type'], 
             'exp': datetime.now()+timedelta(seconds=delta) 
         } 
         secret = os.environ.get('JWT_SECRET') 
@@ -674,6 +693,7 @@ class Manager():
         # Register the encrypted token 
         with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
             encrypted_file.write(encrypted) 
+        return True 
 
 
     def verify_token(self, connectEmail, connectPass, connectDept): 
@@ -682,16 +702,22 @@ class Manager():
                 Store the department's name of the user. 
                 Verify the crypted data: 
                 - decrypt the data with the registered key. 
-                - Loop through the decrupted data to look for the connectEmail. 
+                - Loop through the decrypted data to look for the connectEmail. 
                 IF FOUND: check if the token complies with the given data. 
                     IF YES: Check the token's expiration time. 
                         IF it is NOT PAST: Return the role's permission name 
                             for creation user_session by the Controller. 
-                        ELSE: 
-                            Call get_token() for refreshing the token 
-                                (and update + crypt it into the crypted file). 
                             Return tne role's permission for creation of the 
                                 user_session by the Controller. 
+                        ELSE: 
+                            IF the type of the token is 'token': 
+                                Call get_token() with 'refresh' type for refreshing the token 
+                                    (and update + crypt it into the crypted file). 
+                                Return tne role's permission for creation of the 
+                                    user_session by the Controller. 
+                            ELSE: 
+                                message "session expired" 
+                                Ask for the user's email/password
                     ELSE: return a message 'Not correct token'. 
                 ELSE: return None. 
             ELSE: return None. 
@@ -712,27 +738,34 @@ class Manager():
             if connectEmail == row['email']: 
                 # print('ok row : ', row) 
                 registeredToken = row['token'] 
+                # registeredType = row['type'] 
 
         # registeredToken = self.select_one_user('email', connectEmail).token 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
+        # TODO: voir except Exception as E 
         try: 
             userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-            print('userDecode ML784 : ', userDecode) 
+            print('userDecode ML750 : ', userDecode) 
             userDecode_exp = int(userDecode.pop('exp'))-3600 
             permission = '' 
             if userDecode['dept'] == 'gestion': 
                 permission = 'GESTION' 
             elif userDecode['dept'] == 'commerce': 
                 permission = 'COMMERCE' 
-            if userDecode['dept'] == 'support': 
+            elif userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
             return permission 
         except ExpiredSignatureError as expired: 
             print(expired) 
-            # print('userDecode ML788 : ', userDecode) 
-            return 'past' 
+            print('userDecode past ML762 : ', userDecode) 
+            if registeredToken['type'] == 'token': 
+                return 'past' 
+            else: 
+                return False 
+        except Exception as E: 
+            return False 
 
 
     def hash_pw(self, password, nb:int): 

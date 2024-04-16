@@ -8,6 +8,7 @@
 # print(sys.path)
 # # # import src.c.d
 
+from epic_events.helpers import decorator_verify_jwt 
 from epic_events.manager import Manager 
 
 import unittest 
@@ -46,9 +47,6 @@ class SuperuserTest(unittest.TestCase):
 	# 		# ) 
 	# 		# user_db = self.manager.select_one_user('name', 'super_admin') 
 	# 		# assert checked == user_db.password 
-
-
-
 
 			# if not checked: 
 			# 	# TODO: retour formulaire + compteur (3 fois max) 
@@ -89,6 +87,7 @@ class SuperuserTest(unittest.TestCase):
 			# 		print(self.user_session) 
 
 
+	# @decorator_verify_jwt  # : essayer 
 	def test_1_creation_dept(self): 
 		""" Test adding one department. 
 		""" 

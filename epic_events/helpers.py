@@ -27,10 +27,11 @@ import functools
 #     return wrapper 
 
 
+# TODO: arguments du décorateur 
 # décorateur qui vérifie le token avant de créer un utilisateur 
 def decorator_verify_jwt(fn): 
     @wraps(fn) 
-    def wrapper(*args, **kwargs): 
+    def wrapper(*args, **kwargs):  # args: connectEmail, connectPass, connectDept 
         token = manager.verify_token(connectEmail, connectPass, connectDept) 
         print('token (helpers) : ', token) 
         # if token: 

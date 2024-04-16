@@ -114,7 +114,8 @@ class Setup():
         token = self.manager.get_token(2, { 
             'email': adminUser.email, 
             'pass': adminUser.password, 
-            'dept': adminUser.departments.name 
+            'dept': adminUser.departments.name, 
+            'type': 'token' 
         }) 
         print(token) 
 
@@ -122,9 +123,10 @@ class Setup():
             "users": [ 
                 { 
                     "email": adminUser.email, 
-                    "token": token} 
-                ] 
-            } 
+                    "token": token 
+                } 
+            ] 
+        } 
 
         # Encrypt the token 
         # encrypted = cipher_suite.encrypt(usersTokens) 
@@ -136,20 +138,6 @@ class Setup():
         return True 
 
         # ==== /get + register admin token ==== # 
-
-
-    # def get_token(self, delta:int, data:dict): 
-    #     dept_name = admin_dept['name'] 
-    #     payload = { 
-    #         'email': super_admin['email'], 
-    #         'pass': os.environ.get('USER_1_PW'), 
-    #         'dept': dept_name, 
-    #         'exp': datetime.now()+timedelta(hours=5) 
-    #         # 'exp': datetime.now()+timedelta(seconds=5) 
-    #     } 
-    #     secret = os.environ.get('JWT_SECRET') 
-    #     algo = os.environ.get('JWT_ALGO') 
-    #     encoded_jwt = jwt.encode(payload, secret, algo) 
 
 
 if __name__ == "__main__": 

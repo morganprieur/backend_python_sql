@@ -7,13 +7,11 @@ session = PromptSession()
 class Dashboard(): 
     print('hello dashboard') 
 
-    welcome = '\n* * * * * * * * * * * * * * * * * \
-        \n\033[1mBonjour et bienvenue !\033[0m \
-        \n\n\tCe programme vous permet de gérer vos clients. \
-        \nLe fichier README.md contient les informations pour installer et utiliser l\'application. \
-        \n\n\tDans le menu, vous pouvez à tout moment utiliser les Commandes interface : \
-        \n\033[1m* pour revenir au menu principal \n0 pour sortir\033[0m' 
-
+    # welcome = '\n* * * * * * * * * * * * * * * * * \
+    #     \n\033[1mBonjour et bienvenue !\033[0m \
+    #     \n\n\tCe programme vous permet de gérer vos clients. \
+    #     \nLe fichier README.md contient les informations pour installer et utiliser l\'application. \
+    #     ' 
 
     menu = [ 
         '\n', 
@@ -38,7 +36,7 @@ class Dashboard():
         '16 : Afficher tous les événements ', 
 
         '\n17 : Afficher un département ', 
-        '18 : Afficher un utilisateur (ID, nom et département)', 
+        '18 : Afficher un utilisateur', 
         '19 : Afficher un client ', 
         '20 : Afficher un contrat ', 
         '21 : Afficher un événement ', 
@@ -48,14 +46,13 @@ class Dashboard():
         '24 : Afficher les contrats d\'un utilisateur commercial ', 
         '25 : Afficher les contrats non fini de payer ', 
         '26 : Afficher les contrats non signés ', 
-        '27 : Afficher les événements d\'un utilisateur support ' 
+        '27 : Afficher les événements d\'un utilisateur support ', 
+        '--------', 
+        '\n\033[1m0 : Se déconnecter et fermer l\'application\033[0m ' 
     ] 
 
     rescue_menu = [ 
-        '--------', 
-        '\033[1mCommandes interface :\033[0m ', 
-        '* pour revenir au menu principal ', 
-        '0 pour sortir et fermer l\'application ' 
+        
     ] 
 
 
@@ -63,8 +60,13 @@ class Dashboard():
         pass 
 
 
-    def display_welcome(self): 
-        print(self.welcome) 
+    def display_welcome(self, user_name, user_dept): 
+        # print(self.welcome) 
+        print(f'\n* * * * * * * * * * * * * * * * * \
+            \n\033[1mBonjour et bienvenue {user_name} (département {user_dept}) !\033[0m \
+            \n\n\tCe programme vous permet de gérer vos clients. \
+            \nLe fichier README.md contient les informations pour installer et utiliser l\'application.' 
+        ) 
 
 
     def display_menu(self, items: list): 

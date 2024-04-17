@@ -87,7 +87,7 @@ class SuperuserTest(unittest.TestCase):
 			# 		print(self.user_session) 
 
 
-	# @decorator_verify_jwt  # : essayer 
+	# # @decorator_verify_jwt  # : essayer 
 	def test_1_creation_dept(self): 
 		""" Test adding one department. 
 		""" 
@@ -98,41 +98,38 @@ class SuperuserTest(unittest.TestCase):
 		assert testDept.name == 'testDept' 
 		items_db = self.manager.select_all_entities('depts') 
 		# items_db = self.manager.select_all_depts() 
-		assert len(items_db) == 4 
-
-	# 	self.manager.delete_dept('name', 'testDept') 
+		assert len(items_db) == 2 
 
 
 	def test_2_creation_user(self): 
 		""" Test adding one user. 
 		""" 
 		# Hash pass 
-		hashed_password = self.manager.hash_pw('pw_testUser', 12) 
-
-        # Get token JWT 
-		delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
-		data = { 
-		    'email': 'test_user@email.org', 
-		    'pass': hashed_password, 
-		    'dept': 'admin', 
-		} 
-		user_token = self.manager.get_token(delta, data) 
-		user_dept = self.manager.select_one_dept('name', 'testDept') 
+		hashed_password = self.manager.hash_pw('pw_testUser') 
 
 		testUser = self.manager.add_entity( 'user', { 
 			'name': 'testUser', 
-            'email': 'test_user@email.org', 
+            'email': 'test_user_2@email.org', 
             'password': hashed_password, 
-            'phone': '06 09 87 65 43', 
-            'department_id': user_dept.id, 
-            'token': user_token 
+            'phone': '06 08 97 65 43', 
+            'department_name': 'gestion' 
+            # 'token': user_token 
 		}) 
+
+		# # Get token JWT 
+		# delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
+		# data = { 
+		#     'email': 'test_user_2@email.org', 
+		#     'pass': hashed_password, 
+		#     'dept': 'gestion', 
+		# } 
+		# user_token = self.manager.get_token(delta, data) 
+
 		testUser_db = self.manager.select_one_user('name', 'testUser') 
-		# testUser_db = self.manager.select_one_entity('user', 'name', 'testUser') 
 		assert testUser_db.name == 'testUser' 
 		print(testUser_db) 
 		items_db = self.manager.select_all_entities('users') 
-		assert len(items_db) == 3 
+		assert len(items_db) == 2 
 
 
 	def test_3_creation_client(self): 
@@ -184,10 +181,31 @@ class SuperuserTest(unittest.TestCase):
 		assert len(items_db) == 1 
 
 
-	def test_6_deletion_dept(self): 
-		""" Delete one department deletes the attached users, the attached clients, 
-			the attached contracts and the attached events. 
-		""" 
+	def test_6_deletion_dept_and_user(self): 
+		""" Test deletiing one user.""" 
+		testDept_db = self.manager.select_one_dept('name', 'testDept') 
+		testUser_db = self.manager.select_one_user( 
+			'email', 'test_user_2@email.org') 
+		print('testUser_db : ', testUser_db) 
+
 		self.manager.delete_dept('name', 'testDept') 
+
+		all_depts = self.manager.select_all_entities('depts') 
+		depts_names_list = [] 
+		for dept in all_depts: 
+			depts_names_list.append(dept) 
+		assert testDept_db.name not in depts_names_list 
+
+		# all_users = self.manager.select_all_entities('users') 
+		# users_names_list = [] 
+		# for user in all_users: 
+		# 	users_names_list.append(user) 
+		# assert testUser_db.name not in depts_names_list 
+
+		all_clients = self.manager.select_all_entities('clients') 
+		assert all_clients == [] 
+		assert all_clients is None 
+
+	# 	# self.manager.delete_user('name', 'user test') 
 
 

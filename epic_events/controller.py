@@ -490,7 +490,7 @@ class Controller():
             fields = self.views.input_create_user() 
 
             # Hash password: 
-            fields['password'] = self.manager.hash_pw(fields['entered_password'], 12) 
+            fields['password'] = self.manager.hash_pw(fields['entered_password']) 
             fields.pop('entered_password') 
 
             confirmation = self.views.ask_for_creation('user') 
@@ -643,7 +643,7 @@ class Controller():
 
             # TODO: verif 
             if fields['field_to_modify'] == 'password': 
-                hash_new_pw = self.manager.hash_pw(fields['new_value'], 12) 
+                hash_new_pw = self.manager.hash_pw(fields['new_value']) 
                 fields['new_value'] = hash_new_pw 
             elif fields['field_to_modify'] == 'token': 
                 data = { 

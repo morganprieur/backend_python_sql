@@ -34,6 +34,28 @@ class Manager():
         self.session = Session() 
 
 
+    def add_user_setup(self, fields:dict): 
+        print('add_user_setup') 
+        fields['department_id'] = self.select_one_dept('name', fields['department_name']).id 
+        department_name = fields.pop('department_name') 
+        itemName = User(**fields) 
+        self.session.add(itemName) 
+        self.session.commit() 
+
+        # get token: 
+        token = self.get_token(2, { 
+            'email': fields['email'], 
+            'pass': fields['password'], 
+            'dept': department_name, 
+            # 'dept': fields['department_id'], 
+            'type': 'token' 
+        }) 
+
+        items_db = self.select_all_entities('users') 
+        last_item_db = items_db.pop() 
+        return last_item_db 
+
+
     # ==== generics ==== # 
     # TODO: users : retirer token de la bdd et de la création 
     def add_entity(self, entity, fields:dict): 
@@ -57,6 +79,7 @@ class Manager():
         if entity in entities_dict: 
             if entity == 'dept': 
                 # print('entity => dept') 
+
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
@@ -67,16 +90,17 @@ class Manager():
                     The controller does it. 
                 """ 
                 fields['department_id'] = self.select_one_dept('name', fields['department_name']).id 
+                department_name = fields.pop('department_name') 
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
 
-                # ======== TODO: à déplacer dans login ======== # 
                 # get token: 
                 token = self.get_token(2, { 
                     'email': fields['email'], 
                     'pass': fields['password'], 
-                    'dept': fields['department_id'], 
+                    'dept': department_name, 
+                    # 'dept': fields['department_id'], 
                     'type': 'token' 
                 }) 
 
@@ -283,6 +307,20 @@ class Manager():
         else: 
             print(f'Ce champ "{field}" n\'existe pas.') 
         return item_db 
+
+    def delete_dept(self, field, value): 
+        """ Delete one registered department, following a unique field. 
+            Args: 
+                field (string): The field name on which select the item. 
+                value (string): The field value to select the item to delete. 
+        """ 
+        print('delete_dept') 
+        item_db = self.select_one_dept(field, value) 
+        print('dept to delete ML319 : ', item_db) 
+        self.session.delete(item_db) 
+        self.session.commit() 
+        # print(f'Le département {item_db.name} (id : {item_db.id}) a été supprimé.') 
+
     # ==== /department methods ==== # 
 
 
@@ -306,7 +344,7 @@ class Manager():
         elif field == 'email': 
             itemName.email = new_value 
         elif field == 'password': 
-            hashed_password = self.hash_pw(new_value, 12) 
+            hashed_password = self.hash_pw(new_value) 
             itemName.password = hashed_password 
         elif field == 'phone': 
             itemName.phone = new_value 
@@ -612,6 +650,10 @@ class Manager():
 
 
     def decrypt_token(self): 
+        """ Decrypts the encrypted file with the registered key. 
+            Returns: 
+                dict: The conent of the encrypted file. 
+        """ 
         # open the key
         with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
             key = keyfile.read() 
@@ -626,14 +668,47 @@ class Manager():
         plain_text = cipher_suite.decrypt(registered_bytes) 
         # print(plain_text)  # bytes 
         registered = ast.literal_eval(plain_text.decode('utf-8'))
-        # print(registered)  # dict 
+        print(registered)  # dict 
         return registered 
+
+
+    def first_register_token(self, data_to_encrypt:dict): 
+        """ Register the admin token in a crypted file. 
+            Process: 
+                - Get the key for encrypt the data. 
+                - Set the email/token as a dictionary. 
+                - Encrypt the data. 
+                - register the data into the file.  
+            Args: 
+                email (str): The email to register into the encrypted file. 
+                token (str): The token to register. 
+            Return: 
+                Bool: True if it's done. 
+        """ 
+        # get key 
+        # file deepcode ignore PT: local project  # Snyk 
+        with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
+            key = keyfile.read() 
+        # use the registered key
+        cipher_suite = Fernet(key) 
+
+        # chiffrer le mail/token et l'enregistrer 
+        # ouvrir le fichier users en écriture en bytes 
+        # enregistrer le hash dans le fichier 
+        # Encrypt the token 
+        # encrypted = cipher_suite.encrypt(usersTokens) 
+        # encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
+        encrypted = cipher_suite.encrypt(str(data_to_encrypt).encode('utf-8')) 
+        # Register the encrypted token 
+        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+            encrypted_file.write(encrypted) 
+        return True 
 
 
     def register_token(self, email, token): 
         """ Register the token in a crypted file. 
             Process: 
-                - Get the key for crypt/decrypt the data. 
+                - Get the key for encrypt/decrypt the data. 
                 - Read the encrypted file. 
                 - Decrypt the encrypted data. 
                 - Convert bytes data to dictionary. 
@@ -643,7 +718,7 @@ class Manager():
                 - Encrypt the updated data. 
                 - register the updated data into the file.  
             Args: 
-                email (str): The email to find or register into the crypted file. 
+                email (str): The email to find or register into the encrypted file. 
                 token (str): The new token to register. 
             Return: 
                 Bool: True if it's done. 
@@ -764,18 +839,19 @@ class Manager():
                 return 'past' 
             else: 
                 return False 
-        except Exception as E: 
+        except InvalidToken as invalid: 
+            print(invalid) 
             return False 
 
 
-    def hash_pw(self, password, nb:int): 
+    def hash_pw(self, password): 
         """ Hash the given password before register it into the DB. 
             Params: 
                 password (string): the readable password to hash. 
                 nb (int): the number of characters for the salt. 
             Returns the hashed password. 
         """ 
-        salt = bcrypt.gensalt(nb)
+        salt = bcrypt.gensalt(16)
         hashed_password = bcrypt.hashpw( 
             password.encode('utf-8'), 
             salt 

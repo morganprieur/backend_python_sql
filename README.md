@@ -132,8 +132,7 @@ Base de données dans un container Docker
 
 
     + Création et peuplement des tables    
-        - lancer le script setup.py depuis le dossier parent :     
-            `cd ..`    
+        - lancer le script setup.py depuis le dossier parent :       
             `python setup.py` 
             Opérations du fichier : 
                 - installe les tables dans la BDD 

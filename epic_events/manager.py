@@ -47,8 +47,7 @@ class Manager():
             'email': fields['email'], 
             'pass': fields['password'], 
             'dept': department_name, 
-            # 'dept': fields['department_id'], 
-            'type': 'token' 
+            # 'type': 'token' 
         }) 
 
         items_db = self.select_all_entities('users') 
@@ -100,12 +99,11 @@ class Manager():
                     'email': fields['email'], 
                     'pass': fields['password'], 
                     'dept': department_name, 
-                    # 'dept': fields['department_id'], 
-                    'type': 'token' 
+                    # 'type': 'token' 
                 }) 
 
                 # register token 
-                if self.register_token(fields['email'], token): 
+                if self.register_token(fields['email'], {'type': 'token'}, token): 
                     print('Token créé et enregistré. ') 
                 else: 
                     capture_message('Un problème est survenu lors de la création \
@@ -130,7 +128,7 @@ class Manager():
 
             elif entity == 'contract': 
                 # print('entity => contract') 
-                # print('fields ML103 : ', fields) 
+                # print('fields ML133 : ', fields) 
                 client = self.select_one_client('name', fields['client_name']) 
                 # print('client ML 105 : ', client) 
                 fields.pop('client_name') 
@@ -149,6 +147,7 @@ class Manager():
 
             elif entity == 'event': 
                 # print('entity => event') 
+                print('fields : ', fields) 
                 itemName = entities_dict[entity](**fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
@@ -640,7 +639,7 @@ class Manager():
             'email': data['email'], 
             'pass': data['pass'], 
             'dept': data['dept'], 
-            'type': data['type'], 
+            # 'type': data['type'], 
             'exp': datetime.now()+timedelta(seconds=delta) 
         } 
         secret = os.environ.get('JWT_SECRET') 
@@ -668,7 +667,7 @@ class Manager():
         plain_text = cipher_suite.decrypt(registered_bytes) 
         # print(plain_text)  # bytes 
         registered = ast.literal_eval(plain_text.decode('utf-8'))
-        print(registered)  # dict 
+        print('registered ML672 : ', registered)  # dict 
         return registered 
 
 
@@ -676,7 +675,7 @@ class Manager():
         """ Register the admin token in a crypted file. 
             Process: 
                 - Get the key for encrypt the data. 
-                - Set the email/token as a dictionary. 
+                - Set the email/token/token type as a dictionary. 
                 - Encrypt the data. 
                 - register the data into the file.  
             Args: 
@@ -705,7 +704,7 @@ class Manager():
         return True 
 
 
-    def register_token(self, email, token): 
+    def register_token(self, email, tokenType, token): 
         """ Register the token in a crypted file. 
             Process: 
                 - Get the key for encrypt/decrypt the data. 
@@ -747,10 +746,9 @@ class Manager():
             if email == row['email']: 
                 # print('ok row : ', row) 
                 row['token'] = token 
+                row['type'] = tokenType 
                 # Update the token 
                 presents.append(row['email']) 
-            # else: 
-            #     print('non row : ', row) 
 
         if presents == []: 
             # print('presents is emplty : ', presents) 
@@ -813,16 +811,16 @@ class Manager():
             if connectEmail == row['email']: 
                 # print('ok row : ', row) 
                 registeredToken = row['token'] 
-                # registeredType = row['type'] 
+                registeredType = row['type'] 
+        print('registeredToken ML818 : ', registeredToken) 
 
-        # registeredToken = self.select_one_user('email', connectEmail).token 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
-        # TODO: voir except Exception as E 
+        userDecode = {} 
         try: 
             userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-            print('userDecode ML750 : ', userDecode) 
+            print('userDecode ML823 : ', userDecode) 
             userDecode_exp = int(userDecode.pop('exp'))-3600 
             permission = '' 
             if userDecode['dept'] == 'gestion': 
@@ -834,8 +832,8 @@ class Manager():
             return permission 
         except ExpiredSignatureError as expired: 
             print(expired) 
-            print('userDecode past ML762 : ', userDecode) 
-            if registeredToken['type'] == 'token': 
+            print('userDecode past ML835 : ', userDecode) 
+            if registeredType == 'token': 
                 return 'past' 
             else: 
                 return False 

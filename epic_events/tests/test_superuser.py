@@ -112,7 +112,7 @@ class SuperuserTest(unittest.TestCase):
             'email': 'test_user_2@email.org', 
             'password': hashed_password, 
             'phone': '06 08 97 65 43', 
-            'department_name': 'gestion' 
+            'department_name': 'testDept' 
             # 'token': user_token 
 		}) 
 
@@ -167,8 +167,10 @@ class SuperuserTest(unittest.TestCase):
 	def test_5_creation_event(self): 
 		""" Test adding one event. 
 		""" 
+		contract_id = self.manager.select_all_entities('contracts').pop().id 
 		testEvent = self.manager.add_entity( 'event', { 
 			"name": "Anniversaire 15 ans d'Oren", 
+			"contract_id": contract_id, 
 			"start_datetime": "2024-04-27 10:00", 
 			"end_datetime": "2024-04-27 19:00", 
 			"location": "Pizzéria, rue Desnouettes, Paris 15", 
@@ -204,7 +206,9 @@ class SuperuserTest(unittest.TestCase):
 
 		all_clients = self.manager.select_all_entities('clients') 
 		assert all_clients == [] 
-		assert all_clients is None 
+
+		all_events = self.manager.select_all_entities('events') 
+		assert all_events == [] 
 
 	# 	# self.manager.delete_user('name', 'user test') 
 

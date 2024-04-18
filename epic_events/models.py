@@ -166,7 +166,6 @@ class Client(Base):
 
 
 
-
 class Contract(Base): 
     __tablename__ = 'contracts' 
     id = Column( 

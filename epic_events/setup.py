@@ -78,14 +78,14 @@ class Setup():
             'email': adminUser.email, 
             'pass': adminUser.password, 
             'dept': adminUser.department.name, 
-            'type': 'token' 
         }) 
-        # print(token) 
+        print('token SETUP83 : ', token) 
 
         userToken = { 
             "users": [ 
                 { 
                     "email": adminUser.email, 
+                    "type": "token", 
                     "token": token 
                 } 
             ] 

@@ -1,10 +1,10 @@
 
-# P12 - Epic Events 
+# Backend Python SQL 
 
-Application (utilisable avec CLI) de gestion de clientèle (CRM), en Python, avec PostgreSQL.  
-Pas de framework Python. 
-Base de données dans un container Docker 
+CLI backend CRM application. Developped with Python (without framework) and PostgreSQL. 
+It allows to manage users, authorizations with tokens, read, create and update clients, contracts and events, depending of the authorizations. "Admin" users are allowed to manage the other users. 
 
+The PostgreSQL database is developped into a Docker container. 
 
 ## Outils pour l'installation 
 

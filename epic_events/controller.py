@@ -650,7 +650,7 @@ class Controller():
                     # 'type': 'token' 
                 } 
                 new_token = self.manager.get_token(2, data) 
-                if not self.manager.register_token(user_to_modify.email, {'token': 'token'}, new_token): 
+                if not self.manager.register_token(user_to_modify.email, {'type': 'token'}, new_token): 
                     print('Une erreur est survenue lors de l\'enregistrement du token. ') 
             elif fields['field_to_modify'] == 'password': 
                 hash_new_pw = self.manager.hash_pw(fields['new_value']) 

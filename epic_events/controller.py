@@ -375,37 +375,14 @@ class Controller():
                 'email', userConnect['email']) 
 
             # Check token for connected user + department 
-            self.check_token(logged_user) 
+            if self.check_token(logged_user): 
 
-            # self.user_session = self.manager.verify_token( 
-            #     logged_user.email, 
-            #     logged_user.password, 
-            #     logged_user.department.name 
-            # ) 
-            # print('DEBUG self.user_session : ', self.user_session) 
-
-            # if self.user_session is None: 
-            #     print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
-            #     self.close_the_app() 
-
-            # if self.user_session == 'past': 
-            #     print('DEBUG self.user_session past : ', self.user_session) 
-            #     delta = 8*3600 
-            #     new_token = self.manager.get_token(delta, { 
-            #         'email': logged_user.email, 
-            #         'pass': logged_user.password, 
-            #         'dept': logged_user.department.name 
-            #     }) 
-            #     registered_token = self.manager.decrypt_token() 
-
-            # self.set_session(logged_user.department.name) 
-
-            self.dashboard.display_welcome( 
-                logged_user.name, 
-                logged_user.department.name 
-            ) 
-            self.press_enter_to_continue() 
-            return logged_user 
+                self.dashboard.display_welcome( 
+                    logged_user.name, 
+                    logged_user.department.name 
+                ) 
+                self.press_enter_to_continue() 
+                return logged_user 
 
     def set_session(self, dept_name): 
         """ Set the session name depending on the department of the user. 
@@ -432,25 +409,30 @@ class Controller():
             logged_user.password, 
             logged_user.department.name 
         ) 
-        print('self.user_session CL432 : ', self.user_session) 
+        print('self.user_session CL412 : ', self.user_session) 
 
-        if not self.user_session: 
-            print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
-            self.close_the_app() 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+            return True 
 
         elif self.user_session == 'past': 
-            print('self.user_session past CL439 : ', self.user_session) 
+            print('self.user_session past CL418 : ', self.user_session) 
             delta = 8*3600 
             new_token = self.manager.get_token(delta, { 
                 'email': logged_user.email, 
                 'pass': logged_user.password, 
                 'dept': logged_user.department.name, 
             }) 
-            self.manager.register_token(logged_user.email, 'refresh', new_token) 
-            self.set_session(logged_user.department.name) 
+            if self.manager.register_token(logged_user.email, 'refresh', new_token): 
+                self.set_session(logged_user.department.name) 
+                return True 
+
+        elif not self.user_session: 
+            print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
+            self.close_the_app() 
 
         else: 
-            print(f'Il y a eu un problème ({self.user_session}).') 
+            print(f'Il y a eu un problème ({self.user_session}), veuillez contacter un administrateur.') 
+            self.close_the_app() 
 
     # ==== register methods ==== # 
     def register_dept(self): 

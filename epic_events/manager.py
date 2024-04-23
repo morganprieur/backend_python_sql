@@ -400,14 +400,21 @@ class Manager():
 
 
     def delete_user(self, field, value): 
-        """ Delete one registered user, following a unique field. 
-            Args:
+        """ Deletes one registered user, following a unique field. 
+            Deletes also his token. 
+            Args: 
                 field (string): The field name on which select the item. 
                 value (string): The field value to select the item to delete. 
         """ 
         print('delete_user') 
         item_db = self.select_one_user(field, value) 
         print('user to delete LM249 : ', item_db) 
+        email = item_db.email 
+        # Get the decrypted tokend 
+        self.decrypt_token() 
+        # Retrieve and delete the user's token 
+        self.delete_registered_token() 
+        # Delete the user 
         self.session.delete(item_db) 
         self.session.commit() 
         print(f'L\'utilisateur {item_db.name} (id : {item_db.id}) a été supprimé.') 
@@ -703,6 +710,37 @@ class Manager():
         # print('registered : ', registered)  # dict 
         return registered 
 
+
+    def delete_registered_token(self, connectEmail): 
+        """ Selects the user to delete into the tokens decrypted data. 
+            Delete his row from the data. 
+            Encrypt and regsiter the data again. 
+            Args: 
+                connectEmail (str): The email to look for. 
+            Returns: 
+                bool: True if the data has been registered. 
+        """ 
+        print('delete_registered_token') 
+        # Get the decrypted tokens data 
+        registeredData = self.decrypt_token() 
+        users = registeredData['users'] 
+        print('users ML727 :', users) 
+        for row in users: 
+            # print(row) 
+            if connectEmail == row['email']: 
+                users.pop(row) 
+        print('users after pop : ', users) 
+
+        registered['users'] = users 
+        print('registered after ML735 : ', registered) 
+
+        # Encrypt the token 
+        encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
+        # Register the encrypted token 
+        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+            encrypted_file.write(encrypted) 
+        return True 
+
     
     def verify_token(self, connectEmail, connectPass, connectDept): 
         """ Check if the user and department are those registered in the db. 
@@ -781,7 +819,6 @@ class Manager():
             return False 
 
 
-
     def register_token(self, email, tokenType, token): 
         """ Register the token in a crypted file. 
             Process: 
@@ -814,7 +851,7 @@ class Manager():
         registered = self.decrypt_token() 
 
         users = registered['users'] 
-        print('users ML739 :', users) 
+        print('users ML832 :', users) 
         # SI le mail de l'utilisateur est dedans : 
         #   changer le token 
         # SINON : 

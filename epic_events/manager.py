@@ -103,11 +103,11 @@ class Manager():
                 }) 
 
                 # register token 
-                if self.register_token(fields['email'], {'type': 'token'}, token): 
-                    print('Token créé et enregistré. ') 
-                else: 
-                    capture_message('Un problème est survenu lors de la création \
-                        ou l\'enregistrement du token. ') 
+                self.register_token(fields['email'], 'token', token) 
+                print('Token créé et enregistré. ') 
+                # else: 
+                #     capture_message('Un problème est survenu lors de la création \
+                #         ou l\'enregistrement du token. ') 
                 # ======== TODO: à déplacer dans login ======== # 
 
                 items_db = self.select_all_entities('users') 
@@ -369,7 +369,7 @@ class Manager():
             Returns:
                 object User: The selected User instance. 
         """ 
-        print('select_one_user') 
+        # print('select_one_user') 
         user_db = User() 
         if field == 'id': 
             user_db = self.session.query(User).filter( 
@@ -648,29 +648,6 @@ class Manager():
         return encoded_jwt 
 
 
-    def decrypt_token(self): 
-        """ Decrypts the encrypted file with the registered key. 
-            Returns: 
-                dict: The conent of the encrypted file. 
-        """ 
-        # open the key
-        with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
-            key = keyfile.read() 
-            # print('key : ', key) 
-        # use the registered key
-        cipher_suite = Fernet(key) 
-
-        # decrypt the file 
-        with open(os.environ.get('TOKEN_PATH'), 'rb') as file: 
-            registered_bytes = file.read() 
-        # print(registered_bytes)  # bytes 
-        plain_text = cipher_suite.decrypt(registered_bytes) 
-        # print(plain_text)  # bytes 
-        registered = ast.literal_eval(plain_text.decode('utf-8'))
-        print('registered ML672 : ', registered)  # dict 
-        return registered 
-
-
     def first_register_token(self, data_to_encrypt:dict): 
         """ Register the admin token in a crypted file. 
             Process: 
@@ -703,72 +680,30 @@ class Manager():
             encrypted_file.write(encrypted) 
         return True 
 
-
-    def register_token(self, email, tokenType, token): 
-        """ Register the token in a crypted file. 
-            Process: 
-                - Get the key for encrypt/decrypt the data. 
-                - Read the encrypted file. 
-                - Decrypt the encrypted data. 
-                - Convert bytes data to dictionary. 
-                - Loop through the "users" data to look for the email. 
-                    if found: replace the regsitered token by the given. 
-                    else: add the email/token to the list of data. 
-                - Encrypt the updated data. 
-                - register the updated data into the file.  
-            Args: 
-                email (str): The email to find or register into the encrypted file. 
-                token (str): The new token to register. 
-            Return: 
-                Bool: True if it's done. 
+    
+    def decrypt_token(self): 
+        """ Decrypts the encrypted file with the registered key. 
+            Returns: 
+                dict: The conent of the encrypted file. 
         """ 
-        # get key 
-        # file deepcode ignore PT: local project  # Snyk 
+        # open the key
         with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
             key = keyfile.read() 
+            # print('key : ', key) 
         # use the registered key
         cipher_suite = Fernet(key) 
 
-        # lire le fichier des données chiffrées 
-        # Ouvrir le fichier key en lecture 
-        # l'utiliser pour déchiffrer le fichier chiffré 
-        # boucler pour chercher le mail de l'utilisateur 
-        registered = self.decrypt_token() 
+        # decrypt the file 
+        with open(os.environ.get('TOKEN_PATH'), 'rb') as file: 
+            registered_bytes = file.read() 
+        # print(registered_bytes)  # bytes 
+        plain_text = cipher_suite.decrypt(registered_bytes) 
+        # print(plain_text)  # bytes 
+        registered = ast.literal_eval(plain_text.decode('utf-8'))
+        # print('registered : ', registered)  # dict 
+        return registered 
 
-        users = registered['users'] 
-        # SI le mail de l'utilisateur est dedans : 
-        #   changer le token 
-        # SINON : 
-        #   ajouter le nouveau mail/token au fichier 
-        presents = [] 
-        for row in users: 
-            # print(row) 
-            if email == row['email']: 
-                # print('ok row : ', row) 
-                row['token'] = token 
-                row['type'] = tokenType 
-                # Update the token 
-                presents.append(row['email']) 
-
-        if presents == []: 
-            # print('presents is emplty : ', presents) 
-            # Add the new user into the dict users 
-            users.append({"email": email, "token": token}) 
-        registered['users'] = users 
-        # print('registered : ', registered) 
-
-        # chiffrer registered mis à jour 
-        # ouvrir le fichier users en écriture en bytes 
-        # enregistrer le hash dans le fichier 
-        # Encrypt the token 
-        # encrypted = cipher_suite.encrypt(usersTokens) 
-        encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
-        # Register the encrypted token 
-        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
-            encrypted_file.write(encrypted) 
-        return True 
-
-
+    
     def verify_token(self, connectEmail, connectPass, connectDept): 
         """ Check if the user and department are those registered in the db. 
             If yes: 
@@ -812,15 +747,15 @@ class Manager():
                 # print('ok row : ', row) 
                 registeredToken = row['token'] 
                 registeredType = row['type'] 
-        print('registeredToken ML818 : ', registeredToken) 
+        # print('registeredToken ML818 : ', registeredToken) 
 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
-        userDecode = {} 
+        # userDecode = {} 
         try: 
             userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-            print('userDecode ML823 : ', userDecode) 
+            # print('userDecode ML823 : ', userDecode) 
             userDecode_exp = int(userDecode.pop('exp'))-3600 
             permission = '' 
             if userDecode['dept'] == 'gestion': 
@@ -829,10 +764,14 @@ class Manager():
                 permission = 'COMMERCE' 
             elif userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
+            print('permission ML832 :', permission) 
             return permission 
         except ExpiredSignatureError as expired: 
             print(expired) 
-            print('userDecode past ML835 : ', userDecode) 
+            # userDecode_exp = int(userDecode.pop('exp'))-3600 
+            # userDecode_keys = userDecode.keys() 
+            # print('userDecode_keys past ML837 : ', userDecode_keys) 
+            # print('userDecode past ML838 : ', userDecode) 
             if registeredType == 'token': 
                 return 'past' 
             else: 
@@ -840,6 +779,73 @@ class Manager():
         except InvalidToken as invalid: 
             print(invalid) 
             return False 
+
+
+
+    def register_token(self, email, tokenType, token): 
+        """ Register the token in a crypted file. 
+            Process: 
+                - Get the key for encrypt/decrypt the data. 
+                - Read the encrypted file. 
+                - Decrypt the encrypted data. 
+                - Convert bytes data to dictionary. 
+                - Loop through the "users" data to look for the email. 
+                    if found: replace the regsitered token by the given. 
+                    else: add the email/token to the list of data. 
+                - Encrypt the updated data. 
+                - register the updated data into the file.  
+            Args: 
+                email (str): The email to find or register into the encrypted file. 
+                token (str): The new token to register. 
+            Return: 
+                Bool: True if it's done. 
+        """ 
+        # get key 
+        # file deepcode ignore PT: local project  # Snyk 
+        with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
+            key = keyfile.read() 
+        # use the registered key
+        cipher_suite = Fernet(key) 
+
+        # lire le fichier des données chiffrées 
+        # Ouvrir le fichier key en lecture 
+        # l'utiliser pour déchiffrer le fichier chiffré 
+        # boucler pour chercher le mail de l'utilisateur 
+        registered = self.decrypt_token() 
+
+        users = registered['users'] 
+        print('users ML739 :', users) 
+        # SI le mail de l'utilisateur est dedans : 
+        #   changer le token 
+        # SINON : 
+        #   ajouter le nouveau mail/token au fichier 
+        presents = [] 
+        for row in users: 
+            print('row :', row) 
+            if email == row['email']: 
+                print('ok row : ', row) 
+                row['token'] = token 
+                row['type'] = tokenType 
+                # Update the token 
+                presents.append(row['email']) 
+
+        if presents == []: 
+            # print('presents is emplty : ', presents) 
+            # Add the new user into the dict users 
+            users.append({"email": email, "token": token}) 
+        registered['users'] = users 
+        print('registered after ML759 : ', registered) 
+
+        # chiffrer registered mis à jour 
+        # ouvrir le fichier users en écriture en bytes 
+        # enregistrer le hash dans le fichier 
+        # Encrypt the token 
+        # encrypted = cipher_suite.encrypt(usersTokens) 
+        encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
+        # Register the encrypted token 
+        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+            encrypted_file.write(encrypted) 
+        return True 
 
 
     def hash_pw(self, password): 
@@ -873,7 +879,7 @@ class Manager():
         else: 
             hashed = user_db.password 
             if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
-                print("pw ok (manager)") 
+                print("DEBUG pw ok (manager)") 
                 return True 
             else: 
                 print('pw not ok (manager)') 

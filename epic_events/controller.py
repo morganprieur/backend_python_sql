@@ -38,6 +38,9 @@ class Controller():
                     'dev': the data are getting from the data.json file, 
                     'pub': the data has to be entered by the user. 
         """ 
+        if mode is None: 
+            print('Vous devez indiquer un mode de récupération des informations de connexion : "python project.py <dev/pub>.') 
+
         if self.user_session is None: 
             self.connect_user(mode) 
 
@@ -334,17 +337,19 @@ class Controller():
                     'dev': getting the data from the data.json file. 
                     'pub': the user has to enter the data with the keyboard. 
         """ 
-        print('mode de saisie (test / public) CL337 : ', mode) 
+        print('mode de saisie (dev / pub) : ', mode) 
         userConnect = {} 
         if mode == 'pub': 
             # Type the required credentials: 
             userConnect = self.views.input_user_connection() 
-        else:  
+        elif mode == 'dev': 
             # file deepcode ignore PT: local project 
             with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
                 self.registered = json.load(jsonfile) 
                 userConnect = self.registered['users'][0] 
                 userConnect['password'] = os.environ.get('USER_1_PW') 
+        else: 
+            print(f'Cet argument n\'est pas reconnu ({mode})') 
 
         # Verify password 
         checked = self.manager.check_pw( 
@@ -370,36 +375,36 @@ class Controller():
                 'email', userConnect['email']) 
 
             # Check token for connected user + department 
-            self.user_session = self.manager.verify_token( 
-                logged_user.email, 
-                logged_user.password, 
-                logged_user.department.name 
-            ) 
-            print('self.user_session CL378 : ', self.user_session) 
+            self.check_token(logged_user) 
 
-            if self.user_session is None: 
-                print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
-                self.close_the_app() 
+            # self.user_session = self.manager.verify_token( 
+            #     logged_user.email, 
+            #     logged_user.password, 
+            #     logged_user.department.name 
+            # ) 
+            # print('DEBUG self.user_session : ', self.user_session) 
 
-            if self.user_session == 'past': 
-                print('self.user_session CL371 : ', self.user_session) 
-                delta = 8*3600 
-                new_token = self.manager.get_token(delta, { 
-                    'email': logged_user.email, 
-                    'pass': logged_user.password, 
-                    'dept': logged_user.department.name 
-                }) 
-                registered_token = self.manager.decrypt_token() 
+            # if self.user_session is None: 
+            #     print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
+            #     self.close_the_app() 
 
-                # updated_logged_user = self.manager.update_user(logged_user.id, 'token', new_token) 
-                # updated_user_db = self.manager.select_one_user('email', logged_user.email) 
-                # print('updated_user_db token CL380 : ', updated_user_db.token) 
+            # if self.user_session == 'past': 
+            #     print('DEBUG self.user_session past : ', self.user_session) 
+            #     delta = 8*3600 
+            #     new_token = self.manager.get_token(delta, { 
+            #         'email': logged_user.email, 
+            #         'pass': logged_user.password, 
+            #         'dept': logged_user.department.name 
+            #     }) 
+            #     registered_token = self.manager.decrypt_token() 
 
-            self.set_session(logged_user.department.name) 
+            # self.set_session(logged_user.department.name) 
+
             self.dashboard.display_welcome( 
                 logged_user.name, 
                 logged_user.department.name 
             ) 
+            self.press_enter_to_continue() 
             return logged_user 
 
     def set_session(self, dept_name): 
@@ -413,42 +418,39 @@ class Controller():
             self.user_session = 'COMMERCE' 
         if dept_name == 'support': 
             self.user_session = 'SUPPORT' 
-        print(self.user_session) 
+        print('DEBUG : ', self.user_session) 
 
 
     def check_token(self, logged_user): 
-
-        # Check token's department and expiration time for connected user for each request 
+        """ Checks token's department and expiration time for connected user 
+            for each request. 
+            Args: 
+                User object: the authenticated user instance. 
+        """ 
         self.user_session = self.manager.verify_token( 
             logged_user.email, 
             logged_user.password, 
             logged_user.department.name 
         ) 
-        print('self.user_session CL425 : ', self.user_session) 
+        print('self.user_session CL432 : ', self.user_session) 
 
         if not self.user_session: 
             print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
             self.close_the_app() 
 
         elif self.user_session == 'past': 
-            print('self.user_session past CL432 : ', self.user_session) 
+            print('self.user_session past CL439 : ', self.user_session) 
             delta = 8*3600 
             new_token = self.manager.get_token(delta, { 
                 'email': logged_user.email, 
                 'pass': logged_user.password, 
                 'dept': logged_user.department.name, 
-                # 'type': 'refresh' 
             }) 
-            # updated_logged_user = self.manager.update_user(logged_user.id, 'token', new_token) 
-            # updated_user_db = self.manager.select_one_user('email', logged_user.email) 
-            # print('updated_user_db token CL442 : ', updated_user_db.token) 
+            self.manager.register_token(logged_user.email, 'refresh', new_token) 
+            self.set_session(logged_user.department.name) 
 
-        self.set_session(logged_user.department.name) 
-        # self.dashboard.display_welcome( 
-        #     logged_user.name, 
-        #     logged_user.department.name 
-        # ) 
-
+        else: 
+            print(f'Il y a eu un problème ({self.user_session}).') 
 
     # ==== register methods ==== # 
     def register_dept(self): 

@@ -19,7 +19,7 @@ class Setup():
         try: 
             Base.metadata.drop_all(bind=self.manager.engine) 
             Base.metadata.create_all(bind=self.manager.engine) 
-            print('ok') 
+            print('DB connection ok') 
         except Exception as ex: 
             print(ex) 
         self.manager.create_session() 
@@ -41,7 +41,7 @@ class Setup():
 
         # DEBUG 
         superAdmin_dept_name = self.manager.session.query(Department).filter(Department.id==1).first() 
-        print(superAdmin_dept_name) 
+        print('DEBUG : ', superAdmin_dept_name) 
         # ==== /add department ==== # 
 
         # ==== tokens management ==== # 

@@ -12,8 +12,8 @@ import time
 from sentry_sdk import capture_message 
 # capture_message('Something went wrong') 
 
-from prompt_toolkit import PromptSession 
-session = PromptSession() 
+# from prompt_toolkit import PromptSession 
+# session = PromptSession() 
 
 
 class Controller(): 
@@ -1077,7 +1077,8 @@ class Controller():
 
     @staticmethod 
     def press_enter_to_continue(): 
-        session.prompt('Appuyez sur entrée pour continuer ') 
+        self.views.enter_to_continue() 
+        # session.prompt('Appuyez sur entrée pour continuer ') 
 
     """ Command to quit the application """ 
     @staticmethod 

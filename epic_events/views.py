@@ -8,6 +8,7 @@ class Views():
     print('hello view') 
 
 
+# ==== non generics ==== # 
     def input_user_connection(self): 
         """ Prompt to the data to connect a user. 
             Returns:
@@ -19,10 +20,9 @@ class Views():
         return user 
 
 
-# ==== displaying non generics ==== # 
     def display_user_minimum(self, user): 
         print(f'\nUtilisateur : \nid : :{user.id}, {user.name}, département : {user.department.name} (ID : {user.department_id})') 
-# ==== /displaying non generics ==== # 
+# ==== /non generics ==== # 
 
 
 # ==== generics ==== # 
@@ -104,6 +104,11 @@ class Views():
         print(f'\nVous êtes sur le point d\'enregistrer un {entity_name[entity]} avec les informations suivantes : ') 
         print(entity) 
         return confirmation 
+
+    def enter_to_continue(self): 
+        enter = session.prompt('Appuyez sur entrée pour continuer ') 
+        return enter 
+
     # ==== generics ==== # 
 
 

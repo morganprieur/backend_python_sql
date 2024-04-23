@@ -56,7 +56,6 @@ class Manager():
 
 
     # ==== generics ==== # 
-    # TODO: users : retirer token de la bdd et de la création 
     def add_entity(self, entity, fields:dict): 
         """ Generic method that creates an entity. 
             Args: 
@@ -806,10 +805,6 @@ class Manager():
             return permission 
         except ExpiredSignatureError as expired: 
             print(expired) 
-            # userDecode_exp = int(userDecode.pop('exp'))-3600 
-            # userDecode_keys = userDecode.keys() 
-            # print('userDecode_keys past ML837 : ', userDecode_keys) 
-            # print('userDecode past ML838 : ', userDecode) 
             if registeredType == 'token': 
                 return 'past' 
             else: 
@@ -915,6 +910,7 @@ class Manager():
             return False 
         else: 
             hashed = user_db.password 
+            print('hashed -10 ML913 :', hashed[:10]) 
             if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
                 print("DEBUG pw ok (manager)") 
                 return True 

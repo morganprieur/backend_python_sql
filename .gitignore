@@ -5,10 +5,12 @@ snyk.exe
 roadmap.md
 questions.md
 
-epic_events/project2.py
+epic_events/__pycache__
 epic_events/jup.ipynb
 epic_events/users.json
 epic_events/users2.csv
+
+epic_events/sales_user.py
 
 # compiled files 
 epic_events/tests/__pycache__

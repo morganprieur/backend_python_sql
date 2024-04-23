@@ -5,6 +5,7 @@ import sentry_sdk
 # import this 
 from controller import Controller 
 from datetime import datetime 
+import sys 
 
 sentry_sdk.init( 
     dsn=os.environ.get("SENTRY"),
@@ -19,9 +20,12 @@ sentry_sdk.init(
 # from sentry_sdk import capture_message 
 # capture_message('Something went wrong') 
 
-def main(mode='pub'): 
+# def main(mode='pub'): 
+def main(): 
 
-    print(f'hello main {datetime.now()}') 
+    print(f'hello main (datetime : {datetime.now()})') 
+
+    mode = str(sys.argv[1]) 
     # Test Sentry 
     # division_by_zero = 1 / 0 
     # capture_message('Something went wrong') 
@@ -30,6 +34,11 @@ def main(mode='pub'):
 
 
 if __name__ == "__main__": 
-    # main('pub') 
-    main('dev') 
+    """ Call the programm with 'python project.py <arg>', 
+        where <arg> is the way to get the user's connection informations. 
+        Args choice: 
+            'dev': NOT SECURE, get one predefined user's informations. 
+            'pub': SECURE, asks for the user's informations. 
+    """ 
+    main() 
 

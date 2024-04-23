@@ -1,14 +1,5 @@
 
-# from pathlib import Path
-# import sys
-# # print(sys.path) 
-# path_root = Path(__file__).parents[1]
-# # path_root = Path(__file__).parents[2]
-# sys.path.append(str(path_root))
-# print(sys.path)
-# # # import src.c.d
-
-from epic_events.helpers import decorator_verify_jwt 
+# from epic_events.helpers import decorator_verify_jwt 
 from epic_events.manager import Manager 
 
 import unittest 
@@ -28,111 +19,36 @@ class SuperuserTest(unittest.TestCase):
 		self.manager.create_session() 
 
 
-	# def test_connexion_superuser(self): 
-	# 	""" Tests connexion, verify password and token 
-	# 	""" 
-	# 	print('test_connex') 
-	# 	# file deepcode ignore PT: local project 
-	# 	with open(f"../epic_events/{os.environ.get('FILE_PATH')}", 'r') as jsonfile: 
-	# 		self.registered = json.load(jsonfile) 
-	# 		# print('self.registered test_superuser L36 : ', self.registered) 
-	# 		print('self.registered["users"] test_superuser L37 : ', self.registered['users']) 
-	# 		userConnect = self.registered['users'][0] 
-
-	# 		# # Verify password 
-	# 		# userConnect['password'] = os.environ.get('USER_1_PW') 
-	# 		# checked = self.manager.check_pw( 
-	# 		# 	userConnect['email'], 
-	# 		# 	userConnect['password'] 
-	# 		# ) 
-	# 		# user_db = self.manager.select_one_user('name', 'super_admin') 
-	# 		# assert checked == user_db.password 
-
-			# if not checked: 
-			# 	# TODO: retour formulaire + compteur (3 fois max) 
-			# 	print('Les informations saisies ne sont pas bonnes, merci de réessayer.') 
-			# else: 
-			# 	logged_user = self.manager.select_one_user( 
-			# 		'email', userConnect['email']) 
-
-			# 	# Verify JWT 
-			# 	# Check token pour utilisateur connecté + département 
-			# 	self.user_session = self.manager.verify_token( 
-			# 		logged_user.email, 
-			# 		logged_user.password, 
-			# 		logged_user.department.name 
-			# 	) 
-			# 	print('self.user_session CL65 : ', self.user_session) 
-			# 	# # TODO: sortie propre après l'échec du token 
-			# 	if self.user_session == 'past': 
-			# 		print('self.user_session CL68 : ', self.user_session) 
-			# 		print(logged_user.token) 
-			# 		delta = 8*3600 
-			# 		new_token = self.manager.get_token(delta, { 
-			# 			'email': logged_user.email, 
-			# 			'pass': logged_user.password, 
-			# 			'dept': logged_user.department.name 
-			# 		}) 
-			# 		updated_logged_user = self.manager.update_user(logged_user.id, 'token', new_token) 
-			# 		updated_user_db = self.manager.select_one_user('email', logged_user.email) 
-			# 		print(updated_user_db.token) 
-			# 		if logged_user.departments.name == 'gestion': 
-			# 			self.user_session = 'GESTION' 
-			# 		if logged_user.departments.name == 'commerce': 
-			# 			self.user_session = 'COMMERCE' 
-			# 		if logged_user.departments.name == 'support': 
-			# 			self.user_session = 'SUPPORT' 
-			# 		print(self.user_session) 
-			# 	else: 
-			# 		print(self.user_session) 
-
-
-	# @decorator_verify_jwt  # : essayer 
 	def test_1_creation_dept(self): 
 		""" Test adding one department. 
 		""" 
 		print(datetime.now()) 
 		testDept = self.manager.add_entity('dept', {'name': 'testDept'}) 
-		print('testDept : ', testDept) 
-		# testDept_db = self.manager.select_one_dept('name', 'testTable') 
+		print('DEBUG testDept : ', testDept) 
 		assert testDept.name == 'testDept' 
 		items_db = self.manager.select_all_entities('depts') 
-		# items_db = self.manager.select_all_depts() 
-		assert len(items_db) == 4 
-
-	# 	self.manager.delete_dept('name', 'testDept') 
+		assert len(items_db) == 2 
 
 
 	def test_2_creation_user(self): 
 		""" Test adding one user. 
 		""" 
 		# Hash pass 
-		hashed_password = self.manager.hash_pw('pw_testUser', 12) 
-
-        # Get token JWT 
-		delta = 2*3600  # <-- for 'exp' JWT claim, en secondes 
-		data = { 
-		    'email': 'test_user@email.org', 
-		    'pass': hashed_password, 
-		    'dept': 'admin', 
-		} 
-		user_token = self.manager.get_token(delta, data) 
-		user_dept = self.manager.select_one_dept('name', 'testDept') 
+		hashed_password = self.manager.hash_pw('pw_testUser') 
 
 		testUser = self.manager.add_entity( 'user', { 
 			'name': 'testUser', 
-            'email': 'test_user@email.org', 
+            'email': 'test_user_2@email.org', 
             'password': hashed_password, 
-            'phone': '06 09 87 65 43', 
-            'department_id': user_dept.id, 
-            'token': user_token 
+            'phone': '06 08 97 65 43', 
+            'department_name': 'testDept' 
 		}) 
+
 		testUser_db = self.manager.select_one_user('name', 'testUser') 
-		# testUser_db = self.manager.select_one_entity('user', 'name', 'testUser') 
 		assert testUser_db.name == 'testUser' 
-		print(testUser_db) 
+		print('DEBUG : ', testUser_db) 
 		items_db = self.manager.select_all_entities('users') 
-		assert len(items_db) == 3 
+		assert len(items_db) == 2 
 
 
 	def test_3_creation_client(self): 
@@ -170,8 +86,10 @@ class SuperuserTest(unittest.TestCase):
 	def test_5_creation_event(self): 
 		""" Test adding one event. 
 		""" 
+		contract_id = self.manager.select_all_entities('contracts').pop().id 
 		testEvent = self.manager.add_entity( 'event', { 
 			"name": "Anniversaire 15 ans d'Oren", 
+			"contract_id": contract_id, 
 			"start_datetime": "2024-04-27 10:00", 
 			"end_datetime": "2024-04-27 19:00", 
 			"location": "Pizzéria, rue Desnouettes, Paris 15", 
@@ -184,10 +102,25 @@ class SuperuserTest(unittest.TestCase):
 		assert len(items_db) == 1 
 
 
-	def test_6_deletion_dept(self): 
-		""" Delete one department deletes the attached users, the attached clients, 
-			the attached contracts and the attached events. 
-		""" 
+	def test_6_deletion_dept_and_user(self): 
+		""" Test deletiing one user.""" 
+		testDept_db = self.manager.select_one_dept('name', 'testDept') 
+		testUser_db = self.manager.select_one_user( 
+			'email', 'test_user_2@email.org') 
+		print('DEBUG testUser_db : ', testUser_db) 
+
 		self.manager.delete_dept('name', 'testDept') 
+
+		all_depts = self.manager.select_all_entities('depts') 
+		depts_names_list = [] 
+		for dept in all_depts: 
+			depts_names_list.append(dept) 
+		assert testDept_db.name not in depts_names_list 
+
+		all_clients = self.manager.select_all_entities('clients') 
+		assert all_clients == [] 
+
+		all_events = self.manager.select_all_entities('events') 
+		assert all_events == [] 
 
 

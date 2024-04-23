@@ -16,8 +16,8 @@ import functools
 #     print('helpers') 
 #     @functools.wraps(fn) 
 #     def wrapper(*args, **kwargs): 
-#         hashed_password = hash_pw(password, nb) 
-#         # hashed_password = manager.hash_pw(password, nb) 
+#         hashed_password = hash_pw(password) 
+#         # hashed_password = manager.hash_pw(password) 
 #         print('hashed_password Helpers : ', hashed_password) 
 #         # if token: 
 #         #     print('deco token ok') 

@@ -1,0 +1,2 @@
+[run]
+omit = draft_tests/*, __pycache__/*, .pytest_cache/*, dashboard.py, helpers.py, views.py 

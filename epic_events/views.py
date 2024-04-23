@@ -7,13 +7,6 @@ session = PromptSession()
 class Views(): 
     print('hello view') 
 
-    # def input_user_email(self): 
-    #     """ Prompts to the user's email, in order to check if he/she has a token. 
-    #         Returns: 
-    #             str: The user's email. 
-    #     """ 
-    #     email = session.prompt('\nAdresse mail : ') 
-    #     return email 
 
     def input_user_connection(self): 
         """ Prompt to the data to connect a user. 

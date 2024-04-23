@@ -7,12 +7,6 @@ session = PromptSession()
 class Dashboard(): 
     print('hello dashboard') 
 
-    # welcome = '\n* * * * * * * * * * * * * * * * * \
-    #     \n\033[1mBonjour et bienvenue !\033[0m \
-    #     \n\n\tCe programme vous permet de gérer vos clients. \
-    #     \nLe fichier README.md contient les informations pour installer et utiliser l\'application. \
-    #     ' 
-
     menu = [ 
         '\n', 
         '1 : Enregistrer un département', 
@@ -51,9 +45,6 @@ class Dashboard():
         '\n\033[1m0 : Se déconnecter et fermer l\'application\033[0m ' 
     ] 
 
-    rescue_menu = [ 
-        
-    ] 
 
 
     def __init__(self): 
@@ -77,8 +68,8 @@ class Dashboard():
         print('\n* * * * * * * * * * * * * * * * *') 
         for item in items: 
             print(self.menu[item]) 
-        for r in self.rescue_menu: 
-            print(r) 
+        # for r in self.rescue_menu: 
+        #     print(r) 
         self.ask_for_action = session.prompt('\nChoisir une action : ') 
         print('') 
         return self.ask_for_action 

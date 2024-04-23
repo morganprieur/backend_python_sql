@@ -10,6 +10,10 @@ epic_events/jup.ipynb
 epic_events/users.json
 epic_events/users2.csv
 
+# compiled files 
+epic_events/tests/__pycache__
+epic_events/tests/__pycache__
+
 # secret data 
 .env
 data.json 

@@ -1060,7 +1060,7 @@ class Controller():
                     return True 
                 else: 
                     pass_counter += 1 
-                    self.check_pw(mode, pass_counter, logged_user): 
+                    self.check_pw(mode, pass_counter, logged_user) 
             elif mode == 'dev': 
                 print('IL y a un problème avec le pw.')                 
                 self.close_the_app() 

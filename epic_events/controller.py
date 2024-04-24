@@ -316,32 +316,70 @@ class Controller():
     def connect_user(self, mode): 
         """ Connects a user to the application. 
             Process: 
-                Check the email / hashed password with the registered email and hashed password 
-                    If not ok: 
-                        message 
-                        ask again for the credentials (3x max). 
-                    If ok: 
-                        Check the token 
-                        If not ok: 
-                            message
-                            quit the app. 
-                        If ok: 
-                            Check the token's expiration datetime 
-                            If the token has expired: 
-                                get a new token 
+                - Check the email with the registered email 
+                - Check if the token exists and is not expired 
+                X If email does not exist: 
+                    message
+                    quit the app. 
+                V else: 
+                    X If token is not ok: 
+                        message
+                        quit the app. 
+                    V If ok: 
+                        Check the token's expiration datetime 
+                        X If the token has expired: 
+                            V if tokenType == 'token': 
+                                get a new token with tokenType = 'refresh' 
                                 set the self.user_session. 
-                            If it is still ok: 
-                                set the self.user_session. 
+                            X if tokenType == 'refresh': 
+                                - ask for password 
+                                - check password 
+                                X if it is not ok: 
+                                    message
+                                    quit the app. 
+                                V elif the pw is ok: 
+                                set the self.user_session 
+                        V elif the token is still ok: 
+                            set the self.user_session. 
             Args: 
                 mode (str): The mothod to send the user credentials 
                     'dev': getting the data from the data.json file. 
                     'pub': the user has to enter the data with the keyboard. 
+            Returns: 
+                User instance: the connected user. 
         """ 
-        print('mode de saisie (dev / pub) : ', mode) 
+        print('connect_user mode de saisie (dev / pub) : ', mode) 
+        """ 
+            - Check if the token exists and is not expired 
+            X If email does not exist: 
+                message
+                quit the app. 
+            V else: 
+                X If token is not ok: 
+                    message
+                    quit the app. 
+                V If ok: 
+                    Check the token's expiration datetime 
+                    X If the token has expired: 
+                        V if tokenType == 'token': 
+                            get a new token with tokenType = 'refresh' 
+                            set the self.user_session. 
+                        X if tokenType == 'refresh': 
+                            - ask for password 
+                            - check password 
+                            X if it is not ok: 
+                                message
+                                quit the app. 
+                            V elif the pw is ok: 
+                            set the self.user_session 
+                    V elif the token is still ok: 
+                        set the self.user_session. 
+        """ 
         userConnect = {} 
         if mode == 'pub': 
             # Type the required credentials: 
-            userConnect = self.views.input_user_connection() 
+            # userConnect = self.views.input_user_connection() 
+            userConnect = self.views.input_user_connection_email() 
         elif mode == 'dev': 
             # file deepcode ignore PT: local project 
             with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
@@ -349,7 +387,11 @@ class Controller():
                 userConnect = self.registered['users'][0] 
                 userConnect['password'] = os.environ.get('USER_1_PW') 
         else: 
-            print(f'Cet argument n\'est pas reconnu ({mode})') 
+            print(f'Cet argument n\'est pas reconnu ({mode}). Vous devez utiliser "dev" ou "pub"') 
+
+        # Check the email with the registered email 
+        registered_user = self.manager.select_one_user('email', userConnect['email']) 
+        if self.man
 
         # Verify password 
         checked = self.manager.check_pw( 
@@ -362,7 +404,8 @@ class Controller():
                 print(f'Les informations saisies ne sont pas bonnes, merci de réessayer. \
                     Il vous reste {3-pass_counter} essais. ') 
                 pass_counter += 1 
-                userConnect = self.views.input_user_connection() 
+                # userConnect = self.views.input_user_connection() 
+                userConnect = self.views.input_user_connection_email() 
                 checked = self.manager.check_pw( 
                     userConnect['email'], 
                     userConnect['password'] 
@@ -383,6 +426,7 @@ class Controller():
                 ) 
                 self.press_enter_to_continue() 
                 return logged_user 
+
 
     def set_session(self, dept_name): 
         """ Set the session name depending on the department of the user. 
@@ -406,7 +450,7 @@ class Controller():
         """ 
         self.user_session = self.manager.verify_token( 
             logged_user.email, 
-            logged_user.password, 
+            # logged_user.password, 
             logged_user.department.name 
         ) 
         print('self.user_session CL412 : ', self.user_session) 
@@ -419,7 +463,7 @@ class Controller():
             delta = 8*3600 
             new_token = self.manager.get_token(delta, { 
                 'email': logged_user.email, 
-                'pass': logged_user.password, 
+                # 'pass': logged_user.password, 
                 'dept': logged_user.department.name, 
             }) 
             if self.manager.register_token(logged_user.email, 'refresh', new_token): 
@@ -427,8 +471,8 @@ class Controller():
                 return True 
 
         elif not self.user_session: 
-            print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
-            self.close_the_app() 
+            print('Le token ne correspond pas, veuillez entrer de nouveau vos informations de connexion. ') 
+            self.connect_user('pub') 
 
         else: 
             print(f'Il y a eu un problème ({self.user_session}), veuillez contacter un administrateur.') 
@@ -626,17 +670,7 @@ class Controller():
             ) 
             print('fields CL643 : ', fields) 
 
-            if fields['field_to_modify'] == 'token': 
-                data = { 
-                    'email': user_to_modify.email, 
-                    'pass': user_to_modify.password, 
-                    'dept': user_to_modify.departments.name, 
-                    # 'type': 'token' 
-                } 
-                new_token = self.manager.get_token(2, data) 
-                if not self.manager.register_token(user_to_modify.email, {'type': 'token'}, new_token): 
-                    print('Une erreur est survenue lors de l\'enregistrement du token. ') 
-            elif fields['field_to_modify'] == 'password': 
+            if fields['field_to_modify'] == 'password': 
                 hash_new_pw = self.manager.hash_pw(fields['new_value']) 
                 fields['new_value'] = hash_new_pw 
             

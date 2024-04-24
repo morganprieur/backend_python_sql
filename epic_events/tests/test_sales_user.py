@@ -21,7 +21,8 @@ class SalesuserTest(unittest.TestCase):
 
 	def test_1_connect_sales_user(self): 
 		connectEmail = 'sales_1@mail.org' 
-		connectPass = self.manager.hash_pw(os.environ.get('USER_2_PW')) 
+		connectPass = os.environ.get('USER_2_PW') 
+		# connectPass = self.manager.hash_pw(os.environ.get('USER_2_PW')) 
 		print('connectPass -10 test25 :', connectPass[:10]) 
 		connectDept = self.manager.select_one_user('email', connectEmail) 
 		logged_user = self.manager.check_pw(connectEmail, connectPass) 

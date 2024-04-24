@@ -9,13 +9,21 @@ class Views():
 
 
 # ==== non generics ==== # 
-    def input_user_connection(self): 
-        """ Prompt to the data to connect a user. 
+    def input_user_connection_email(self): 
+        """ Prompt to the email to connect a user. 
             Returns:
-                dict: The data for connecting the user. 
+                dict: The email for connecting the user. 
         """ 
         user = {} 
         user['email'] = session.prompt('\nAdresse mail : ') 
+        return user 
+
+    def input_user_connection_pass(self): 
+        """ Prompt to the password to connect a user. 
+            Returns:
+                dict: The password for connecting the user. 
+        """ 
+        user = {} 
         user['password'] = getpass('\nMot de passe : ') 
         return user 
 

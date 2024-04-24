@@ -45,9 +45,8 @@ class Manager():
         # get token: 
         token = self.get_token(2, { 
             'email': fields['email'], 
-            'pass': fields['password'], 
-            'dept': department_name, 
-            # 'type': 'token' 
+            # 'pass': fields['password'], 
+            'dept': department_name 
         }) 
 
         items_db = self.select_all_entities('users') 
@@ -96,9 +95,8 @@ class Manager():
                 # get token: 
                 token = self.get_token(2, { 
                     'email': fields['email'], 
-                    'pass': fields['password'], 
-                    'dept': department_name, 
-                    # 'type': 'token' 
+                    # 'pass': fields['password'], 
+                    'dept': department_name 
                 }) 
 
                 # register token 
@@ -636,16 +634,15 @@ class Manager():
                 delta (int): The number of seconds before expiration. 
                 username (str): The name of the user. 
                 data (dict): The payload data for the creation of the token: 
-                    email, pass, dept (name), wich type of token. 
+                    email, dept (name), wich type of token. 
             Returns: 
                 string: The token to register for later use. 
         """ 
         print('get_token') 
         payload = { 
             'email': data['email'], 
-            'pass': data['pass'], 
+            # 'pass': data['pass'], 
             'dept': data['dept'], 
-            # 'type': data['type'], 
             'exp': datetime.now()+timedelta(seconds=delta) 
         } 
         secret = os.environ.get('JWT_SECRET') 
@@ -731,7 +728,7 @@ class Manager():
         print('users after pop : ', users) 
 
         registered['users'] = users 
-        print('registered after ML735 : ', registered) 
+        print('registered after ML731 : ', registered) 
 
         # Encrypt the token 
         encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
@@ -792,7 +789,7 @@ class Manager():
         # userDecode = {} 
         try: 
             userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-            # print('userDecode ML823 : ', userDecode) 
+            print('userDecode ML792 : ', userDecode) 
             userDecode_exp = int(userDecode.pop('exp'))-3600 
             permission = '' 
             if userDecode['dept'] == 'gestion': 
@@ -806,8 +803,10 @@ class Manager():
         except ExpiredSignatureError as expired: 
             print(expired) 
             if registeredType == 'token': 
+                printt('registeredType ML809 :', registeredType) 
                 return 'past' 
             else: 
+                printt('registeredType ML812 :', registeredType) 
                 return False 
         except InvalidToken as invalid: 
             print(invalid) 
@@ -856,15 +855,15 @@ class Manager():
             print('row :', row) 
             if email == row['email']: 
                 print('ok row : ', row) 
-                row['token'] = token 
                 row['type'] = tokenType 
+                row['token'] = token 
                 # Update the token 
                 presents.append(row['email']) 
 
         if presents == []: 
             # print('presents is emplty : ', presents) 
             # Add the new user into the dict users 
-            users.append({"email": email, "token": token}) 
+            users.append({"email": email, "tokenType": tokenType, "token": token}) 
         registered['users'] = users 
         print('registered after ML759 : ', registered) 
 

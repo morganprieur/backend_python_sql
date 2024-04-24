@@ -86,9 +86,19 @@ class Manager():
                 """ A User instance needs to get the password hashed. 
                     The controller does it. 
                 """ 
-                fields['department_id'] = self.select_one_dept('name', fields['department_name']).id 
+                print('fields ML89 :', fields) 
+                fields['department_id'] = self.select_one_dept( 
+                    'name', fields['department_name']).id 
                 department_name = fields.pop('department_name') 
-                itemName = entities_dict[entity](**fields) 
+
+                # print('fields["entered_password"] ML92 :', fields['entered_password']) 
+                hashed = self.hash_pw(fields['entered_password']) 
+                print('hashed ML92 :', hashed) 
+                fields.pop('entered_password') 
+
+                itemName = entities_dict[entity]( 
+                    password=hashed, 
+                    **fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
 
@@ -111,12 +121,15 @@ class Manager():
 
             elif entity == 'client': 
                 # print('entity => client') 
-                sales_contact = self.select_one_user('name', fields['sales_contact_name']) 
+                sales_contact_db = self.select_one_user( 
+                    'name', 
+                    fields['sales_contact_name'] 
+                ) 
                 fields.pop('sales_contact_name') 
                 fields['created_at'] = datetime.now() 
                 fields['updated_at'] = datetime.now() 
                 itemName = entities_dict[entity]( 
-                    sales_contact_id=sales_contact.id, 
+                    sales_contact_id=sales_contact_db.id, 
                     **fields 
                 ) 
                 self.session.add(itemName) 
@@ -124,10 +137,11 @@ class Manager():
                 items_db = self.select_all_entities('clients') 
 
             elif entity == 'contract': 
-                # print('entity => contract') 
-                # print('fields ML133 : ', fields) 
-                client = self.select_one_client('name', fields['client_name']) 
-                # print('client ML 105 : ', client) 
+                client = self.select_one_client( 
+                    'name', 
+                    fields['client_name'] 
+                ) 
+                print('client ML138 : ', client) 
                 fields.pop('client_name') 
                 if (fields['is_signed'] == 'Y') | (fields['is_signed'] == 'y'): 
                     fields['is_signed'] = True 
@@ -371,14 +385,12 @@ class Manager():
         if field == 'id': 
             user_db = self.session.query(User).filter( 
                 User.id==int(value)).first() 
-            # self.session.query(Client).filter( 
-            #     Client.id==int(value)).first() 
             print('manager user_db : ', user_db) 
             return user_db 
         elif field == 'name': 
             user_db = self.session.query(User).filter( 
                 User.name==value).first() 
-            # users_db = self.session.query(User).all() 
+            print('user_db ML386 :', user_db) 
             return user_db 
         elif field == 'email': 
             user_db = self.session.query(User).filter( 
@@ -518,7 +530,6 @@ class Manager():
             return contract_db 
 
 
-    # def update_contract(self, id, field, new_value): 
     def update_contract(self, itemName, field, new_value): 
         """ Modifies a field of a Contract instance, following its id. 
             Possible fields: 
@@ -586,13 +597,13 @@ class Manager():
         return event_db 
 
 
-    # def update_event(self, id, field, new_value): 
     def update_event(self, itemName, field, new_value): 
         """ Modifies a field of an Event instance, following its id. 
             Possible fields: 
                 id 
                 name 
                 contract_id 
+                support_contact_name 
             Args:
                 # id (int): The id of the registered Event instance. 
                 itemName (object): The registered Event instance to modify. 
@@ -793,6 +804,7 @@ class Manager():
         # Get the decrypted token 
         registeredData = self.decrypt_token() 
         users = registeredData['users'] 
+        print('registeredData ML796 :', registeredData) 
         for row in users: 
             # print(row) 
             if connectEmail == row['email']: 
@@ -805,7 +817,11 @@ class Manager():
         algo = os.environ.get('JWT_ALGO') 
 
         try: 
-            userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
+            userDecode = jwt.decode( 
+                registeredToken, 
+                secret, 
+                algorithms=[algo] 
+            ) 
             print('userDecode ML792 : ', userDecode) 
             userDecode_exp = int(userDecode.pop('exp'))-3600 
             permission = '' 
@@ -890,7 +906,7 @@ class Manager():
         if presents == []: 
             # print('presents is emplty : ', presents) 
             # Add the new user into the dict users 
-            users.append({"email": email, "tokenType": tokenType, "token": token}) 
+            users.append({"email": email, "type": tokenType, "token": token}) 
         registered['users'] = users 
         print('registered after ML759 : ', registered) 
 
@@ -909,7 +925,7 @@ class Manager():
     def hash_pw(self, password): 
         """ Hash the given password before register it into the DB. 
             Params: 
-                password (string): the readable password to hash. 
+                password (string): the password to hash. 
                 nb (int): the number of characters for the salt. 
             Returns the hashed password. 
         """ 

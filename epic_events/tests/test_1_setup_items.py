@@ -41,6 +41,7 @@ class SetupTest(unittest.TestCase):
 		items_db = self.manager.select_all_entities('depts') 
 		assert len(items_db) == 1 
 
+
 	def test_2_created_user(self): 
 		""" Test user created by the setup.py script.""" 
 		testUser_db = self.manager.select_one_user( 
@@ -57,7 +58,8 @@ class SetupTest(unittest.TestCase):
 		connectEmail = 'admin@mail.org' 
 		connectPass = self.manager.hash_pw(os.environ.get('USER_1_PW')) 
 		connectDept = self.manager.select_one_user('email', 'admin@mail.org').department.name 
-		permission = self.manager.verify_token(connectEmail, connectPass, connectDept) 
+		permission = self.manager.verify_token( 
+			connectEmail, connectDept) 
 
 		assert permission == 'GESTION' 
 

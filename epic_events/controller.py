@@ -432,10 +432,6 @@ class Controller():
             print('\nEnregistrer un utilisateur') 
             fields = self.views.input_create_user() 
 
-            # Hash password: 
-            fields['password'] = self.manager.hash_pw(fields['entered_password']) 
-            fields.pop('entered_password') 
-
             confirmation = self.views.ask_for_creation('user') 
             self.press_enter_to_continue() 
 
@@ -1093,8 +1089,8 @@ class Controller():
             self.close_the_app() 
 
 
-    @staticmethod 
-    def press_enter_to_continue(): 
+    # @staticmethod 
+    def press_enter_to_continue(self): 
         self.views.enter_to_continue() 
         # session.prompt('Appuyez sur entrée pour continuer ') 
 

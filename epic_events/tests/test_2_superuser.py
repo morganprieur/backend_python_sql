@@ -29,24 +29,14 @@ class SuperuserTest(unittest.TestCase):
 		items_db = self.manager.select_all_entities('depts') 
 		assert len(items_db) == 2 
 
-		# print(datetime.now()) 
-		# testDept = self.manager.add_entity('dept', {'name': 'testDept'}) 
-		# print('DEBUG testDept : ', testDept) 
-		# assert testDept.name == 'testDept' 
-		# items_db = self.manager.select_all_entities('depts') 
-		# assert len(items_db) == 2 
-
 
 	def test_2_creation_user(self): 
 		""" Test adding one user. 
 		""" 
-		# Hash pass 
-		hashed_password = self.manager.hash_pw(os.environ.get('USER_2_PW')) 
-
 		testUser = self.manager.add_entity( 'user', { 
 			'name': 'sales_user 1', 
             'email': 'sales_1@mail.org', 
-            'password': hashed_password, 
+            'entered_password': os.environ.get('USER_2_PW'), 
             'phone': '06 23 45 67 89', 
             'department_name': 'commerce' 
 		}) 
@@ -56,39 +46,6 @@ class SuperuserTest(unittest.TestCase):
 		print('DEBUG : ', testUser_db) 
 		items_db = self.manager.select_all_entities('users') 
 		assert len(items_db) == 2 
-
-		# # Hash pass 
-		# hashed_password = self.manager.hash_pw('pw_testUser') 
-
-		# testUser = self.manager.add_entity( 'user', { 
-		# 	'name': 'testUser', 
-        #     'email': 'test_user_2@email.org', 
-        #     'password': hashed_password, 
-        #     'phone': '06 08 97 65 43', 
-        #     'department_name': 'testDept' 
-		# }) 
-
-		# testUser_db = self.manager.select_one_user('name', 'testUser') 
-		# assert testUser_db.name == 'testUser' 
-		# print('DEBUG : ', testUser_db) 
-		# items_db = self.manager.select_all_entities('users') 
-		# assert len(items_db) == 2 
-
-
-	# def test_3_creation_client(self): 
-	# 	""" Test adding one client. 
-	# 	""" 
-	# 	testClient = self.manager.add_entity( 'client', { 
-	# 		'name': 'testClient', 
-    #         'email': 'test_client@email.com', 
-    #         'phone': '06 13 45 67 89', 
-    #         'corporation_name': 'Entreprise 2', 
-    #         'sales_contact_name': 'testUser' 
-	# 	}) 
-	# 	testClient_db = self.manager.select_one_client('name', 'testClient') 
-	# 	assert testClient_db.name == 'testClient' 
-	# 	items_db = self.manager.select_all_entities('clients') 
-	# 	assert len(items_db) == 1 
 
 
 	# def test_4_creation_contract(self): 

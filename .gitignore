@@ -20,4 +20,6 @@ epic_events/tests/__pycache__
 .env
 data.json 
 epic_events/users_clear.csv
+epic_events/users.csv
+epic_events/users.key
 

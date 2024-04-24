@@ -632,9 +632,10 @@ class Manager():
                 'token' of 'refresh' 
             Args: 
                 delta (int): The number of seconds before expiration. 
-                username (str): The name of the user. 
                 data (dict): The payload data for the creation of the token: 
-                    email, dept (name), wich type of token. 
+                    "email", 
+                    "dept" (name), 
+                    "type" (of token). 
             Returns: 
                 string: The token to register for later use. 
         """ 
@@ -737,8 +738,25 @@ class Manager():
             encrypted_file.write(encrypted) 
         return True 
 
+    def verify_if_token_exists(self, connectEmail): 
+        """ Check if the user's token is registered into the encrypted file. 
+            Args: 
+                connectEmail (string): The email entered by the connected user. 
+            Returns:
+                dict: the dict of the registered user's data 
+                    or False: if the user's token is not registered. 
+        """ 
+        # Get the decrypted token's content file 
+        registeredData = self.decrypt_token() 
+        users = registeredData['users'] 
+        for row in users: 
+            # print(row) 
+            if connectEmail == row['email']: 
+                # print('ok row : ', row) 
+                return row 
+
     
-    def verify_token(self, connectEmail, connectPass, connectDept): 
+    def verify_token(self, connectEmail, connectDept): 
         """ Check if the user and department are those registered in the db. 
             If yes: 
                 Store the department's name of the user. 
@@ -786,7 +804,6 @@ class Manager():
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
-        # userDecode = {} 
         try: 
             userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
             print('userDecode ML792 : ', userDecode) 
@@ -798,19 +815,29 @@ class Manager():
                 permission = 'COMMERCE' 
             elif userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
-            print('permission ML832 :', permission) 
+            print('permission ML818 :', permission) 
             return permission 
         except ExpiredSignatureError as expired: 
             print(expired) 
             if registeredType == 'token': 
-                printt('registeredType ML809 :', registeredType) 
-                return 'past' 
+                print('registeredType ML824 :', registeredType) 
+                new_token = self.get_token(10, {"email": connectEmail, "dept": connectDept}) 
+                self.register_token(connectEmail, 'refresh', new_token) 
+                permission = '' 
+                if userDecode['dept'] == 'gestion': 
+                    permission = 'GESTION' 
+                elif userDecode['dept'] == 'commerce': 
+                    permission = 'COMMERCE' 
+                elif userDecode['dept'] == 'support': 
+                    permission = 'SUPPORT' 
+                print('permission ML818 :', permission) 
+                return permission 
             else: 
-                printt('registeredType ML812 :', registeredType) 
-                return False 
+                print('registeredType ML835 :', registeredType) 
+                return 'past' 
         except InvalidToken as invalid: 
             print(invalid) 
-            return False 
+            return None 
 
 
     def register_token(self, email, tokenType, token): 

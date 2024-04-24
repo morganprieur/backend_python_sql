@@ -14,18 +14,16 @@ class Views():
             Returns:
                 dict: The email for connecting the user. 
         """ 
-        user = {} 
-        user['email'] = session.prompt('\nAdresse mail : ') 
-        return user 
+        userEmail = session.prompt('\nAdresse mail : ') 
+        return userEmail 
 
     def input_user_connection_pass(self): 
         """ Prompt to the password to connect a user. 
             Returns:
                 dict: The password for connecting the user. 
         """ 
-        user = {} 
-        user['password'] = getpass('\nMot de passe : ') 
-        return user 
+        userPass = getpass('\nMot de passe : ') 
+        return userPass 
 
 
     def display_user_minimum(self, user): 

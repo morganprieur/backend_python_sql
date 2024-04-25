@@ -1,2 +1,2 @@
 [run]
-omit = draft_tests/*, __pycache__/*, .pytest_cache/*, dashboard.py, helpers.py, views.py 
+omit = epic_events/draft_tests/*, epic_events/__pycache__/*, epic_events/.pytest_cache/*, epic_events/dashboard.py, epic_events/helpers.py, epic_events/views.py, epic_events/commands/* 

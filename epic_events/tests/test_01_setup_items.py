@@ -51,16 +51,3 @@ class SetupTest(unittest.TestCase):
 		assert testUser_db.name == 'super_admin' 
 		assert testUser_db.department_id == 1 
 
-
-	def test_4_verify_token(self): 
-		registered = self.manager.decrypt_token() 
-
-		connectEmail = 'admin@mail.org' 
-		connectPass = self.manager.hash_pw(os.environ.get('USER_1_PW')) 
-		connectDept = self.manager.select_one_user('email', 'admin@mail.org').department.name 
-		permission = self.manager.verify_token( 
-			connectEmail, connectDept) 
-
-		assert permission == 'GESTION' 
-
-

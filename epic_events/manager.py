@@ -217,7 +217,7 @@ class Manager():
                 events_db = self.session.query(Event).filter( 
                     Event.support_contact_id==null)  # *** null *** 
                 if events_db is None: 
-                    print('Aucun événement avec ces informations (manager without support)') 
+                    print('Aucun événement avec ces informations (manager, without support)') 
                     return False 
                 else: 
                     return events_db 
@@ -230,14 +230,6 @@ class Manager():
                 else: 
                     return events_db 
         elif entities == 'contracts': 
-            if criteria == 'sales contact': 
-                contracts_db = self.session.query(Contract).filter( 
-                    Contract.sales_contact_id==id) 
-                if contracts_db is None: 
-                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return contracts_db 
             if criteria == 'not signed': 
                 contracts_db = self.session.query(Contract).filter( 
                     Contract.is_signed==0) 

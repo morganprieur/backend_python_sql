@@ -215,7 +215,7 @@ class Manager():
         if entities == 'events': 
             if criteria == 'without support': 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==null)  # *** null *** 
+                    Event.support_contact_id==null).all()  # *** null *** 
                 if events_db is None: 
                     print('Aucun événement avec ces informations (manager, without support)') 
                     return False 
@@ -223,7 +223,7 @@ class Manager():
                     return events_db 
             elif criteria == 'support contact': 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==contact_id) 
+                    Event.support_contact_id==contact_id).all() 
                 if events_db is None: 
                     print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
@@ -232,7 +232,7 @@ class Manager():
         elif entities == 'contracts': 
             if criteria == 'not signed': 
                 contracts_db = self.session.query(Contract).filter( 
-                    Contract.is_signed==0) 
+                    Contract.is_signed=='f').all() 
                 if contracts_db is None: 
                     print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
@@ -240,25 +240,25 @@ class Manager():
                     return contracts_db 
             elif criteria == 'not paid': 
                 contracts_db = self.session.query(Contract).filter( 
-                    Contract.amount-Contract.paid_amount!=0) 
+                    Contract.amount-Contract.paid_amount!=0).all() 
                 if contracts_db is None: 
                     print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
                 else: 
                     return contracts_db 
-        elif field == 'clients': 
+        elif entities == 'clients': 
             if criteria == 'sales contact': 
                 clients_db = self.session.query(Client).filter( 
-                    Client.sales_contact_id==id)
+                    Client.sales_contact_id==contact_id).all() 
                 if clients_db is None: 
                     print('Aucun client avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
                 else: 
                     return clients_db 
-        elif field == 'users': 
+        elif entities == 'users': 
             if criteria == 'department': 
                 users_db = self.session.query(Client).filter( 
-                    Client.department_id==id)
+                    Client.department_id==id).all()
                 if users_db is None: 
                     print('Aucun utilisateur impacté par la suppression de ce département (manager.select_entities_with_criteria).') 
                     return False 
@@ -449,6 +449,9 @@ class Manager():
         elif field == 'phone': 
             client_db = self.session.query(Client).filter( 
                 Client.phone==value).first() 
+        elif field == 'sales_contact_id': 
+            client_db = self.session.query(Client).filter( 
+                Client.sales_contact_id==7).all() 
         else: 
             print('no field recognized (manager.select_one_client)') 
         if client_db is None: 
@@ -829,14 +832,17 @@ class Manager():
             print(expired) 
             if registeredType == 'token': 
                 print('registeredType ML824 :', registeredType) 
-                new_token = self.get_token(10, {"email": connectEmail, "dept": connectDept}) 
+                new_token = self.get_token(10, { 
+                    "email": connectEmail, 
+                    "dept": connectDept 
+                }) 
                 self.register_token(connectEmail, 'refresh', new_token) 
                 permission = '' 
-                if userDecode['dept'] == 'gestion': 
+                if connectDept == 'gestion': 
                     permission = 'GESTION' 
-                elif userDecode['dept'] == 'commerce': 
+                elif connectDept == 'commerce': 
                     permission = 'COMMERCE' 
-                elif userDecode['dept'] == 'support': 
+                elif connectDept == 'support': 
                     permission = 'SUPPORT' 
                 print('permission ML818 :', permission) 
                 return permission 

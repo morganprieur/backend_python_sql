@@ -282,7 +282,7 @@ class Manager():
                 object Department: The updated instance of Department. 
         """ 
         if itemName is None: 
-            print('itemName is none ML236') 
+            print('itemName is none ML285') 
         else: 
             itemName.name = new_value 
             self.session.commit() 
@@ -328,7 +328,6 @@ class Manager():
 
     # TODO: update_user : modifier le token 
     # ==== user ==== # 
-    # def update_user(self, id, field, new_value): 
     def update_user(self, itemName, field, new_value): 
         """ Modifies a field of a user instance, following its id. 
             Args:
@@ -352,10 +351,9 @@ class Manager():
             itemName.phone = new_value 
         elif field == 'department_id': 
             itemName.department_id = new_value 
-        # elif field == 'token': 
-        #     itemName.token = new_value 
         else: 
             print('no value (manager.update_user)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
 
@@ -463,7 +461,6 @@ class Manager():
             return client_db 
 
 
-    # def update_client(self, id, field, new_value): 
     def update_client(self, itemName, field, new_value): 
         """ Modifies a field of a Client instance, following its id. 
             Possible fields: 
@@ -494,6 +491,7 @@ class Manager():
             itemName.sales_contact_id = sales_contact_db.id 
         else: 
             print('no value (manager.update_client)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
     # ==== /client ==== # 
@@ -539,17 +537,21 @@ class Manager():
             Returns:
                 object Contract: The just updated Contract instance. 
         """ 
+        print('update_contract') 
+        print('itemName 1 :', itemName) 
         # itemName = self.select_one_user('id', id) 
         if field == 'amount': 
             itemName.amount = new_value 
+            self.session.commit() 
         elif field == 'paid_amount': 
             itemName.paid_amount = new_value 
+            print('itemName 3 :', itemName) 
         elif field == 'is_signed': 
             itemName.is_signed = new_value 
-        elif field == 'department_id': 
-            itemName.department_id = new_value 
+            self.session.commit() 
         else: 
             print('no value (manager.update_contract)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
     # ==== /contract ==== # 
@@ -624,6 +626,7 @@ class Manager():
             itemName.notes = new_value 
         else: 
             print('no value (manager.update_event)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
     # ==== /event ==== # 

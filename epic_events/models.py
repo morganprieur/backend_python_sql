@@ -199,7 +199,7 @@ class Contract(Base):
         cascade='all, delete') 
 
     def __str__(self): 
-        return f'Contract : id {self.id}, client id : {self.client_id}.' 
+        return f'Contract : id {self.id}, client id : {self.client_id}, montant payé : {self.paid_amount}, is_signed : {self.is_signed}.' 
 
     def __repr__(self): 
         return str(self) 

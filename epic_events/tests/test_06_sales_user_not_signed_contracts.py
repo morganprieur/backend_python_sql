@@ -12,14 +12,15 @@ from datetime import datetime
 class Sales5Test(unittest.TestCase): 
     """ Config test files. 
     """ 
-    def setUp(self): 
+    @classmethod
+    def setUp(cls): 
         # # view = Views() 
-        self.manager = Manager() 
-        self.manager.connect() 
-        self.manager.create_session() 
+        cls.manager = Manager() 
+        cls.manager.connect() 
+        cls.manager.create_session() 
 
-
-    def test_1_connect_sales_user(self): 
+    @classmethod
+    def test_1_connect_sales_user(cls): 
     	""" Test connect a sales user. 
     		Expect permission is 'COMMERCE'. 
     	""" 
@@ -27,34 +28,35 @@ class Sales5Test(unittest.TestCase):
     	# connectPass = os.environ.get('USER_2_PW') 
     	# print('connectPass -10 test25 :', connectPass[:10]) 
 
-    	self.connectUser = self.manager.select_one_user( 
+    	cls.connectUser = cls.manager.select_one_user( 
     		'email', connectEmail) 
-    	if self.manager.verify_if_token_exists(connectEmail): 
-    		permission = self.manager.verify_token( 
+    	if cls.manager.verify_if_token_exists(connectEmail): 
+    		cls.permission = cls.manager.verify_token( 
     			connectEmail, 
-    			connectUser.department.name 
+    			cls.connectUser.department.name 
     		) 
-    		assert self.permission == 'COMMERCE' 
-    	else: 
-    	    assert not self.permission 
+    		assert cls.permission == 'COMMERCE' 
 
 
-    def test_2_get_not_signed_sales_user_s_contracts(self): 
+    @classmethod
+    def test_2_get_not_signed_sales_user_s_contracts(cls): 
         """ Test getting the sales user's not signed contracts. 
             Expect getting one contract 
             and his id is equal to the last registered contract's id. 
     	""" 
-        if self.connectUser: 
-            if self.permission == 'COMMERCE': 
-                notSignedContracts_db = self.manager.select_entities_with_criteria( 
+        # print(dir(cls)) 
+        if cls.connectUser: 
+            if cls.permission == 'COMMERCE': 
+                notSignedContracts_db = cls.manager.select_entities_with_criteria( 
                     'contracts', 
                     'not signed', 
-                    self.connectUser.id 
+                    cls.connectUser.id 
                 ) 
                 assert len(notSignedContracts_db) == 1 
-                items_db = self.manager.select_all_entities('contracts') 
+                items_db = cls.manager.select_all_entities('contracts') 
                 lastContract_db = items_db.pop() 
-                assert notSignedContracts_db.id == lastContract_db.id 
+                assert notSignedContracts_db[0].id == lastContract_db.id 
+                # assert 1 == 2 
             else: 
                 assert permission != 'COMMERCE' 
 

@@ -215,7 +215,7 @@ class Manager():
         if entities == 'events': 
             if criteria == 'without support': 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==null).all()  # *** null *** 
+                    Event.support_contact_id=='NULL').all()  # *** null *** 
                 if events_db is None: 
                     print('Aucun événement avec ces informations (manager, without support)') 
                     return False 
@@ -562,6 +562,7 @@ class Manager():
         """ Select one Event instance following a unique field. 
             Possible fields: 
                 'id' 
+                'name' 
                 'contract_id', 
             Args:
                 field (string): The name of the field to look for. 
@@ -570,8 +571,8 @@ class Manager():
                 object Event: The selected Event instance. 
         """ 
         print('select_one_event (manager)') 
-        print('field (manager) : ', field) 
-        print('value (manager) : ', value) 
+        # print('field (manager) : ', field) 
+        # print('value (manager) : ', value) 
         event_db = Event() 
         if field == 'id': 
             event_db = self.session.query(Event).filter( 

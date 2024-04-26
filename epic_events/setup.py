@@ -76,7 +76,6 @@ class Setup():
         # ==== get + register admin token ==== # 
         token = self.manager.get_token(2, { 
             'email': adminUser.email, 
-            'pass': adminUser.password, 
             'dept': adminUser.department.name, 
         }) 
         print('token SETUP83 : ', token) 

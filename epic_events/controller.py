@@ -12,9 +12,6 @@ import time
 from sentry_sdk import capture_message 
 # capture_message('Something went wrong') 
 
-from prompt_toolkit import PromptSession 
-session = PromptSession() 
-
 
 class Controller(): 
     print(f'hello controller') 
@@ -304,153 +301,96 @@ class Controller():
             self.press_enter_to_continue() 
             self.start(mode) 
 
-
-        """ Command to quit the application """ 
+        # ==== Quit the application ==== #  
         if self.dashboard.ask_for_action == '0': 
             self.dashboard.ask_for_action = None 
             self.close_the_app() 
 
 
 
-    # ======== actions ======== # 
     def connect_user(self, mode): 
         """ Connects a user to the application. 
             Process: 
-                Check the email / hashed password with the registered email and hashed password 
-                    If not ok: 
-                        message 
-                        ask again for the credentials (3x max). 
-                    If ok: 
-                        Check the token 
-                        If not ok: 
-                            message
-                            quit the app. 
-                        If ok: 
-                            Check the token's expiration datetime 
-                            If the token has expired: 
-                                get a new token 
+                - Check the email with the registered email 
+                - Check if the token exists and is not expired 
+                X If email does not exist: 
+                    message
+                    quit the app. 
+                V else: 
+                    X If token is not ok: 
+                        message
+                        quit the app. 
+                    V If ok: 
+                        Check the token's expiration datetime 
+                        X If the token has expired: 
+                            V if tokenType == 'token': 
+                                get a new token with tokenType = 'refresh' 
                                 set the self.user_session. 
-                            If it is still ok: 
-                                set the self.user_session. 
+                            X if tokenType == 'refresh': 
+                                - ask for password 
+                                - check password 
+                                X if it is not ok: 
+                                    message
+                                    quit the app. 
+                                V elif the pw is ok: 
+                                set the self.user_session 
+                        V elif the token is still ok: 
+                            set the self.user_session. 
             Args: 
                 mode (str): The mothod to send the user credentials 
                     'dev': getting the data from the data.json file. 
                     'pub': the user has to enter the data with the keyboard. 
+            Returns: 
+                User instance: the connected user. 
         """ 
-        print('mode de saisie (dev / pub) : ', mode) 
+        print('connect_user mode de saisie (dev / pub) : ', mode) 
         userConnect = {} 
         if mode == 'pub': 
             # Type the required credentials: 
-            userConnect = self.views.input_user_connection() 
+            userConnect['email'] = self.views.input_user_connection_email() 
         elif mode == 'dev': 
             # file deepcode ignore PT: local project 
             with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
                 self.registered = json.load(jsonfile) 
                 userConnect = self.registered['users'][0] 
-                userConnect['password'] = os.environ.get('USER_1_PW') 
+                userConnect['email'] = userConnect['email'] 
+                userConnect['pass'] = os.environ.get('USER_1_PW') 
         else: 
-            print(f'Cet argument n\'est pas reconnu ({mode})') 
+            print(f'Cet argument n\'est pas reconnu ({mode}). Vous devez utiliser "dev" ou "pub"') 
 
-        # Verify password 
-        checked = self.manager.check_pw( 
-            userConnect['email'], 
-            userConnect['password'] 
-        ) 
-        pass_counter = 1 
-        if not checked: 
-            if pass_counter < 3: 
-                print(f'Les informations saisies ne sont pas bonnes, merci de réessayer. \
-                    Il vous reste {3-pass_counter} essais. ') 
-                pass_counter += 1 
-                userConnect = self.views.input_user_connection() 
-                checked = self.manager.check_pw( 
-                    userConnect['email'], 
-                    userConnect['password'] 
-                ) 
-            else: 
-                print('Les informations saisies ne sont pas bonnes, Veuillez contacter un administrateur.')                 
-                self.close_the_app() 
+        # Check the email with the registered emails into the DB 
+        print('DEBUG userEmail CL363 :', userConnect['email']) 
+        logged_user = self.manager.select_one_user('email', userConnect['email']) 
+        if logged_user: 
+            # Check if the token exists 
+            if self.manager.verify_if_token_exists(logged_user.email): 
+                # Check token for connected user + department 
+                if self.check_token(logged_user): 
+                    self.dashboard.display_welcome( 
+                        logged_user.name, 
+                        logged_user.department.name 
+                    ) 
+                    self.press_enter_to_continue() 
+                else: 
+                    pass_counter = 1 
+                    userPass = '' 
+                    if mode == 'dev': 
+                        userPass = userConnect['password'] 
+                    elif mode == 'pub': 
+                        userPass = self.views.input_user_connection_pass() 
+                    if self.check_pw(mode, logged_user, userPass): 
+                        self.dashboard.display_welcome( 
+                            logged_user.name, 
+                            logged_user.department.name 
+                        ) 
+                        self.press_enter_to_continue() 
+                    else: 
+                        print('Les informations saisies ne sont pas bonnes, Veuillez contacter un administrateur.')                 
+                        self.close_the_app() 
         else: 
-            logged_user = self.manager.select_one_user( 
-                'email', userConnect['email']) 
-
-            # Check token for connected user + department 
-            self.check_token(logged_user) 
-
-            # self.user_session = self.manager.verify_token( 
-            #     logged_user.email, 
-            #     logged_user.password, 
-            #     logged_user.department.name 
-            # ) 
-            # print('DEBUG self.user_session : ', self.user_session) 
-
-            # if self.user_session is None: 
-            #     print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
-            #     self.close_the_app() 
-
-            # if self.user_session == 'past': 
-            #     print('DEBUG self.user_session past : ', self.user_session) 
-            #     delta = 8*3600 
-            #     new_token = self.manager.get_token(delta, { 
-            #         'email': logged_user.email, 
-            #         'pass': logged_user.password, 
-            #         'dept': logged_user.department.name 
-            #     }) 
-            #     registered_token = self.manager.decrypt_token() 
-
-            # self.set_session(logged_user.department.name) 
-
-            self.dashboard.display_welcome( 
-                logged_user.name, 
-                logged_user.department.name 
-            ) 
-            self.press_enter_to_continue() 
-            return logged_user 
-
-    def set_session(self, dept_name): 
-        """ Set the session name depending on the department of the user. 
-            Args:
-                dept_name (str): The department returned by the verify_token manager's method. 
-        """ 
-        if dept_name == 'gestion': 
-            self.user_session = 'GESTION' 
-        if dept_name == 'commerce': 
-            self.user_session = 'COMMERCE' 
-        if dept_name == 'support': 
-            self.user_session = 'SUPPORT' 
-        print('DEBUG : ', self.user_session) 
-
-
-    def check_token(self, logged_user): 
-        """ Checks token's department and expiration time for connected user 
-            for each request. 
-            Args: 
-                User object: the authenticated user instance. 
-        """ 
-        self.user_session = self.manager.verify_token( 
-            logged_user.email, 
-            logged_user.password, 
-            logged_user.department.name 
-        ) 
-        print('self.user_session CL432 : ', self.user_session) 
-
-        if not self.user_session: 
-            print('Le token ne correspond pas, veuillez contacter un administrateur. ') 
+            print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
             self.close_the_app() 
 
-        elif self.user_session == 'past': 
-            print('self.user_session past CL439 : ', self.user_session) 
-            delta = 8*3600 
-            new_token = self.manager.get_token(delta, { 
-                'email': logged_user.email, 
-                'pass': logged_user.password, 
-                'dept': logged_user.department.name, 
-            }) 
-            self.manager.register_token(logged_user.email, 'refresh', new_token) 
-            self.set_session(logged_user.department.name) 
-
-        else: 
-            print(f'Il y a eu un problème ({self.user_session}).') 
 
     # ==== register methods ==== # 
     def register_dept(self): 
@@ -491,10 +431,6 @@ class Controller():
         if self.user_session == 'GESTION': 
             print('\nEnregistrer un utilisateur') 
             fields = self.views.input_create_user() 
-
-            # Hash password: 
-            fields['password'] = self.manager.hash_pw(fields['entered_password']) 
-            fields.pop('entered_password') 
 
             confirmation = self.views.ask_for_creation('user') 
             self.press_enter_to_continue() 
@@ -644,17 +580,7 @@ class Controller():
             ) 
             print('fields CL643 : ', fields) 
 
-            if fields['field_to_modify'] == 'token': 
-                data = { 
-                    'email': user_to_modify.email, 
-                    'pass': user_to_modify.password, 
-                    'dept': user_to_modify.departments.name, 
-                    # 'type': 'token' 
-                } 
-                new_token = self.manager.get_token(2, data) 
-                if not self.manager.register_token(user_to_modify.email, {'type': 'token'}, new_token): 
-                    print('Une erreur est survenue lors de l\'enregistrement du token. ') 
-            elif fields['field_to_modify'] == 'password': 
+            if fields['field_to_modify'] == 'password': 
                 hash_new_pw = self.manager.hash_pw(fields['new_value']) 
                 fields['new_value'] = hash_new_pw 
             
@@ -1090,17 +1016,89 @@ class Controller():
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
+    # ==== show with criteria methods ==== # 
 
 
+    # ======== Utils ======== # 
+    def set_session(self, dept_name): 
+        """ Set the session name depending on the department of the user. 
+            Args:
+                dept_name (str): The department returned by the verify_token manager's method. 
+        """ 
+        if dept_name == 'gestion': 
+            self.user_session = 'GESTION' 
+        if dept_name == 'commerce': 
+            self.user_session = 'COMMERCE' 
+        if dept_name == 'support': 
+            self.user_session = 'SUPPORT' 
+        print('DEBUG : ', self.user_session) 
 
-    @staticmethod 
-    def press_enter_to_continue(): 
-        session.prompt('Appuyez sur entrée pour continuer ') 
+
+    def check_pw(self, mode, pass_counter, logged_user): 
+        """ Recursive method that checks the password of the user, if the token is past. 
+            Args: 
+                mode (str): The mode (dev or pub) wich the app has ben runned. 
+                pass_counter (int): It counts the attempts to enter the password of the user. 
+                logged_user (User instance): The user selected with his email. 
+            Returns: 
+                bool: True if the self.user_session has been filled, if all was alright. 
+                        False instead. 
+        """ 
+        if pass_counter < 3: 
+            if mode == 'pub': 
+                print(f'Les informations saisies ne sont pas bonnes, merci de réessayer. \
+                    Il vous reste {3-pass_counter} essais. ') 
+                userPass = self.views.input_user_connection_pass() 
+                if self.manager.check_pw( 
+                    logged_user.email, 
+                    userPass 
+                ): 
+                    return True 
+                else: 
+                    pass_counter += 1 
+                    self.check_pw(mode, pass_counter, logged_user) 
+            elif mode == 'dev': 
+                print('IL y a un problème avec le pw.')                 
+                self.close_the_app() 
+            else: 
+                return False 
+        else: 
+            return False 
+
+
+    def check_token(self, logged_user): 
+        """ Checks token's department and expiration time for connected user 
+            for each request. 
+            Args: 
+                User object: the authenticated user instance. 
+        """ 
+        self.user_session = self.manager.verify_token( 
+            logged_user.email, 
+            # logged_user.password, 
+            logged_user.department.name 
+        ) 
+        print('self.user_session CL460 : ', self.user_session) 
+
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+            return True 
+        elif self.user_session == 'past': 
+            return False 
+
+        elif self.user_session is None: 
+            print(f'Il y a eu un problème ({self.user_session}), veuillez contacter un administrateur.') 
+            self.close_the_app() 
+
+
+    # @staticmethod 
+    def press_enter_to_continue(self): 
+        self.views.enter_to_continue() 
+        # session.prompt('Appuyez sur entrée pour continuer ') 
+
 
     """ Command to quit the application """ 
     @staticmethod 
     def close_the_app(): 
         print('\nFermeture de l\'application. Bonne fin de journée !') 
 
-    # ======== /actions ======== # 
+    # ======== /Utils ======== # 
 

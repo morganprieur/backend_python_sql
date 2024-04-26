@@ -45,9 +45,8 @@ class Manager():
         # get token: 
         token = self.get_token(2, { 
             'email': fields['email'], 
-            'pass': fields['password'], 
-            'dept': department_name, 
-            # 'type': 'token' 
+            # 'pass': fields['password'], 
+            'dept': department_name 
         }) 
 
         items_db = self.select_all_entities('users') 
@@ -56,7 +55,6 @@ class Manager():
 
 
     # ==== generics ==== # 
-    # TODO: users : retirer token de la bdd et de la création 
     def add_entity(self, entity, fields:dict): 
         """ Generic method that creates an entity. 
             Args: 
@@ -88,18 +86,27 @@ class Manager():
                 """ A User instance needs to get the password hashed. 
                     The controller does it. 
                 """ 
-                fields['department_id'] = self.select_one_dept('name', fields['department_name']).id 
+                print('fields ML89 :', fields) 
+                fields['department_id'] = self.select_one_dept( 
+                    'name', fields['department_name']).id 
                 department_name = fields.pop('department_name') 
-                itemName = entities_dict[entity](**fields) 
+
+                # print('fields["entered_password"] ML92 :', fields['entered_password']) 
+                hashed = self.hash_pw(fields['entered_password']) 
+                print('hashed ML92 :', hashed) 
+                fields.pop('entered_password') 
+
+                itemName = entities_dict[entity]( 
+                    password=hashed, 
+                    **fields) 
                 self.session.add(itemName) 
                 self.session.commit() 
 
                 # get token: 
                 token = self.get_token(2, { 
                     'email': fields['email'], 
-                    'pass': fields['password'], 
-                    'dept': department_name, 
-                    # 'type': 'token' 
+                    # 'pass': fields['password'], 
+                    'dept': department_name 
                 }) 
 
                 # register token 
@@ -114,12 +121,15 @@ class Manager():
 
             elif entity == 'client': 
                 # print('entity => client') 
-                sales_contact = self.select_one_user('name', fields['sales_contact_name']) 
+                sales_contact_db = self.select_one_user( 
+                    'name', 
+                    fields['sales_contact_name'] 
+                ) 
                 fields.pop('sales_contact_name') 
                 fields['created_at'] = datetime.now() 
                 fields['updated_at'] = datetime.now() 
                 itemName = entities_dict[entity]( 
-                    sales_contact_id=sales_contact.id, 
+                    sales_contact_id=sales_contact_db.id, 
                     **fields 
                 ) 
                 self.session.add(itemName) 
@@ -127,10 +137,11 @@ class Manager():
                 items_db = self.select_all_entities('clients') 
 
             elif entity == 'contract': 
-                # print('entity => contract') 
-                # print('fields ML133 : ', fields) 
-                client = self.select_one_client('name', fields['client_name']) 
-                # print('client ML 105 : ', client) 
+                client = self.select_one_client( 
+                    'name', 
+                    fields['client_name'] 
+                ) 
+                print('client ML138 : ', client) 
                 fields.pop('client_name') 
                 if (fields['is_signed'] == 'Y') | (fields['is_signed'] == 'y'): 
                     fields['is_signed'] = True 
@@ -204,32 +215,24 @@ class Manager():
         if entities == 'events': 
             if criteria == 'without support': 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==null)  # *** null *** 
+                    Event.support_contact_id==null).all()  # *** null *** 
                 if events_db is None: 
-                    print('Aucun événement avec ces informations (manager without support)') 
+                    print('Aucun événement avec ces informations (manager, without support)') 
                     return False 
                 else: 
                     return events_db 
             elif criteria == 'support contact': 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==contact_id) 
+                    Event.support_contact_id==contact_id).all() 
                 if events_db is None: 
                     print('Aucun événement avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
                 else: 
                     return events_db 
         elif entities == 'contracts': 
-            if criteria == 'sales contact': 
-                contracts_db = self.session.query(Contract).filter( 
-                    Contract.sales_contact_id==id) 
-                if contracts_db is None: 
-                    print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
-                    return False 
-                else: 
-                    return contracts_db 
             if criteria == 'not signed': 
                 contracts_db = self.session.query(Contract).filter( 
-                    Contract.is_signed==0) 
+                    Contract.is_signed=='f').all() 
                 if contracts_db is None: 
                     print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
@@ -237,25 +240,25 @@ class Manager():
                     return contracts_db 
             elif criteria == 'not paid': 
                 contracts_db = self.session.query(Contract).filter( 
-                    Contract.amount-Contract.paid_amount!=0) 
+                    Contract.amount-Contract.paid_amount!=0).all() 
                 if contracts_db is None: 
                     print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
                 else: 
                     return contracts_db 
-        elif field == 'clients': 
+        elif entities == 'clients': 
             if criteria == 'sales contact': 
                 clients_db = self.session.query(Client).filter( 
-                    Client.sales_contact_id==id)
+                    Client.sales_contact_id==contact_id).all() 
                 if clients_db is None: 
                     print('Aucun client avec ces informations (manager.select_entities_with_criteria)') 
                     return False 
                 else: 
                     return clients_db 
-        elif field == 'users': 
+        elif entities == 'users': 
             if criteria == 'department': 
                 users_db = self.session.query(Client).filter( 
-                    Client.department_id==id)
+                    Client.department_id==id).all()
                 if users_db is None: 
                     print('Aucun utilisateur impacté par la suppression de ce département (manager.select_entities_with_criteria).') 
                     return False 
@@ -374,14 +377,12 @@ class Manager():
         if field == 'id': 
             user_db = self.session.query(User).filter( 
                 User.id==int(value)).first() 
-            # self.session.query(Client).filter( 
-            #     Client.id==int(value)).first() 
             print('manager user_db : ', user_db) 
             return user_db 
         elif field == 'name': 
             user_db = self.session.query(User).filter( 
                 User.name==value).first() 
-            # users_db = self.session.query(User).all() 
+            print('user_db ML386 :', user_db) 
             return user_db 
         elif field == 'email': 
             user_db = self.session.query(User).filter( 
@@ -400,14 +401,21 @@ class Manager():
 
 
     def delete_user(self, field, value): 
-        """ Delete one registered user, following a unique field. 
-            Args:
+        """ Deletes one registered user, following a unique field. 
+            Deletes also his token. 
+            Args: 
                 field (string): The field name on which select the item. 
                 value (string): The field value to select the item to delete. 
         """ 
         print('delete_user') 
         item_db = self.select_one_user(field, value) 
         print('user to delete LM249 : ', item_db) 
+        email = item_db.email 
+        # Get the decrypted tokend 
+        self.decrypt_token() 
+        # Retrieve and delete the user's token 
+        self.delete_registered_token() 
+        # Delete the user 
         self.session.delete(item_db) 
         self.session.commit() 
         print(f'L\'utilisateur {item_db.name} (id : {item_db.id}) a été supprimé.') 
@@ -441,6 +449,9 @@ class Manager():
         elif field == 'phone': 
             client_db = self.session.query(Client).filter( 
                 Client.phone==value).first() 
+        elif field == 'sales_contact_id': 
+            client_db = self.session.query(Client).filter( 
+                Client.sales_contact_id==7).all() 
         else: 
             print('no field recognized (manager.select_one_client)') 
         if client_db is None: 
@@ -514,7 +525,6 @@ class Manager():
             return contract_db 
 
 
-    # def update_contract(self, id, field, new_value): 
     def update_contract(self, itemName, field, new_value): 
         """ Modifies a field of a Contract instance, following its id. 
             Possible fields: 
@@ -582,13 +592,13 @@ class Manager():
         return event_db 
 
 
-    # def update_event(self, id, field, new_value): 
     def update_event(self, itemName, field, new_value): 
         """ Modifies a field of an Event instance, following its id. 
             Possible fields: 
                 id 
                 name 
                 contract_id 
+                support_contact_name 
             Args:
                 # id (int): The id of the registered Event instance. 
                 itemName (object): The registered Event instance to modify. 
@@ -628,18 +638,18 @@ class Manager():
                 'token' of 'refresh' 
             Args: 
                 delta (int): The number of seconds before expiration. 
-                username (str): The name of the user. 
                 data (dict): The payload data for the creation of the token: 
-                    email, pass, dept (name), wich type of token. 
+                    "email", 
+                    "dept" (name), 
+                    "type" (of token). 
             Returns: 
                 string: The token to register for later use. 
         """ 
         print('get_token') 
         payload = { 
             'email': data['email'], 
-            'pass': data['pass'], 
+            # 'pass': data['pass'], 
             'dept': data['dept'], 
-            # 'type': data['type'], 
             'exp': datetime.now()+timedelta(seconds=delta) 
         } 
         secret = os.environ.get('JWT_SECRET') 
@@ -703,8 +713,56 @@ class Manager():
         # print('registered : ', registered)  # dict 
         return registered 
 
+
+    def delete_registered_token(self, connectEmail): 
+        """ Selects the user to delete into the tokens decrypted data. 
+            Delete his row from the data. 
+            Encrypt and regsiter the data again. 
+            Args: 
+                connectEmail (str): The email to look for. 
+            Returns: 
+                bool: True if the data has been registered. 
+        """ 
+        print('delete_registered_token') 
+        # Get the decrypted tokens data 
+        registeredData = self.decrypt_token() 
+        users = registeredData['users'] 
+        print('users ML727 :', users) 
+        for row in users: 
+            # print(row) 
+            if connectEmail == row['email']: 
+                users.pop(row) 
+        print('users after pop : ', users) 
+
+        registered['users'] = users 
+        print('registered after ML731 : ', registered) 
+
+        # Encrypt the token 
+        encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
+        # Register the encrypted token 
+        with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
+            encrypted_file.write(encrypted) 
+        return True 
+
+    def verify_if_token_exists(self, connectEmail): 
+        """ Check if the user's token is registered into the encrypted file. 
+            Args: 
+                connectEmail (string): The email entered by the connected user. 
+            Returns:
+                dict: the dict of the registered user's data 
+                    or False: if the user's token is not registered. 
+        """ 
+        # Get the decrypted token's content file 
+        registeredData = self.decrypt_token() 
+        users = registeredData['users'] 
+        for row in users: 
+            # print(row) 
+            if connectEmail == row['email']: 
+                # print('ok row : ', row) 
+                return row 
+
     
-    def verify_token(self, connectEmail, connectPass, connectDept): 
+    def verify_token(self, connectEmail, connectDept): 
         """ Check if the user and department are those registered in the db. 
             If yes: 
                 Store the department's name of the user. 
@@ -741,6 +799,7 @@ class Manager():
         # Get the decrypted token 
         registeredData = self.decrypt_token() 
         users = registeredData['users'] 
+        print('registeredData ML796 :', registeredData) 
         for row in users: 
             # print(row) 
             if connectEmail == row['email']: 
@@ -752,10 +811,13 @@ class Manager():
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
 
-        # userDecode = {} 
         try: 
-            userDecode = jwt.decode(registeredToken, secret, algorithms=[algo]) 
-            # print('userDecode ML823 : ', userDecode) 
+            userDecode = jwt.decode( 
+                registeredToken, 
+                secret, 
+                algorithms=[algo] 
+            ) 
+            print('userDecode ML792 : ', userDecode) 
             userDecode_exp = int(userDecode.pop('exp'))-3600 
             permission = '' 
             if userDecode['dept'] == 'gestion': 
@@ -764,22 +826,32 @@ class Manager():
                 permission = 'COMMERCE' 
             elif userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
-            print('permission ML832 :', permission) 
+            print('permission ML818 :', permission) 
             return permission 
         except ExpiredSignatureError as expired: 
             print(expired) 
-            # userDecode_exp = int(userDecode.pop('exp'))-3600 
-            # userDecode_keys = userDecode.keys() 
-            # print('userDecode_keys past ML837 : ', userDecode_keys) 
-            # print('userDecode past ML838 : ', userDecode) 
             if registeredType == 'token': 
-                return 'past' 
+                print('registeredType ML824 :', registeredType) 
+                new_token = self.get_token(10, { 
+                    "email": connectEmail, 
+                    "dept": connectDept 
+                }) 
+                self.register_token(connectEmail, 'refresh', new_token) 
+                permission = '' 
+                if connectDept == 'gestion': 
+                    permission = 'GESTION' 
+                elif connectDept == 'commerce': 
+                    permission = 'COMMERCE' 
+                elif connectDept == 'support': 
+                    permission = 'SUPPORT' 
+                print('permission ML818 :', permission) 
+                return permission 
             else: 
-                return False 
+                print('registeredType ML835 :', registeredType) 
+                return 'past' 
         except InvalidToken as invalid: 
             print(invalid) 
-            return False 
-
+            return None 
 
 
     def register_token(self, email, tokenType, token): 
@@ -814,7 +886,7 @@ class Manager():
         registered = self.decrypt_token() 
 
         users = registered['users'] 
-        print('users ML739 :', users) 
+        print('users ML832 :', users) 
         # SI le mail de l'utilisateur est dedans : 
         #   changer le token 
         # SINON : 
@@ -824,15 +896,15 @@ class Manager():
             print('row :', row) 
             if email == row['email']: 
                 print('ok row : ', row) 
-                row['token'] = token 
                 row['type'] = tokenType 
+                row['token'] = token 
                 # Update the token 
                 presents.append(row['email']) 
 
         if presents == []: 
             # print('presents is emplty : ', presents) 
             # Add the new user into the dict users 
-            users.append({"email": email, "token": token}) 
+            users.append({"email": email, "type": tokenType, "token": token}) 
         registered['users'] = users 
         print('registered after ML759 : ', registered) 
 
@@ -851,7 +923,7 @@ class Manager():
     def hash_pw(self, password): 
         """ Hash the given password before register it into the DB. 
             Params: 
-                password (string): the readable password to hash. 
+                password (string): the password to hash. 
                 nb (int): the number of characters for the salt. 
             Returns the hashed password. 
         """ 
@@ -878,6 +950,7 @@ class Manager():
             return False 
         else: 
             hashed = user_db.password 
+            print('hashed -10 ML913 :', hashed[:10]) 
             if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
                 print("DEBUG pw ok (manager)") 
                 return True 

@@ -57,6 +57,7 @@ class Dashboard():
             \n\033[1mBonjour et bienvenue {user_name} (département {user_dept}) !\033[0m \
             \n\n\tCe programme vous permet de gérer vos clients. \
             \nLe fichier README.md contient les informations pour installer et utiliser l\'application.' 
+            '\n' 
         ) 
 
 

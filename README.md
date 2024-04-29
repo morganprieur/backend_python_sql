@@ -1,9 +1,10 @@
 
-# P12 - Epic Events 
+# Backend Python SQL 
 
-Projet d'apprentissage. 
-Développer une application (en CLI) de gestion de clientèle (CRM), avec Python et SQL.  
+CLI backend CRM application. Developped with Python (without framework) and PostgreSQL. 
+It allows to manage users, authorizations with tokens, read, create and update clients, contracts and events, depending of the authorizations. "Admin" users are allowed to manage the other users. 
 
+The PostgreSQL database is developped into a Docker container. 
 
 ## Outils pour l'installation 
 
@@ -87,15 +88,57 @@ Développer une application (en CLI) de gestion de clientèle (CRM), avec Python
     + Données secrètes : 
         + Dans le fichier `.env` :    
             - ajouter une entrée `USER_1_PW` avec pour valeur le mot de passe de votre choix pour le super utilisateur. 
-            - et des entrées `JWT_SECRET` et `JWT_ALGO` avec les valeurs de votre choix pour les processus JWT. 
+            - et une entrée `JWT_SECRET` avec la valeur de votre choix pour la phrase secrète à utiliser par JWT. 
+
+            - 'SENTRY' = <l'url reçue par mail> 
+
+            - 'FILE_PATH' = 'data.json' 
+            - 'TOKEN_PATH' = '<nom_du_fichier_contenant_les_tokens_chiffrés>.csv' 
+            - 'JWT_KEY_PATH' = '<nom_du_fichier_contenant_la_clé_JWT>.key' 
+
+            Les chemins à importer : 
+            - 'ROOTPATH'='C:/Users/<chemin/vers/le/dossier/projet>'
+            - 'PYTHONPATH'='${ROOTPATH};${ROOTPATH}/epic_events;${ROOTPATH}/epic_events/controller;${ROOTPATH}/utils'
 
         - **Vérifier que les fichiers `data.json` et `.env` sont bien ajoutés au fichier `.gitignore`.** 
 
+        + Tokens 
+            Les tokens créés lors de l'installation sont enregistrés chiffrés dans un fichier. La clé utilisée est enregistrée dans un fichier pour être accessible quand on en a besoin (chiffrer / déchiffrer les données). 
+            + A l'installation (fichier setup.py) : 
+                - la clé est générée une seule fois pour toute l'application (à renouveler si elle est corrompue). 
+                - elle est enregistrée dans un fichier : `<nom_du_fichier_contenant_la_clé_JWT>.key`. 
+                - récupérée pour pouvoir l'utiliser. 
+                - les données d'origine sont chiffrées et enregistrées dans le fichier : `<nom_du_fichier_contenant_les_tokens_chiffrés>.csv`. 
+            + Pour mettre à jour ou ajouter un token : manager.register_token 
+                - Récupère la clé. 
+                - Déchiffre les données du fichier chiffré. 
+                - Parcourt les données déchiffrées pour chercher le mail. 
+                - SI trouvé : remplace le token enregistré par le nouveau, 
+                    SINON : ajoute le binome mail/token à la liste des données. 
+                - chiffre les données màj. 
+                - enregistre les données màj chiffrées dans le fichier :  `<nom_du_fichier_contenant_les_tokens_chiffrés>.csv`. 
+            + Pour vérifier un token (**prérequis : le mail et le mot de passe sont bons**) : manager.verify_token 
+                - Récupère la clé. 
+                - Déchiffre les données du fichier chiffré. 
+                - parcourt les données déchiffrées pour chercher le mail. 
+                    SI trouvé : vérifie le token 
+                        SI ok : vérifie la date du token 
+                            SI PAS PASSE : accepte la connexion de 
+                                l'utilisateur 
+                            SINON : appele manager.get_token() pour 
+                                rafraichir le token et l'enregistrer dans le fichier chiffré 
+                        SINON : message "Token non conforme" 
+                    SINON : None. 
+
+
     + Création et peuplement des tables    
-        - lancer le script setup.py depuis le dossier parent :     
-            `cd ..`    
+        - lancer le script setup.py depuis le dossier parent :       
             `python setup.py` 
-        - vérifier que les données du fichier data.json sont bien enregistrées dans la BDD depuis Adminer. 
+            Opérations du fichier : 
+                - installe les tables dans la BDD 
+                - crée le département "gestion" 
+                - crée un utilisateur du département "gestion". 
+        - vérifier que les données sont bien enregistrées dans la BDD (depuis Adminer, avec les données de connexion indiquées dans ### Container Docker pour la BDD). 
 
 7. Configuration pour l'utilisation 
     Pour utiliser l'application en mode dev : 
@@ -104,9 +147,15 @@ Développer une application (en CLI) de gestion de clientèle (CRM), avec Python
     **Attention :** ce mode n'est pas sécurisé, décommenter la ligne `main()` et commenter la ligne `main('dev')` pour une utilisation publique.  
 
 
-**A compléter** 
+## sentry 
+Sentry est un service de surveillance d'applications à distance. Il reçoit les erreurs ou événement configurés, et peut envoyer des notifications aux utilisateurs enregistrés. 
+Vous pourrez nous dire qui doit recevoir quelles notifications, pour qu'on les ajoute aux utilisateurs de Sentry. 
 
-tests 
-sentry 
+La clé privée d'accès à l'API vous sera envoyée par mail à la livraison de l'application. 
+**Conservez-la en sécurité** : 
+- Supprimez le mail du serveur de votre mailer 
+- collez la clé dans votre fichier `.env` 
+- vérifiez que le fichier `.env` est bien ajouté au fichier `.gitignore` 
+- ne partagez pas ce fichier avec des personnes qui n'ont pas de raison de le consulter. 
 
 

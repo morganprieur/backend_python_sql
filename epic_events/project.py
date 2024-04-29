@@ -1,7 +1,14 @@
 
-import sentry_sdk
-sentry_sdk.init(
-    dsn="https://92f2fd7678cf64d3efff193b8390cc2e@o4506970696646656.ingest.us.sentry.io/4506970703200256",
+import os 
+import sentry_sdk 
+
+# import this 
+from controller import Controller 
+from datetime import datetime 
+import sys 
+
+sentry_sdk.init( 
+    dsn=os.environ.get("SENTRY"),
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     traces_sample_rate=1.0,
@@ -10,21 +17,28 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
 ) 
-# import this 
-from controller import Controller 
-from datetime import datetime 
+# from sentry_sdk import capture_message 
+# capture_message('Something went wrong') 
 
+# def main(mode='pub'): 
+def main(): 
 
-def main(mode='pub'): 
+    print(f'hello main (datetime : {datetime.now()})') 
 
-    print(f'hello main {datetime.now()}') 
+    mode = str(sys.argv[1]) 
     # Test Sentry 
     # division_by_zero = 1 / 0 
+    # capture_message('Something went wrong') 
     controller = Controller() 
     controller.start(mode) 
 
 
 if __name__ == "__main__": 
-    # main('pub') 
-    main('dev') 
+    """ Call the programm with 'python project.py <arg>', 
+        where <arg> is the way to get the user's connection informations. 
+        Args choice: 
+            'dev': NOT SECURE, get one predefined user's informations. 
+            'pub': SECURE, asks for the user's informations. 
+    """ 
+    main() 
 

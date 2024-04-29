@@ -24,17 +24,17 @@ class Department(Base):
         cascade='all, delete') 
 
     def __str__(self): 
-        return f'Modèle Département : {self.name}, id : {self.id}.' 
+        return f'Département : {self.name} (id : {self.id}).' 
 
     def __repr__(self): 
         return str(self) 
         # return f'User {self.__str__()}' 
 
-    # def select_one_item(self, itemName, value): 
-    #     # print('dept attribute L34 : ', attribute) 
-    #     itemName = self.session.query(Department).filter(Department.name==value).first() 
-    #     return itemName 
-    #     # return self.repr() 
+    def to_dict(self): 
+        return { 
+            'id': self.id,
+            'name': self.name
+        } 
 
 
 class User(Base): 
@@ -68,21 +68,34 @@ class User(Base):
         Integer, 
         ForeignKey('departments.id'), 
     ) 
-    token = Column( 
-        String, 
-        unique=True 
-    ) 
+    # # TODO: à mettre dans un fichier chiffré 
+    # token = Column( 
+    #     String, 
+    #     unique=True 
+    # ) 
 
     department = relationship('Department', back_populates='user') 
-    clients = relationship("Client", back_populates="user") 
+    clients = relationship("Client", back_populates="user", 
+        cascade='all, delete') 
     events = relationship("Event", back_populates="user") 
 
     def __str__(self): 
-        return f'Modèle User : {self.name}, id : {self.id}.' 
+        return f'User (id : {self.id}) : {self.name}, {self.email}, hash mot de passe : {self.password}, téléphone : {self.phone}, département {self.department_id} {self.department.name}.' 
 
     def __repr__(self): 
         return str(self) 
-        # return f'User {self.name}' 
+        # return f'User {self.name}'
+
+    def to_dict(self): 
+        return { 
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'password': self.password,
+            'phone': self.phone,
+            'department_id': self.department_id,
+            'token': self.token
+        } 
 
 
 class Client(Base): 
@@ -111,7 +124,7 @@ class Client(Base):
     ) 
     corporation_name = Column( 
         String, 
-        unique=True, 
+        unique=False, 
         index=True 
     ) 
     #TODO Auto *** 
@@ -128,26 +141,29 @@ class Client(Base):
     ) 
 
     user = relationship('User', back_populates="clients") 
-    contract = relationship("Contract", back_populates="clients") 
+    contract = relationship("Contract", back_populates="client", 
+        cascade='all, delete') 
+    # contract = relationship("Contract", back_populates="clients") 
 
     def __str__(self): 
-        return f'Modèle Client : {self.name}, id : {self.id}.' 
+        return f'Client : {self.name} (id : {self.id}), contacts : {self.email} {self.phone}, entreprise : {self.corporation_name}, créé le {self.created_at}, mis à jour le {self.updated_at}, contact commerce : {self.user.name} (id : {self.user.id}).' 
 
     def __repr__(self): 
         return str(self) 
-        # return f'Client {self.name}' 
 
-    def add_item(self, itemName, fields:list): 
-        itemName = Client( 
-            name=fields[0], 
-            email=fields[1], 
-            phone=fields[2], 
-            corporation_name=fields[3], 
-            created_at=fields[4], 
-            updated_at=fields[5], 
-            sales_contact_id=fields[6], 
-        ) 
-        return itemName 
+
+    def to_dict(self): 
+        return { 
+            'id': self.id, 
+            'name': self.name, 
+            'email': self.email, 
+            'phone': self.phone, 
+            'corporation_name': self.corporation_name, 
+            'created_at': self.created_at, 
+            'updated_at': self.updated_at, 
+            'sales_contact_id': self.sales_contact_id 
+        } 
+
 
 
 class Contract(Base): 
@@ -159,6 +175,7 @@ class Contract(Base):
         index=True 
     ) 
     client_id = Column( 
+        Integer, 
         ForeignKey('clients.id') 
     ) 
     # A diviser par 100 pour retrouver un prix avec centimes 
@@ -177,11 +194,15 @@ class Contract(Base):
         DateTime 
     ) 
 
-    clients = relationship("Client", back_populates="contract") 
-    events = relationship("Event", back_populates="contracts") 
+    client = relationship("Client", back_populates="contract") 
+    events = relationship("Event", back_populates="contracts", 
+        cascade='all, delete') 
+
+    def __str__(self): 
+        return f'Contract : id {self.id}, client id : {self.client_id}, montant payé : {self.paid_amount}, is_signed : {self.is_signed}.' 
 
     def __repr__(self): 
-        return f'Contract {self.id}, client {self.client_id}' 
+        return str(self) 
 
 
 class Event(Base): 
@@ -195,16 +216,14 @@ class Event(Base):
     ) 
     name = Column( 
         String, 
-        unique=True, 
+        unique=False, 
         index=True 
     ) 
     contract_id = Column( 
         Integer, 
-        ForeignKey('contracts.id') 
+        ForeignKey('contracts.id'), 
+        unique=True, 
     ) 
-    # client_contact = Column( 
-    #     string 
-    # ) 
     start_datetime = Column( 
         DateTime 
     ) 
@@ -219,7 +238,7 @@ class Event(Base):
     location = Column( 
         String 
     ) 
-    Attendees = Column( 
+    attendees = Column( 
         Integer 
     ) 
     notes = Column( 
@@ -227,12 +246,35 @@ class Event(Base):
     ) 
 
     user = relationship("User", back_populates="events") 
-    # support_contact = relationship("User", back_populates="events") 
     contracts = relationship("Contract", back_populates="events") 
 
-    def __repr__(self): 
-        return f'Event {self.name}' 
+    def __str__(self): 
+        if not self.support_contact_id: 
+            support_contact_id = '' 
+        else: 
+            support_contact_id = self.support_contact_id 
+        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support ID : {support_contact_id}, lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
+        # return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}), lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
 
+    def __repr__(self): 
+        return str(self) 
+
+    def to_dict(self): 
+        if not self.support_contact_id: 
+            support_contact_id = '' 
+        else: 
+            support_contact_id = self.support_contact_id 
+        return { 
+            'id': self.name, 
+            'name': self.name, 
+            'contract_id': self.contract_id, 
+            'start_datetime': self.start_datetime, 
+            'end_datetime': self.end_datetime, 
+            'support_contact_id': support_contact_id, 
+            'location': self.location, 
+            'attendees': self.attendees, 
+            'notes': self.notes, 
+        } 
 
 
 

@@ -16,8 +16,8 @@ import functools
 #     print('helpers') 
 #     @functools.wraps(fn) 
 #     def wrapper(*args, **kwargs): 
-#         hashed_password = hash_pw(password, nb) 
-#         # hashed_password = manager.hash_pw(password, nb) 
+#         hashed_password = hash_pw(password) 
+#         # hashed_password = manager.hash_pw(password) 
 #         print('hashed_password Helpers : ', hashed_password) 
 #         # if token: 
 #         #     print('deco token ok') 
@@ -27,10 +27,11 @@ import functools
 #     return wrapper 
 
 
+# TODO: arguments du décorateur 
 # décorateur qui vérifie le token avant de créer un utilisateur 
 def decorator_verify_jwt(fn): 
     @wraps(fn) 
-    def wrapper(*args, **kwargs): 
+    def wrapper(*args, **kwargs):  # args: connectEmail, connectPass, connectDept 
         token = manager.verify_token(connectEmail, connectPass, connectDept) 
         print('token (helpers) : ', token) 
         # if token: 

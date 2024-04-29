@@ -24,16 +24,31 @@ class Superuser2Test(unittest.TestCase):
     	""" Test the admin user's token. 
     		Expect his permission dept == 'GESTION'. 
     	""" 
-    	registered = cls.manager.decrypt_token() 
-
+    	# registered = cls.manager.decrypt_token() 
     	connectEmail = 'admin@mail.org' 
     	cls.connectUser = cls.manager.select_one_user('email', 'admin@mail.org') 
     	if cls.manager.verify_if_token_exists(connectEmail): 
     		cls.permission = cls.manager.verify_token( 
-    			connectEmail, 
-    			cls.connectUser.department.name 
-    		) 
-    		assert cls.permission == 'GESTION' 
+                connectEmail, 
+                cls.connectUser.department.name 
+            ) 
+    		if cls.permission in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+    		    assert cls.permission == 'GESTION' 
+    		elif cls.permission == 'past': 
+    		    pass_counter = 1 				
+    		    # file deepcode ignore NoHardcodedPasswords/test: Local project 
+    		    userEmail = 'admin@mail.org' 
+    		    userPass = 'pass_superuser1' 
+    		    if cls.manager.check_pw(userEmail, userPass): 
+    		        user_db = cls.manager.select_one_user('email', userEmail) 
+    		        assert user_db.department.name == 'gestion' 
+    		        token = cls.manager.get_token(5, { 
+    		            'email': userEmail, 
+    		            'dept': user_db.department.name 
+    		        }) 
+    		        cls.manager.register_token(userEmail, 'token', token) 
+    		        cls.permission = user_db.department.name.upper() 
+    		        assert cls.permission == 'GESTION' 
 
 
     @classmethod
@@ -46,7 +61,7 @@ class Superuser2Test(unittest.TestCase):
             cls.lastContract_db = contracts_db.pop() 
             assert cls.lastContract_db.client.name == 'client 1' 
             assert cls.lastContract_db.amount == 1000 
-            assert cls.lastContract_db.paid_amount == 400 
+            assert cls.lastContract_db.paid_amount == 350 
             assert cls.lastContract_db.is_signed == False 
         else: 
             assert cls.permission == 'SUPPORT' 

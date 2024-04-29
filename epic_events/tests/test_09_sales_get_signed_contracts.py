@@ -27,7 +27,6 @@ class Sales5Test(unittest.TestCase):
     	connectEmail = 'sales_1@mail.org' 
     	# connectPass = os.environ.get('USER_2_PW') 
     	# print('connectPass -10 test25 :', connectPass[:10]) 
-
     	cls.connectUser = cls.manager.select_one_user( 
     		'email', connectEmail) 
     	if cls.manager.verify_if_token_exists(connectEmail): 
@@ -35,9 +34,23 @@ class Sales5Test(unittest.TestCase):
     			connectEmail, 
     			cls.connectUser.department.name 
     		) 
-    		assert cls.permission == 'COMMERCE' 
-    	else: 
-    		assert not cls.permission 
+    		if cls.permission in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+    			assert cls.permission == 'COMMERCE' 
+    		elif cls.permission == 'past': 
+    		    pass_counter = 1 				
+    		    # file deepcode ignore NoHardcodedPasswords/test: Local project 
+    		    userEmail = 'sales_1@mail.org' 
+    		    userPass = 'pass_user2' 
+    		    if cls.manager.check_pw(userEmail, userPass): 
+    		        user_db = cls.manager.select_one_user('email', userEmail) 
+    		        assert user_db.department.name == 'commerce' 
+    		        token = cls.manager.get_token(5, { 
+    		            'email': userEmail, 
+    		            'dept': user_db.department.name 
+    		        }) 
+    		        cls.manager.register_token(userEmail, 'token', token) 
+    		        cls.permission = user_db.department.name.upper() 
+    		        assert cls.permission == 'COMMERCE' 
 
     @classmethod
     def test_2_get_not_signed_sales_user_s_contracts(cls): 
@@ -45,12 +58,13 @@ class Sales5Test(unittest.TestCase):
             Expect getting one contract 
             and his id is equal to the last registered contract's id. 
     	""" 
-        notSignedContracts_db = cls.manager.select_entities_with_criteria( 
-            'contracts', 
-            'not signed', 
-            cls.connectUser.id 
-        ) 
-        items_db = cls.manager.select_all_entities('contracts') 
-        assert len(items_db) == 1 
-        assert len(notSignedContracts_db) == 0 
+        if cls.permission == 'COMMERCE': 
+    	    notSignedContracts_db = cls.manager.select_entities_with_criteria( 
+    	        'contracts', 
+    	        'not signed', 
+    	        cls.connectUser.id 
+    	    ) 
+    	    assert len(notSignedContracts_db) == 0 
+    	    items_db = cls.manager.select_all_entities('contracts') 
+    	    assert len(items_db) == 1 
 

@@ -191,7 +191,7 @@ class Manager():
         if entity in entities_dict.keys(): 
             items_list_db = self.session.query(entities_dict[entity]).all() 
             for item in items_list_db: 
-                print(f'{entity} trouvé  (manager.select_all_entities) : {item}.') 
+                print(f'{entity} trouvés  (manager.select_all_entities) : {item}.') 
             return items_list_db 
         else: 
             print(f'Cet objet ({entity}) n\'existe pas ML748.') 
@@ -214,8 +214,9 @@ class Manager():
         """ 
         if entities == 'events': 
             if criteria == 'without support': 
+                # SQLAlchemy syntax: '== None' 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id=='NULL').all()  # *** null *** 
+                    Event.support_contact_id == None).all() 
                 if events_db is None: 
                     print('Aucun événement avec ces informations (manager, without support)') 
                     return False 
@@ -265,7 +266,7 @@ class Manager():
                 else: 
                     return users_db 
         else: 
-            print('no field recognized (manager.select_entities_with_criteria)') 
+            print('no entity recognized (manager.select_entities_with_criteria)') 
     # ==== /generics ==== # 
 
 
@@ -583,8 +584,12 @@ class Manager():
         elif field == 'contract_id': 
             event_db = self.session.query(Event).filter( 
                 Event.contract_id==value).first() 
+        # # TODO: à retirer : 
+        # elif field == 'support_contact_id': 
+        #     event_db = self.session.query(Event).filter( 
+        #         Event.support_contact_id==value).first() 
         else: 
-            print('no field recognized (manager.select_one_event)') 
+            print(f'no field recognized ({field}) (manager.select_one_event)') 
         # if event_db is None: 
         #     # TODO : afficher de nouveau la question précédente ? 
         #     print('Aucun événement avec ces informations (manager.select_one_event)') 
@@ -756,14 +761,19 @@ class Manager():
                 dict: the dict of the registered user's data 
                     or False: if the user's token is not registered. 
         """ 
+        # print('connectEmail :', connectEmail) 
         # Get the decrypted token's content file 
         registeredData = self.decrypt_token() 
+        # print('registeredData :', registeredData) 
         users = registeredData['users'] 
+        # print('users :', users) 
         for row in users: 
-            # print(row) 
+            # print('row :', row) 
             if connectEmail == row['email']: 
                 # print('ok row : ', row) 
                 return row 
+            # else: 
+                # print('NOK row : ', row) 
 
     
     def verify_token(self, connectEmail, connectDept): 

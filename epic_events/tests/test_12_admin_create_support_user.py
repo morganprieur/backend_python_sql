@@ -35,6 +35,22 @@ class Superuser3Test(unittest.TestCase):
     			cls.connectUser.department.name 
     		) 
     		assert cls.permission == 'GESTION' 
+    	elif cls.permission == 'past': 
+    	    pass_counter = 1 				
+    	    # file deepcode ignore NoHardcodedPasswords/test: Local project 
+    	    userEmail = 'admin@mail.org' 
+    	    userPass = 'pass_superuser1' 
+    	    if cls.manager.check_pw(userEmail, userPass): 
+    	        user_db = cls.manager.select_one_user('email', userEmail) 
+    	        assert user_db.department.name == 'gestion' 
+    	        token = cls.manager.get_token(5, { 
+    	            'email': userEmail, 
+    	            'dept': user_db.department.name 
+    	        }) 
+    	        cls.manager.register_token(userEmail, 'token', token) 
+    	        cls.permission = user_db.department.name.upper() 
+    	        assert cls.permission == 'GESTION' 
+
 
     @classmethod
     def test_2_getting_support_dept(cls): 
@@ -56,16 +72,25 @@ class Superuser3Test(unittest.TestCase):
             # print('get password :', os.environ.get('U_3_PW'))  # bug vscode ? 
             suppDept_db = cls.manager.select_one_dept('name', 'support') 
             testUser = cls.manager.add_entity( 'user', { 
-                'name': 'support_user 1', 
-                'email': 'support_1@mail.org', 
-                'entered_password': 'pass_user3', 
-                'phone': '06 34 56 78 91', 
+                'name': 'support_user 2', 
+                'email': 'support_2@mail.org', 
+                'entered_password': 'pass_user4', 
+                'phone': '06 34 56 79 81', 
                 'department_name': suppDept_db.name 
             }) 
+            # testUser = cls.manager.add_entity( 'user', { 
+            #     'name': 'support_user 1', 
+            #     'email': 'support_1@mail.org', 
+            #     'entered_password': 'pass_user3', 
+            #     'phone': '06 34 56 78 91', 
+            #     'department_name': suppDept_db.name 
+            # }) 
 
             items_db = cls.manager.select_all_entities('users') 
-            assert len(items_db) == 3 
+            assert len(items_db) == 4 
+            # assert len(items_db) == 3 
             testSupport_db = items_db.pop() 
             print('DEBUG : ', testSupport_db) 
-            assert testSupport_db.name == 'support_user 1' 
+            assert testSupport_db.name == 'support_user 2' 
+            # assert testSupport_db.name == 'support_user 1' 
 

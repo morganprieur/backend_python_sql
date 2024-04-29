@@ -35,6 +35,22 @@ class Superuser3Test(unittest.TestCase):
     			cls.connectUser.department.name 
     		) 
     		assert cls.permission == 'GESTION' 
+    	elif cls.permission == 'past': 
+    	    pass_counter = 1 				
+    	    # file deepcode ignore NoHardcodedPasswords/test: Local project 
+    	    userEmail = 'admin@mail.org' 
+    	    userPass = 'pass_superuser1' 
+    	    if cls.manager.check_pw(userEmail, userPass): 
+    	        user_db = cls.manager.select_one_user('email', userEmail) 
+    	        assert user_db.department.name == 'gestion' 
+    	        token = cls.manager.get_token(5, { 
+    	            'email': userEmail, 
+    	            'dept': user_db.department.name 
+    	        }) 
+    	        cls.manager.register_token(userEmail, 'token', token) 
+    	        cls.permission = user_db.department.name.upper() 
+    	        assert cls.permission == 'GESTION' 
+
 
     @classmethod
     def test_2_get_events_without_support(cls): 
@@ -42,11 +58,17 @@ class Superuser3Test(unittest.TestCase):
             Excpect getting one event and his name is "Anniversaire 15 ans d'Oren". 
     	""" 
     	if cls.permission == 'GESTION': 
-            events_db = cls.manager.select_entities_with_criteria('events', 'without support', 1) 
+            events_db = cls.manager.select_entities_with_criteria( 
+                'events', 
+                'without support', 
+                1 
+            ) 
             assert len(events_db) == 1 
             lastEvent_db = events_db.pop() 
             assert lastEvent_db.name == "Anniversaire 15 ans d'Oren" 
-            assert lastEvent_db.support_contact_id == 'NULL' 
+        #     file deepcode ignore change_to_is/test: local project 
+            assert lastEvent_db.support_contact_id is None 
+
 
     @classmethod
     def test_3_set_support_to_event(cls): 
@@ -55,16 +77,22 @@ class Superuser3Test(unittest.TestCase):
             and its support_id is equal to the id of the just registered support user. 
     	""" 
     	if cls.permission == 'GESTION': 
-    	    lastEvent_db = cls.manager.select_one_event('name', "Anniversaire 15 ans d'Oren") 
+    	    lastEvent_db = cls.manager.select_one_event( 
+                'name', 
+                "Anniversaire 15 ans d'Oren" 
+            ) 
     	    edited_event = cls.manager.update_event( 
                 lastEvent_db, 
                 'support_contact_name', 
                 # NULL 
-                # 'support_user 1' 
+                'support_user 1' 
             ) 
     	    items_db = cls.manager.select_all_entities('events') 
     	    assert len(items_db) == 1 
     	    last_event_db = items_db.pop() 
-    	    supportUser_db = cls.manager.select_one_user('name', 'support_user 1') 
+    	    supportUser_db = cls.manager.select_one_user( 
+                'name', 
+                'support_user 1' 
+            ) 
     	    assert last_event_db.support_contact_id == supportUser_db.id 
 

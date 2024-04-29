@@ -1,5 +1,6 @@
 
 from epic_events.manager import Manager 
+# from epic_events.controller import Controller 
 
 import unittest 
 import json 
@@ -13,10 +14,10 @@ class SalesuserTest(unittest.TestCase):
 	""" 
 	@classmethod
 	def setUp(cls): 
-		# # view = Views() 
 		cls.manager = Manager() 
 		cls.manager.connect() 
 		cls.manager.create_session() 
+		# cls.controller = Controller() 
 
 	@classmethod
 	def test_1_connect_sales_user(cls): 

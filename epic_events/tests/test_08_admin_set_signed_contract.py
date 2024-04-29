@@ -12,73 +12,87 @@ from datetime import datetime
 class Superuser2Test(unittest.TestCase): 
     """ Config test files. 
     """ 
-    def setUp(self): 
+    @classmethod
+    def setUp(cls): 
         # # view = Views() 
-        self.manager = Manager() 
-        self.manager.connect() 
-        self.manager.create_session() 
+        cls.manager = Manager() 
+        cls.manager.connect() 
+        cls.manager.create_session() 
 
-
-    def test_1_verify_admin_token(self): 
+    @classmethod
+    def test_1_verify_admin_token(cls): 
     	""" Test the admin user's token. 
     		Expect his permission dept == 'GESTION'. 
     	""" 
-    	registered = self.manager.decrypt_token() 
-
+    	# registered = cls.manager.decrypt_token() 
     	connectEmail = 'admin@mail.org' 
-    	# connectPass = self.manager.hash_pw(os.environ.get('USER_1_PW')) 
-    	self.connectUser = self.manager.select_one_user('email', 'admin@mail.org') 
-    	if self.manager.verify_if_token_exists(connectEmail): 
-    		self.permission = self.manager.verify_token( 
-    			connectEmail, 
-    			self.connectUser.department.name 
-    		) 
-    		assert self.permission == 'GESTION' 
-    	else: 
-    	    assert not self.permission 
+    	cls.connectUser = cls.manager.select_one_user('email', 'admin@mail.org') 
+    	if cls.manager.verify_if_token_exists(connectEmail): 
+    		cls.permission = cls.manager.verify_token( 
+                connectEmail, 
+                cls.connectUser.department.name 
+            ) 
+    		if cls.permission in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+    		    assert cls.permission == 'GESTION' 
+    		elif cls.permission == 'past': 
+    		    pass_counter = 1 				
+    		    # file deepcode ignore NoHardcodedPasswords/test: Local project 
+    		    userEmail = 'admin@mail.org' 
+    		    userPass = 'pass_superuser1' 
+    		    if cls.manager.check_pw(userEmail, userPass): 
+    		        user_db = cls.manager.select_one_user('email', userEmail) 
+    		        assert user_db.department.name == 'gestion' 
+    		        token = cls.manager.get_token(5, { 
+    		            'email': userEmail, 
+    		            'dept': user_db.department.name 
+    		        }) 
+    		        cls.manager.register_token(userEmail, 'token', token) 
+    		        cls.permission = user_db.department.name.upper() 
+    		        assert cls.permission == 'GESTION' 
 
 
-    def test_2_get_last_contract_not_signed(self): 
+    @classmethod
+    def test_2_get_last_contract_not_signed(cls): 
         """ Test last contract is not signed, if the connected user is admin. 
             Expect is_signed is none. 
         """ 
-        if (self.permission == 'GESTION') | (self.permission == 'COMMERCE'): 
-            contracts_db = self.manager.select_all_entities('contracts') 
-            self.lastContract_db = contracts_db.pop() 
-            assert self.lastContract_db.client_name == 'testClient' 
-            assert self.lastContract_db.amount == 1000 
-            assert self.lastContract_db.paid_amount == 350 
-            assert self.lastContract_db.is_signed is None 
+        if (cls.permission == 'GESTION') | (cls.permission == 'COMMERCE'): 
+            contracts_db = cls.manager.select_all_entities('contracts') 
+            cls.lastContract_db = contracts_db.pop() 
+            assert cls.lastContract_db.client.name == 'client 1' 
+            assert cls.lastContract_db.amount == 1000 
+            assert cls.lastContract_db.paid_amount == 350 
+            assert cls.lastContract_db.is_signed == False 
         else: 
-            assert self.permission == 'SUPPORT' 
+            assert cls.permission == 'SUPPORT' 
 
 
-    def test_3_set_signed_contract(self): 
+    def test_3_set_signed_contract(cls): 
         """ Test set last contract's is_signed field to True, 
             if the connected user is admin or sales user. 
             Expect is_signed is True. 
         """ 
-        if (self.permission == 'COMMERCE') | (self.permission == 'GESTION'): 
-            edited_contract = self.manager.update_contract( 
-                self.lastContract_db, 
+        if (cls.permission == 'COMMERCE') | (cls.permission == 'GESTION'): 
+            edited_contract = cls.manager.update_contract( 
+                cls.lastContract_db, 
                 'is_signed', 
+                # False 
                 True 
             ) 
-            items_db = self.manager.select_all_entities('contracts') 
+            items_db = cls.manager.select_all_entities('contracts') 
             assert len(items_db) == 1 
-            self.last_contract_db = items_db.pop() 
-            assert last_contract_db.client.name == "testClient" 
-        else: 
-            assert self.permission == 'SUPPORT' 
+            last_db = items_db.pop() 
+            assert last_db.client.name == "client 1" 
 
 
-    def test_4_contract_signed(self): 
+    def test_4_contract_signed(cls): 
         """ Test last contract's is_signed field is False, 
             if the connected user is admin or sales user. 
             Expect is_signed is True. 
         """ 
-        if (self.permission == 'COMMERCE') | (self.permission == 'GESTION'): 
-            assert last_contract_db.is_signed == True 
-        else: 
-            assert self.permission == 'SUPPORT' 
+        if (cls.permission == 'COMMERCE') | (cls.permission == 'GESTION'): 
+            items_db = cls.manager.select_all_entities('contracts') 
+            assert len(items_db) == 1 
+            last_db = items_db.pop()  
+            assert last_db.is_signed == True 
 

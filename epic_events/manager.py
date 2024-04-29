@@ -191,7 +191,7 @@ class Manager():
         if entity in entities_dict.keys(): 
             items_list_db = self.session.query(entities_dict[entity]).all() 
             for item in items_list_db: 
-                print(f'{entity} trouvé  (manager.select_all_entities) : {item}.') 
+                print(f'{entity} trouvés  (manager.select_all_entities) : {item}.') 
             return items_list_db 
         else: 
             print(f'Cet objet ({entity}) n\'existe pas ML748.') 
@@ -214,8 +214,9 @@ class Manager():
         """ 
         if entities == 'events': 
             if criteria == 'without support': 
+                # SQLAlchemy syntax: '== None' 
                 events_db = self.session.query(Event).filter( 
-                    Event.support_contact_id==null).all()  # *** null *** 
+                    Event.support_contact_id == None).all() 
                 if events_db is None: 
                     print('Aucun événement avec ces informations (manager, without support)') 
                     return False 
@@ -265,7 +266,7 @@ class Manager():
                 else: 
                     return users_db 
         else: 
-            print('no field recognized (manager.select_entities_with_criteria)') 
+            print('no entity recognized (manager.select_entities_with_criteria)') 
     # ==== /generics ==== # 
 
 
@@ -282,7 +283,7 @@ class Manager():
                 object Department: The updated instance of Department. 
         """ 
         if itemName is None: 
-            print('itemName is none ML236') 
+            print('itemName is none ML285') 
         else: 
             itemName.name = new_value 
             self.session.commit() 
@@ -328,7 +329,6 @@ class Manager():
 
     # TODO: update_user : modifier le token 
     # ==== user ==== # 
-    # def update_user(self, id, field, new_value): 
     def update_user(self, itemName, field, new_value): 
         """ Modifies a field of a user instance, following its id. 
             Args:
@@ -352,10 +352,9 @@ class Manager():
             itemName.phone = new_value 
         elif field == 'department_id': 
             itemName.department_id = new_value 
-        # elif field == 'token': 
-        #     itemName.token = new_value 
         else: 
             print('no value (manager.update_user)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
 
@@ -463,7 +462,6 @@ class Manager():
             return client_db 
 
 
-    # def update_client(self, id, field, new_value): 
     def update_client(self, itemName, field, new_value): 
         """ Modifies a field of a Client instance, following its id. 
             Possible fields: 
@@ -494,6 +492,7 @@ class Manager():
             itemName.sales_contact_id = sales_contact_db.id 
         else: 
             print('no value (manager.update_client)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
     # ==== /client ==== # 
@@ -539,17 +538,21 @@ class Manager():
             Returns:
                 object Contract: The just updated Contract instance. 
         """ 
+        print('update_contract') 
+        print('itemName 1 :', itemName) 
         # itemName = self.select_one_user('id', id) 
         if field == 'amount': 
             itemName.amount = new_value 
+            self.session.commit() 
         elif field == 'paid_amount': 
             itemName.paid_amount = new_value 
+            print('itemName 3 :', itemName) 
         elif field == 'is_signed': 
             itemName.is_signed = new_value 
-        elif field == 'department_id': 
-            itemName.department_id = new_value 
+            self.session.commit() 
         else: 
             print('no value (manager.update_contract)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
     # ==== /contract ==== # 
@@ -560,6 +563,7 @@ class Manager():
         """ Select one Event instance following a unique field. 
             Possible fields: 
                 'id' 
+                'name' 
                 'contract_id', 
             Args:
                 field (string): The name of the field to look for. 
@@ -568,8 +572,8 @@ class Manager():
                 object Event: The selected Event instance. 
         """ 
         print('select_one_event (manager)') 
-        print('field (manager) : ', field) 
-        print('value (manager) : ', value) 
+        # print('field (manager) : ', field) 
+        # print('value (manager) : ', value) 
         event_db = Event() 
         if field == 'id': 
             event_db = self.session.query(Event).filter( 
@@ -580,8 +584,12 @@ class Manager():
         elif field == 'contract_id': 
             event_db = self.session.query(Event).filter( 
                 Event.contract_id==value).first() 
+        # # TODO: à retirer : 
+        # elif field == 'support_contact_id': 
+        #     event_db = self.session.query(Event).filter( 
+        #         Event.support_contact_id==value).first() 
         else: 
-            print('no field recognized (manager.select_one_event)') 
+            print(f'no field recognized ({field}) (manager.select_one_event)') 
         # if event_db is None: 
         #     # TODO : afficher de nouveau la question précédente ? 
         #     print('Aucun événement avec ces informations (manager.select_one_event)') 
@@ -624,6 +632,7 @@ class Manager():
             itemName.notes = new_value 
         else: 
             print('no value (manager.update_event)') 
+        self.session.merge(itemName) 
         self.session.commit() 
         return itemName 
     # ==== /event ==== # 
@@ -752,14 +761,19 @@ class Manager():
                 dict: the dict of the registered user's data 
                     or False: if the user's token is not registered. 
         """ 
+        # print('connectEmail :', connectEmail) 
         # Get the decrypted token's content file 
         registeredData = self.decrypt_token() 
+        # print('registeredData :', registeredData) 
         users = registeredData['users'] 
+        # print('users :', users) 
         for row in users: 
-            # print(row) 
+            # print('row :', row) 
             if connectEmail == row['email']: 
                 # print('ok row : ', row) 
                 return row 
+            # else: 
+                # print('NOK row : ', row) 
 
     
     def verify_token(self, connectEmail, connectDept): 

@@ -12,64 +12,88 @@ from datetime import datetime
 class Support1Test(unittest.TestCase): 
     """ Config test files. 
     """ 
-    def setUp(self): 
+    @classmethod
+    def setUp(cls): 
         # # view = Views() 
-        self.manager = Manager() 
-        self.manager.connect() 
-        self.manager.create_session() 
+        cls.manager = Manager() 
+        cls.manager.connect() 
+        cls.manager.create_session() 
+        # cls.permission = '' 
 
-
-    def test_1_connect_support_user(self): 
+    @classmethod
+    def test_1_connect_support_user(cls): 
     	""" Test connect a support user. 
     		Expect permission is 'SUPPORT'. 
     	""" 
-    	connectEmail = 'support_user 1' 
-    	# connectPass = os.environ.get('USER_2_PW') 
-    	# print('connectPass -10 test25 :', connectPass[:10]) 
-
-    	self.connectUser = self.manager.select_one_user( 
+    	connectEmail = 'support_1@mail.org' 
+    	connectUser = cls.manager.select_one_user( 
     		'email', connectEmail) 
-    	if self.manager.verify_if_token_exists(connectEmail): 
-    		permission = self.manager.verify_token( 
-    			connectEmail, 
-    			self.connectUser.department.name 
-    		) 
-    		assert self.permission == 'SUPPORT' 
+    	if cls.manager.verify_if_token_exists(connectEmail): 
+            # print('if exists') 
+            cls.permission = cls.manager.verify_token( 
+            	connectEmail, 
+            	connectUser.department.name 
+            ) 
+            if cls.permission in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+                assert cls.permission == 'SUPPORT' 
+                # assert 1 == 2 
+            elif cls.permission == 'past': 
+            	pass_counter = 1 				
+            	# file deepcode ignore NoHardcodedPasswords/test: Local project 
+            	userEmail = connectEmail 
+            	userPass = 'pass_user3' 
+            	if cls.manager.check_pw(userEmail, userPass): 
+            		user_db = cls.manager.select_one_user( 
+                        'email', 
+                        userEmail 
+                    ) 
+            		assert user_db.department.name == 'support' 
+            		token = cls.manager.get_token(5, { 
+            			'email': userEmail, 
+            			'dept': user_db.department.name 
+            		}) 
+            		cls.manager.register_token(userEmail, 'token', token) 
+            		cls.permission = user_db.department.name.upper() 
+            		assert cls.permission == 'SUPPORT' 
     	else: 
-    	    assert not self.permission 
+            print('No token exists') 
+            assert 3 == 4 
+    	# print('not entered into if') 
+    	# assert 0 == 1 
 
 
-    def test_2_get_support_user_s_events(self): 
+    @classmethod
+    def test_2_get_support_user_s_events(cls): 
         """ Test getting the support user's events, if permission is 'SUPPORT'. 
             Expect getting one event and his name is "Anniversaire 15 ans d'Oren". 
     	""" 
-        if self.permission == 'SUPPORT': 
-            supportEvents_db = self.manager.select_entities_with_criteria( 
+        if cls.permission == 'SUPPORT': 
+            supportUser = cls.manager.select_one_user('email', 'support_1@mail.org') 
+            supportEvents_db = cls.manager.select_entities_with_criteria( 
                 'events', 
-                'support contacts', 
-                self.connectUser.id 
+                'support contact', 
+                supportUser.id 
             ) 
-            assert len(items_db) == 1 
-            self.last_event_db = items_db.pop() 
-            assert self.last_event_db.support_contact_id == self.connectUser.id 
-        else: 
-    	    assert not self.permission 
+            assert len(supportEvents_db) == 1 
+            last_event_db = supportEvents_db.pop() 
+            assert last_event_db.support_contact_id == supportUser.id 
+            assert last_event_db.attendees == 30 
 
 
-    def test_3_support_update_event(self): 
+    @classmethod
+    def test_3_support_update_event(cls): 
         """ Test updating one event, if permission is 'SUPPORT'. 
             Expect getting event.attendees is 40. 
     	""" 
-        if self.permission == 'SUPPORT': 
-            edited_event = self.manager.update_event( 
-                self.last_event_db, 
+        if cls.permission == 'SUPPORT': 
+            item_db = cls.manager.select_one_event('name', "Anniversaire 15 ans d'Oren") 
+            print('items_db 1 :', item_db) 
+            edited_event = cls.manager.update_event( 
+                item_db, 
                 'attendees', 
                 40 
             ) 
-            item_db = self.manager.select_one_event('name', "Anniversaire 15 ans d'Oren") 
+            item_db = cls.manager.select_one_event('name', "Anniversaire 15 ans d'Oren") 
+            print('items_db 2 :', item_db) 
             assert item_db.attendees == 40 
-        else: 
-    	    assert not self.permission 
-
-
 

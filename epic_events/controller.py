@@ -1077,7 +1077,7 @@ class Controller():
             # logged_user.password, 
             logged_user.department.name 
         ) 
-        print('self.user_session CL460 : ', self.user_session) 
+        print('self.user_session CL1080 : ', self.user_session) 
 
         if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             return True 

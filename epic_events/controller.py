@@ -310,44 +310,29 @@ class Controller():
     def connect_user(self, mode): 
         """ Connects a user to the application. 
             Process: 
-                - Check the email with the registered email 
-                - Check if the token exists and is not expired 
+                - Compare the email with the registered email 
                 If email does not exist: 
                     message
                     quit the app. 
                 else: 
+                    - Check if the token exists and is not expired 
                     if token does not exist: 
                         ask for password 
                         if pw ok: 
                             get token 
-                            register token with tokenType = 'token' 
+                            register token 
                             return permission = dept.upper() 
                         if pw NOT ok: 
                             message
                             quit the app. 
-                    else: 
+                    if token exists: 
                         If token is not ok: 
                             message
                             quit the app. 
-                        If token ok: 
-                            check the expiration: 
-                            if past: 
-                                check the delay of expiration 
-                                if delay > 1h: 
-                                    ask for password 
-
-                                if delay < 1h: 
-                                    check the tokenType: 
-                                    if tokenType is 'token': 
-                                        get new token 
-                                        register new token with tokenType = 'refresh' 
-                                        return permission = dept.upper() 
-                                    if tokenType is 'refresh': 
-                                        ask for password 
-
-                            if NOT past: 
-                                return permission = dept.upper() 
-
+                        If token ok and NOT expired: 
+                            return permission = dept.upper() 
+                        If token ok and expired: 
+                            return 'past' 
 
             Args: 
                 mode (str): The mothod to send the user credentials 
@@ -364,13 +349,8 @@ class Controller():
             exp ? 
             exp ok: 
                 return dept 
-            exp NOT ok: 
-                exp delay ? 
-                    delay > 1h: 
-
-                tokenType ? 
-                    'token': 
-                        new token 
+            exp NOT ok or past: 
+                return 'past' 
         """ 
         print('connect_user mode de saisie (dev / pub) : ', mode) 
         userConnect = {} 
@@ -392,14 +372,16 @@ class Controller():
         self.logged_user = self.manager.select_one_user('email', userConnect['email']) 
         if self.logged_user: 
             # Check if the token exists 
-            # if self.manager.verify_if_token_exists(self.logged_user.email): 
+            row = self.manager.verify_if_token_exists( 
+                self.logged_user.email) 
+            if row is not None: 
                 # Check token for connected user + department 
-            if self.check_token(self.logged_user): 
-                self.dashboard.display_welcome( 
-                    self.logged_user.name, 
-                    self.logged_user.department.name 
-                ) 
-                self.press_enter_to_continue() 
+                if self.check_token(row): 
+                    self.dashboard.display_welcome( 
+                        self.logged_user.name, 
+                        self.logged_user.department.name 
+                    ) 
+                    self.press_enter_to_continue() 
             else: 
                 pass_counter = 1 
                 userPass = '' 
@@ -408,21 +390,24 @@ class Controller():
                 elif mode == 'pub': 
                     userPass = self.views.input_user_connection_pass() 
                 if self.check_pw(mode, self.logged_user, userPass): 
+                    token = self.manager.get_token(60, { 
+                        'email': self.logged_user.email, 
+                        'dept': self.logged_user.department.name 
+                    }) 
+                    self.manager.register_token( 
+                        self.logged_user.email, token) 
+
                     self.dashboard.display_welcome( 
                         self.logged_user.name, 
                         self.logged_user.department.name 
                     ) 
                     self.press_enter_to_continue() 
                 else: 
-                    print('Les informations saisies ne sont pas bonnes, Veuillez contacter un administrateur.')                 
+                    print('Les informations saisies ne sont pas bonnes, veuillez contacter un administrateur.')                 
                     self.close_the_app() 
         else: 
-            # Ask for password 
-            pass 
-
-        # else: 
-        #     print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
-        #     self.close_the_app() 
+            print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
+            self.close_the_app() 
 
 
     # ==== register methods ==== # 
@@ -1141,7 +1126,7 @@ class Controller():
                     pass_counter += 1 
                     self.check_pw(mode, pass_counter) 
             elif mode == 'dev': 
-                print('IL y a un problème avec le pw.')                 
+                print('Il y a un problème avec le pw.')                 
                 self.close_the_app() 
             else: 
                 return False 
@@ -1149,20 +1134,20 @@ class Controller():
             return False 
 
 
-    def check_token(self): 
+    def check_token(self, row): 
         """ Checks token's department and expiration time for connected user 
             for each request. 
             Args: 
                 User object: the authenticated user instance. 
         """ 
-        row = self.manager.verify_if_token_exists(self.logged_user.email) 
-        if row: 
-            self.user_session = self.manager.verify_token( 
-                self.logged_user.email, 
-                self.logged_user.department.name, 
-                row 
-            ) 
-        print('self.user_session CL1080 : ', self.user_session) 
+        # row = self.manager.verify_if_token_exists(self.logged_user.email) 
+        # if row: 
+        self.user_session = self.manager.verify_token( 
+            self.logged_user.email, 
+            self.logged_user.department.name, 
+            row 
+        ) 
+        print('self.user_session CL1142 : ', self.user_session) 
 
         if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             return True 

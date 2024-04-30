@@ -43,13 +43,6 @@ class Manager():
         self.session.add(itemName) 
         self.session.commit() 
 
-        # # get token: 
-        # token = self.get_token(2, { 
-        #     'email': fields['email'], 
-        #     # 'pass': fields['password'], 
-        #     'dept': department_name 
-        # }) 
-
         items_db = self.select_all_entities('users') 
         last_item_db = items_db.pop() 
         return last_item_db 
@@ -100,19 +93,6 @@ class Manager():
                 self.session.add(itemName) 
                 self.session.commit() 
 
-                # # get token: 
-                # token = self.get_token(2, { 
-                #     'email': fields['email'], 
-                #     'dept': department_name 
-                # }) 
-
-                # # register token 
-                # self.register_token( 
-                #     fields['email'], 
-                #     'token', 
-                #     token 
-                # ) 
-                # print('Token créé et enregistré. ') 
                 items_db = self.select_all_entities('users') 
 
             elif entity == 'client': 
@@ -623,14 +603,11 @@ class Manager():
     def get_token(self, delta:int, data:dict): 
         """ Creates a token for the new user, that indicates his.her department, 
             with <delta> seconds before expiration. 
-            The type of token can be: 
-                'token' of 'refresh' 
             Args: 
                 delta (int): The number of seconds before expiration. 
                 data (dict): The payload data for the creation of the token: 
                     "email", 
-                    "dept" (name), 
-                    "type" (of token). 
+                    "dept" (name). 
             Returns: 
                 string: The token to register for later use. 
         """ 
@@ -649,7 +626,7 @@ class Manager():
         """ Register the admin token in a crypted file. 
             Process: 
                 - Get the key for encrypt the data. 
-                - Set the email/token/token type as a dictionary. 
+                - Set the email/token as a dictionary. 
                 - Encrypt the data. 
                 - register the data into the file.  
             Args: 
@@ -669,8 +646,6 @@ class Manager():
         # ouvrir le fichier users en écriture en bytes 
         # enregistrer le hash dans le fichier 
         # Encrypt the token 
-        # encrypted = cipher_suite.encrypt(usersTokens) 
-        # encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
         encrypted = cipher_suite.encrypt(str(data_to_encrypt).encode('utf-8')) 
         # Register the encrypted token 
         with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
@@ -712,15 +687,15 @@ class Manager():
         # Get the decrypted tokens data 
         registeredData = self.decrypt_token() 
         users = registeredData['users'] 
-        print('users ML727 :', users) 
+        # print('users ML727 :', users) 
         for row in users: 
             # print(row) 
             if connectEmail == row['email']: 
                 users.pop(row) 
-        print('users after pop : ', users) 
+        # print('users after pop : ', users) 
 
         registered['users'] = users 
-        print('registered after ML731 : ', registered) 
+        # print('registered after ML731 : ', registered) 
 
         # Encrypt the token 
         encrypted = cipher_suite.encrypt(str(registered).encode('utf-8')) 
@@ -762,18 +737,7 @@ class Manager():
                         IF it is NOT PAST: 
                             Return the role's permission name 
                         IF it is past: 
-                            Check the delay of expiration 
-                            IF delay >= 1h: 
-                                return 'past' 
-                            IF delay <= 1h: 
-                                Check the tokenType 
-                                IF the tokenType == 'token': 
-                                    Call get_token() with 'refresh' type for refreshing the token 
-                                        (and update + encrypt it into the encrypted file). 
-                                    Return tne role's permission for creation of the 
-                                    user_session by the Controller. 
-                                IF the tokenType == 'refresh': 
-                                    return 'past' 
+                            return 'past' 
                     IF token NOT ok: 
                         return False. 
                 IF token does NOT exist: 
@@ -798,14 +762,10 @@ class Manager():
         if connectEmail == row['email']: 
             # print('ok row : ', row) 
             registeredToken = row['token'] 
-            registeredType = row['type'] 
         # print('registeredToken ML818 : ', registeredToken) 
 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
-        print('today tuesday') 
-        test = jwt.get_unverified_header(registeredToken) 
-        print('test :', test) 
 
         try: 
             self.userDecode = jwt.decode( 
@@ -813,11 +773,11 @@ class Manager():
                 secret, 
                 algorithms=[algo] 
             ) 
-            print('self.userDecode ML813 : ', self.userDecode) 
+            print('self.userDecode ML810 : ', self.userDecode) 
             userDecode_exp = int(self.userDecode.pop('exp'))-3600 
-            print('time() ML815 :', time()) 
-            print('userDecode_exp ML816 :', userDecode_exp) 
-        # if userDecode_exp < time(): 
+            # print('time() ML815 :', time()) 
+            # print('userDecode_exp ML816 :', userDecode_exp) 
+
             permission = '' 
             if userDecode['dept'] == 'gestion': 
                 permission = 'GESTION' 
@@ -830,48 +790,13 @@ class Manager():
 
         except ExpiredSignatureError as expired: 
             print('expired') 
-            print('self.userDecode :', self.userDecode) 
-            userDecode_exp = int(self.userDecode.pop('exp'))-3600 
-            print('time() ML832 :', time()) 
-            print('userDecode_exp ML833 :', userDecode_exp) 
-            decode_exp = int(self.userDecode.pop('exp'))-3600 
-            print('decode_exp :', decode_exp) 
-            print('time :', time) 
-            # exp_datetime = datetime.strptime(decode_exp, "%m/%d/%Y, %H:%M:%S")  
-            # delay_exp = datetime.now() - exp_datetime 
-            delay_exp = decode_exp-time 
-            print('delay_exp :', delay_exp) 
-
-            if decode_exp >= (datetime+3601): 
-                print('délai + d\'1h. ') 
-            else: 
-                print('délai - d\'1h. ') 
-
-                if registeredType == 'token': 
-                    # print('registeredType ML824 :', registeredType) 
-                    new_token = self.get_token(10, { 
-                        "email": connectEmail, 
-                        "dept": connectDept 
-                    }) 
-                    self.register_token(connectEmail, 'refresh', new_token) 
-                    permission = '' 
-                    if connectDept == 'gestion': 
-                        permission = 'GESTION' 
-                    elif connectDept == 'commerce': 
-                        permission = 'COMMERCE' 
-                    elif connectDept == 'support': 
-                        permission = 'SUPPORT' 
-                    # print('permission ML818 :', permission) 
-                    return permission 
-                else: 
-                    # print('registeredType ML835 :', registeredType) 
-                    return 'past' 
+            return 'past' 
 
         except InvalidToken as invalid: 
             print(invalid) 
-            return None 
+            return False 
 
-    def register_token(self, email, tokenType, token): 
+    def register_token(self, email, token): 
         """ Register the token in a crypted file. 
             Process: 
                 - Get the key for encrypt/decrypt the data. 
@@ -913,7 +838,6 @@ class Manager():
             print('row :', row) 
             if email == row['email']: 
                 print('ok row : ', row) 
-                row['type'] = tokenType 
                 row['token'] = token 
                 # Update the token 
                 presents.append(row['email']) 
@@ -921,7 +845,7 @@ class Manager():
         if presents == []: 
             # print('presents is emplty : ', presents) 
             # Add the new user into the dict users 
-            users.append({"email": email, "type": tokenType, "token": token}) 
+            users.append({"email": email, "token": token}) 
         registered['users'] = users 
 
         # chiffrer registered mis à jour 

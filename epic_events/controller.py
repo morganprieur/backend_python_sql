@@ -315,7 +315,7 @@ class Controller():
                     message
                     quit the app. 
                 else: 
-                    - Check if the token exists and is not expired 
+                    - Check if the token exists 
                     if token does not exist: 
                         ask for password 
                         if pw ok: 
@@ -327,30 +327,18 @@ class Controller():
                             quit the app. 
                     if token exists: 
                         If token is not ok: 
-                            message
+                            message 
                             quit the app. 
                         If token ok and NOT expired: 
                             return permission = dept.upper() 
                         If token ok and expired: 
                             return 'past' 
-
             Args: 
                 mode (str): The mothod to send the user credentials 
                     'dev': getting the data from the data.json file. 
                     'pub': the user has to enter the data with the keyboard. 
             Returns: 
                 User instance: the connected user. 
-        """ 
-        """ 
-            enter email 
-            email ok: 
-            token ? 
-            token ok: 
-            exp ? 
-            exp ok: 
-                return dept 
-            exp NOT ok or past: 
-                return 'past' 
         """ 
         print('connect_user mode de saisie (dev / pub) : ', mode) 
         userConnect = {} 

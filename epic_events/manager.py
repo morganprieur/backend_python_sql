@@ -710,7 +710,7 @@ class Manager():
                 connectEmail (string): The email entered by the connected user. 
             Returns:
                 dict: the dict of the registered user's data 
-                    or False: if the user's token is not registered. 
+                    or None: if the user's token is not registered. 
         """ 
         # print('connectEmail :', connectEmail) 
         # Get the decrypted token's content file 
@@ -723,7 +723,8 @@ class Manager():
             if connectEmail == row['email']: 
                 # print('ok row : ', row) 
                 return row 
-
+            else: 
+                return None 
 
     def verify_token(self, connectEmail, connectDept, row:dict): 
         """ Check if the user and department are those registered in the db. 
@@ -753,12 +754,7 @@ class Manager():
                 or message (str) 
                 or None 
         """ 
-        # Get the decrypted token 
-        # registeredData = self.decrypt_token() 
-        # users = registeredData['users'] 
-        # print('registeredData ML796 :', registeredData) 
-        # for row in users: 
-            # print(row) 
+        # Get the decrypted token row 
         if connectEmail == row['email']: 
             # print('ok row : ', row) 
             registeredToken = row['token'] 
@@ -779,11 +775,11 @@ class Manager():
             # print('userDecode_exp ML816 :', userDecode_exp) 
 
             permission = '' 
-            if userDecode['dept'] == 'gestion': 
+            if self.userDecode['dept'] == 'gestion': 
                 permission = 'GESTION' 
-            elif userDecode['dept'] == 'commerce': 
+            elif self.userDecode['dept'] == 'commerce': 
                 permission = 'COMMERCE' 
-            elif userDecode['dept'] == 'support': 
+            elif self.userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
             print('permission ML825 :', permission) 
             return permission 

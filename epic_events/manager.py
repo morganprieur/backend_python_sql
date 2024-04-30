@@ -671,7 +671,7 @@ class Manager():
         plain_text = cipher_suite.decrypt(registered_bytes) 
         # print(plain_text)  # bytes 
         registered = ast.literal_eval(plain_text.decode('utf-8'))
-        print('registered : ', registered)  # dict 
+        # print('registered ML674 : ', registered)  # dict 
         return registered 
 
     def delete_registered_token(self, connectEmail): 
@@ -717,14 +717,12 @@ class Manager():
         registeredData = self.decrypt_token() 
         # print('registeredData :', registeredData) 
         users = registeredData['users'] 
-        # print('users :', users) 
+        # print('users ML720 :', users) 
         for row in users: 
-            # print('row :', row) 
+            # print('row ML722 :', row) 
             if connectEmail == row['email']: 
-                # print('ok row : ', row) 
+                # print('ok row ML724 : ', row) 
                 return row 
-            else: 
-                return None 
 
     def verify_token(self, connectEmail, connectDept, row:dict): 
         """ Check if the user and department are those registered in the db. 
@@ -754,6 +752,9 @@ class Manager():
                 or message (str) 
                 or None 
         """ 
+        # print('connectEmail ML757 :', connectEmail) 
+        # print('connectDept ML758 :', connectDept) 
+        # print('row ML759 :', row) 
         # Get the decrypted token row 
         if connectEmail == row['email']: 
             # print('ok row : ', row) 
@@ -769,7 +770,7 @@ class Manager():
                 secret, 
                 algorithms=[algo] 
             ) 
-            print('self.userDecode ML810 : ', self.userDecode) 
+            print('self.userDecode ML773 : ', self.userDecode) 
             userDecode_exp = int(self.userDecode.pop('exp'))-3600 
             # print('time() ML815 :', time()) 
             # print('userDecode_exp ML816 :', userDecode_exp) 
@@ -781,7 +782,7 @@ class Manager():
                 permission = 'COMMERCE' 
             elif self.userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
-            print('permission ML825 :', permission) 
+            # print('permission ML825 :', permission) 
             return permission 
 
         except ExpiredSignatureError as expired: 
@@ -831,9 +832,9 @@ class Manager():
         #   ajouter le nouveau mail/token au fichier 
         presents = [] 
         for row in users: 
-            print('row :', row) 
+            # print('row :', row) 
             if email == row['email']: 
-                print('ok row : ', row) 
+                # print('ok row : ', row) 
                 row['token'] = token 
                 # Update the token 
                 presents.append(row['email']) 
@@ -887,10 +888,10 @@ class Manager():
             hashed = user_db.password 
             print('hashed -10 ML913 :', hashed[:10]) 
             if bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8')): 
-                print("DEBUG pw ok (manager)") 
+                print("DEBUG pw ok ML891 (manager)") 
                 return True 
             else: 
-                print('pw not ok (manager)') 
+                print('pw not ok ML894 (manager)') 
                 return False 
 
     # ======== /Utils ======== # 

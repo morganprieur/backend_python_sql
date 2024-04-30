@@ -7,12 +7,10 @@ import os
 from datetime import datetime 
 
 
-# class ConnectTest(unittest.TestCase): 
 class ConnectTest(): 
-    """ Config file. 
+    """ Set the role of the user to test. 
     """ 
     @classmethod 
-    # def setUp(cls): 
     def __init__(cls, role:str): 
         cls.manager = Manager() 
         cls.manager.connect() 
@@ -20,76 +18,97 @@ class ConnectTest():
         cls.role = role 
 
     @classmethod 
-    # def test_1_verify_admin_token(cls): 
     def connect_user(cls): 
-        """ Test the admin user's token. 
-        	Expect his permission dept == 'GESTION'. 
+        """ Test the user's token. 
         """ 
         # registered = cls.manager.decrypt_token() 
         role_dict = { 
             'admin': { 
                 'email': 'admin@mail.org', 
-                'pass': os.environ.get('USER_1_PW'), 
+                # file deepcode ignore NoHardcodedPasswords/test: local project 
+                'pass': 'pass_superuser1', 
+                'dept': 'GESTION' 
+            }, 
+            'sales': { 
+                'email': 'sales_1@mail.org', 
+                # file deepcode ignore NoHardcodedPasswords/test: local project 
+                'pass': 'pass_user2', 
+                'dept': 'COMMERCE' 
+            }, 
+            'support': { 
+                'email': 'support_1@mail.org', 
+                # file deepcode ignore NoHardcodedPasswords/test: local project 
+                'pass': 'pass_user3', 
+                'dept': 'SUPPORT' 
             } 
         } 
-        # connectEmail = 'admin@mail.org' 
-        # connectPass = cls.manager.hash_pw(os.environ.get('USER_1_PW')) 
         connectUser = cls.manager.select_one_user( 
         	'email', 
         	role_dict[cls.role]['email'] 
         ) 
+
         row = cls.manager.verify_if_token_exists(role_dict[cls.role]['email']) 
-        if row: 
+        if row is not None: 
         	cls.permission = cls.manager.verify_token( 
         		role_dict[cls.role]['email'], 
         		connectUser.department.name, 
         		row 
         	) 
-        	assert cls.permission == 'GESTION' 
-        else: 
-        	row = cls.manager.verify_if_token_exists(role_dict[cls.role]['email']) 
-        	if row is None: 
-        		# assert row is None 
-        		token = cls.manager.get_token(120, { 
-        			'email': role_dict[cls.role]['email'], 
-        			'dept': connectUser.department.name 
-        		}) 
-        		cls.manager.register_token(role_dict[cls.role]['email'], token) 
-        		row = cls.manager.verify_if_token_exists(role_dict[cls.role]['email']) 
-        		cls.permission = cls.manager.verify_token( 
-        			role_dict[cls.role]['email'], 
-        			connectUser.department.name, 
-        			row 
-        		) 
-        		assert cls.permission == 'GESTION' 
-        	else: 
-        		cls.permission = cls.manager.verify_token( 
-        			role_dict[cls.role]['email'], 
-        			connectUser.department.name, 
-        			row 
-        		) 
-        		if cls.permission == 'past': 
-        			check_pass = cls.manager.check_pw( 
-                        role_dict[cls.role]['email'], 
-                        role_dict[cls.role]['pass'] 
-                    ) 
-        			if check_pass: 
-        				token = cls.manager.get_token(120, { 
-        					'email': role_dict[cls.role]['email'], 
-        					'dept': connectUser.department.name 
-        				}) 
-        				cls.manager.register_token( 
-                            role_dict[cls.role]['email'], 
-                            token 
-                        ) 
-        				row = cls.manager.verify_if_token_exists( 
-                            role_dict[cls.role]['email']) 
-        				cls.permission = cls.manager.verify_token( 
-        					role_dict[cls.role]['email'], 
-        					connectUser.department.name, 
-        					row 
-        				) 
-        				assert cls.permission == 'GESTION' 
-        			else: 
-        				assert cls.permission == 'past' 
+        	if cls.permission == 'past': 
+        	    pw_check = cls.manager.check_pw( 
+        	        role_dict[cls.role]['email'], 
+        	        role_dict[cls.role]['pass'] 
+        	    ) 
+        	    if pw_check: 
+        	        new_token = cls.manager.get_token(120, { 
+        	            'email': role_dict[cls.role]['email'], 
+        	            'dept': connectUser.department.name 
+        	        }) 
+        	        cls.manager.register_token( 
+        	            role_dict[cls.role]['email'], 
+        	            new_token 
+        	        ) 
 
+        	        row = cls.manager.verify_if_token_exists( 
+        	            role_dict[cls.role]['email'] 
+        	        ) 
+        	        cls.permission = cls.manager.verify_token( 
+        	            role_dict[cls.role]['email'], 
+        	            connectUser.department.name, 
+        	            row 
+        	        ) 
+        	        assert cls.permission == role_dict[cls.role]['dept'] 
+        	        # assert 1 == 2 
+        	    else: 
+        	        assert not cls.permission 
+        	        assert 2 == 3 
+        else: 
+            pw_check = cls.manager.check_pw( 
+                role_dict[cls.role]['email'], 
+                role_dict[cls.role]['pass'] 
+            ) 
+            if pw_check: 
+                new_token = cls.manager.get_token(120, { 
+                    'email': role_dict[cls.role]['email'], 
+                    'dept': connectUser.department.name 
+                }) 
+                cls.manager.register_token( 
+                    role_dict[cls.role]['email'], 
+                    new_token 
+                ) 
+
+                row = cls.manager.verify_if_token_exists( 
+                    role_dict[cls.role]['email'] 
+                ) 
+                cls.permission = cls.manager.verify_token( 
+                    role_dict[cls.role]['email'], 
+                    connectUser.department.name, 
+                    row 
+                ) 
+                assert cls.permission == role_dict[cls.role]['dept'] 
+                assert 3 == 4 
+            else: 
+                assert not cls.permission 
+                assert 4 == 5 
+
+			# if cls.permission in ['GESTION', 'COMMERCE', 'SUPPORT']: 

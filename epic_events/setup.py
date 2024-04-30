@@ -73,28 +73,27 @@ class Setup():
         adminUser = self.manager.add_user_setup(superAdmin) 
         # ==== /register user ==== # 
 
-        # ==== get + register admin token ==== # 
-        token = self.manager.get_token(2, { 
-            'email': adminUser.email, 
-            'dept': adminUser.department.name, 
-        }) 
-        print('token SETUP83 : ', token) 
+        # # ==== get + register admin token ==== # 
+        # token = self.manager.get_token(2, { 
+        #     'email': adminUser.email, 
+        #     'dept': adminUser.department.name, 
+        # }) 
+        # print('token SETUP83 : ', token) 
 
-        userToken = { 
-            "users": [ 
-                { 
-                    "email": adminUser.email, 
-                    "type": "token", 
-                    "token": token 
-                } 
-            ] 
-        } 
-        # Encrypt the token 
-        self.manager.first_register_token(userToken) 
+        # userToken = { 
+        #     "users": [ 
+        #         { 
+        #             "email": adminUser.email, 
+        #             "type": "token", 
+        #             "token": token 
+        #         } 
+        #     ] 
+        # } 
+        # # Encrypt the token 
+        # self.manager.first_register_token(userToken) 
 
-        return True 
-
-        # ==== /get + register admin token ==== # 
+        # return True 
+        # # ==== /get + register admin token ==== # 
 
 
 if __name__ == "__main__": 

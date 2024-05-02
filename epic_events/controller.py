@@ -307,35 +307,32 @@ class Controller():
             self.close_the_app() 
 
 
-
     def connect_user(self, mode): 
         """ Connects a user to the application. 
             Process: 
-                - Check the email with the registered email 
-                - Check if the token exists and is not expired 
-                X If email does not exist: 
+                - Compare the email with the registered email 
+                If email does not exist: 
                     message
                     quit the app. 
-                V else: 
-                    X If token is not ok: 
-                        message
-                        quit the app. 
-                    V If ok: 
-                        Check the token's expiration datetime 
-                        X If the token has expired: 
-                            V if tokenType == 'token': 
-                                get a new token with tokenType = 'refresh' 
-                                set the self.user_session. 
-                            X if tokenType == 'refresh': 
-                                - ask for password 
-                                - check password 
-                                X if it is not ok: 
-                                    message
-                                    quit the app. 
-                                V elif the pw is ok: 
-                                set the self.user_session 
-                        V elif the token is still ok: 
-                            set the self.user_session. 
+                else: 
+                    - Check if the token exists 
+                    if token does not exist: 
+                        ask for password 
+                        if pw ok: 
+                            get token 
+                            register token 
+                            return permission = dept.upper() 
+                        if pw NOT ok: 
+                            message
+                            quit the app. 
+                    if token exists: 
+                        If token is not ok: 
+                            message 
+                            quit the app. 
+                        If token ok and NOT expired: 
+                            return permission = dept.upper() 
+                        If token ok and expired: 
+                            return 'past' 
             Args: 
                 mode (str): The mothod to send the user credentials 
                     'dev': getting the data from the data.json file. 
@@ -359,34 +356,43 @@ class Controller():
             print(f'Cet argument n\'est pas reconnu ({mode}). Vous devez utiliser "dev" ou "pub"') 
 
         # Check the email with the registered emails into the DB 
-        print('DEBUG userEmail CL363 :', userConnect['email']) 
-        logged_user = self.manager.select_one_user('email', userConnect['email']) 
-        if logged_user: 
+        # print('DEBUG userEmail CL363 :', userConnect['email']) 
+        self.logged_user = self.manager.select_one_user('email', userConnect['email']) 
+        if self.logged_user: 
             # Check if the token exists 
-            if self.manager.verify_if_token_exists(logged_user.email): 
+            row = self.manager.verify_if_token_exists( 
+                self.logged_user.email) 
+            if row is not None: 
                 # Check token for connected user + department 
-                if self.check_token(logged_user): 
+                if self.check_token(row): 
                     self.dashboard.display_welcome( 
-                        logged_user.name, 
-                        logged_user.department.name 
+                        self.logged_user.name, 
+                        self.logged_user.department.name 
+                    ) 
+                    self.press_enter_to_continue() 
+            else: 
+                pass_counter = 1 
+                userPass = '' 
+                if mode == 'dev': 
+                    userPass = userConnect['password'] 
+                elif mode == 'pub': 
+                    userPass = self.views.input_user_connection_pass() 
+                if self.check_pw(mode, self.logged_user, userPass): 
+                    token = self.manager.get_token(60, { 
+                        'email': self.logged_user.email, 
+                        'dept': self.logged_user.department.name 
+                    }) 
+                    self.manager.register_token( 
+                        self.logged_user.email, token) 
+
+                    self.dashboard.display_welcome( 
+                        self.logged_user.name, 
+                        self.logged_user.department.name 
                     ) 
                     self.press_enter_to_continue() 
                 else: 
-                    pass_counter = 1 
-                    userPass = '' 
-                    if mode == 'dev': 
-                        userPass = userConnect['password'] 
-                    elif mode == 'pub': 
-                        userPass = self.views.input_user_connection_pass() 
-                    if self.check_pw(mode, logged_user, userPass): 
-                        self.dashboard.display_welcome( 
-                            logged_user.name, 
-                            logged_user.department.name 
-                        ) 
-                        self.press_enter_to_continue() 
-                    else: 
-                        print('Les informations saisies ne sont pas bonnes, Veuillez contacter un administrateur.')                 
-                        self.close_the_app() 
+                    print('Les informations saisies ne sont pas bonnes, veuillez contacter un administrateur.')                 
+                    self.close_the_app() 
         else: 
             print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
             self.close_the_app() 
@@ -457,7 +463,7 @@ class Controller():
         if self.user_session == 'COMMERCE': 
             print('\nEnregistrer un client') 
             fields = self.views.input_create_client() 
-            fields['sales_contact_id'] = logged_user.id 
+            fields['sales_contact_id'] = self.logged_user.id 
 
             new_item = self.manager.add_entity('client', fields) 
             print(f"Le client {new_item.name} (ID : {new_item.id}) du contact {new_item.User.name} a bien été créé. ") 
@@ -935,84 +941,134 @@ class Controller():
 
     # ==== show with criteria methods ==== # 
     def show_events_without_support(self): 
+        """ Selects the events those don't have a support_contact_id. 
+            Only "gestion" users are allowed to do this. 
+            Returns: 
+                List of Event instances: The list of the events, 
+                or False if the user does not have the authorization to perform this. 
+        """ 
         if (self.user_session == 'GESTION'): 
             print('\nAfficher les événements sans contact support') 
             events = self.manager.select_entities_with_criteria( 
                 'events', 
                 'without support', 
-                logged_user.id 
+                self.logged_user.id 
             ) 
             self.views.display_entity([event]) 
+            return events 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
 
     def show_clients_of_commerce_user(self): 
+        """ Selects the clients who are attached to the user. 
+            Only "commerce" users are allowed to do this. 
+            Returns: 
+                Client instance: The list of the clients, 
+                or False if the user does not have the authorization to perform this. 
+        """ 
         if (self.user_session == 'COMMERCE'): 
             print('\nAfficher les clients d\'un utilisateur commercial') 
             clients = self.manager.select_entities_with_criteria( 
                 'clients', 
                 'sales contact', 
-                logged_user.id 
+                self.logged_user.id 
             ) 
             self.views.display_entity([clients]) 
+            return clients 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
 
     def show_contracts_of_commerce_user(self): 
+        """ Selects the contracts those are attached to the user's clients. 
+            Only "commerce" users are allowed to do this. 
+            Returns: 
+                List of Contract instances: The list of the contracts, 
+                or False if the user does not have the authorization to perform this. 
+        """ 
         if (self.user_session == 'COMMERCE'): 
             print('\nAfficher les contrats d\'un utilisateur commercial ') 
-            contracts = self.manager.select_entities_with_criteria( 
-                'contracts', 
+            clients = self.manager.select_entities_with_criteria( 
+                'clients', 
                 'sales contact', 
-                logged_user.id 
+                self.logged_user.id 
             ) 
+            contracts = [] 
+            for client in clients: 
+                contract = self.manager.select_entities_with_criteria( 
+                    'contracts', 
+                    'client', 
+                    self.logged_user.id 
+                ) 
+                contracts.append(contract) 
             self.views.display_entity([contracts]) 
+            return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
 
     def show_not_paid_contracts(self): 
+        """ Selects the contracts those aren't entirely paid. 
+            Only "commerce" users are allowed to do this. 
+            Returns: 
+                List of Contract instances: The list of the contracts, 
+                or False if the user does not have the authorization to perform this. 
+        """ 
         if (self.user_session == 'COMMERCE'): 
             print('\nAfficher les contrats non fini de payer ') 
             contracts = self.manager.select_entities_with_criteria( 
                 'contracts', 
                 'not paid', 
-                logged_user.id 
+                self.logged_user.id 
             ) 
             self.views.display_entity([contracts]) 
+            return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
 
     def show_not_signed_contracts(self): 
+        """ Selects the contracts those aren't signed. 
+            Only "commerce" users are allowed to do this. 
+            Returns: 
+                List of Contract instances: The list of the contracts, 
+                or False if the user does not have the authorization to perform this. 
+        """ 
         if (self.user_session == 'COMMERCE'): 
             print('\nAfficher les contrats non signés ') 
             contracts = self.manager.select_entities_with_criteria( 
                 'contracts', 
                 'not signed', 
-                logged_user.id 
+                self.logged_user.id 
             ) 
             self.views.display_entity([contracts]) 
+            return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
 
     def show_events_support_user(self): 
+        """ Selects the events those are attached to the 'support' user. 
+            Only "support" users are allowed to do this. 
+            Returns: 
+                List of Event instances: The list of the events, 
+                or False if the user does not have the authorization to perform this. 
+        """ 
         if (self.user_session == 'SUPPORT'): 
             print('\nAfficher les événements d\'un utilisateur support ') 
             events = self.manager.select_entities_with_criteria( 
                 'events', 
                 'support contact', 
-                logged_user.id 
+                self.logged_user.id 
             ) 
             self.views.display_entity([events]) 
+            return events 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -1034,12 +1090,12 @@ class Controller():
         print('DEBUG : ', self.user_session) 
 
 
-    def check_pw(self, mode, pass_counter, logged_user): 
+    def check_pw(self, mode, pass_counter): 
         """ Recursive method that checks the password of the user, if the token is past. 
             Args: 
                 mode (str): The mode (dev or pub) wich the app has ben runned. 
                 pass_counter (int): It counts the attempts to enter the password of the user. 
-                logged_user (User instance): The user selected with his email. 
+                self.logged_user (User instance): The user selected with his email. 
             Returns: 
                 bool: True if the self.user_session has been filled, if all was alright. 
                         False instead. 
@@ -1050,15 +1106,15 @@ class Controller():
                     Il vous reste {3-pass_counter} essais. ') 
                 userPass = self.views.input_user_connection_pass() 
                 if self.manager.check_pw( 
-                    logged_user.email, 
+                    self.logged_user.email, 
                     userPass 
                 ): 
                     return True 
                 else: 
                     pass_counter += 1 
-                    self.check_pw(mode, pass_counter, logged_user) 
+                    self.check_pw(mode, pass_counter) 
             elif mode == 'dev': 
-                print('IL y a un problème avec le pw.')                 
+                print('Il y a un problème avec le pw.')                 
                 self.close_the_app() 
             else: 
                 return False 
@@ -1066,18 +1122,20 @@ class Controller():
             return False 
 
 
-    def check_token(self, logged_user): 
+    def check_token(self, row): 
         """ Checks token's department and expiration time for connected user 
             for each request. 
             Args: 
                 User object: the authenticated user instance. 
         """ 
+        # row = self.manager.verify_if_token_exists(self.logged_user.email) 
+        # if row: 
         self.user_session = self.manager.verify_token( 
-            logged_user.email, 
-            # logged_user.password, 
-            logged_user.department.name 
+            self.logged_user.email, 
+            self.logged_user.department.name, 
+            row 
         ) 
-        print('self.user_session CL1080 : ', self.user_session) 
+        print('self.user_session CL1142 : ', self.user_session) 
 
         if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             return True 
@@ -1089,11 +1147,9 @@ class Controller():
             self.close_the_app() 
 
 
-    # @staticmethod 
     def press_enter_to_continue(self): 
         self.views.enter_to_continue() 
         # session.prompt('Appuyez sur entrée pour continuer ') 
-
 
     """ Command to quit the application """ 
     @staticmethod 

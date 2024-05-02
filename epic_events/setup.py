@@ -41,7 +41,7 @@ class Setup():
 
         # DEBUG 
         superAdmin_dept_name = self.manager.session.query(Department).filter(Department.id==1).first() 
-        print('DEBUG : ', superAdmin_dept_name) 
+        print('DEBUG superAdmin_dept_name : ', superAdmin_dept_name) 
         # ==== /add department ==== # 
 
         # ==== tokens management ==== # 
@@ -71,30 +71,20 @@ class Setup():
             'department_name': 'gestion'  # , 
         } 
         adminUser = self.manager.add_user_setup(superAdmin) 
+        print('DEBUG adminUser : ', adminUser) 
         # ==== /register user ==== # 
 
-        # ==== get + register admin token ==== # 
-        token = self.manager.get_token(2, { 
-            'email': adminUser.email, 
-            'dept': adminUser.department.name, 
-        }) 
-        print('token SETUP83 : ', token) 
-
+        # ==== register empty file for tokens ==== # 
         userToken = { 
             "users": [ 
-                { 
-                    "email": adminUser.email, 
-                    "type": "token", 
-                    "token": token 
-                } 
             ] 
         } 
         # Encrypt the token 
         self.manager.first_register_token(userToken) 
-
+        debug = self.manager.decrypt_token() 
+        print('debug decrypt_token :', debug) 
         return True 
-
-        # ==== /get + register admin token ==== # 
+        # ==== /register empty file for tokens ==== # 
 
 
 if __name__ == "__main__": 

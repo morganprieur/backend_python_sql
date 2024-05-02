@@ -369,7 +369,7 @@ class Manager():
         else: 
             print('no field recognized (manager.select_one_user)') 
         if user_db is None: 
-            print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
+            print('Aucun utilisateur avec ces informations.') 
             return False 
         else: 
             return user_db 

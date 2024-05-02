@@ -52,7 +52,9 @@ class Controller():
         elif self.user_session == 'SUPPORT': 
             self.dashboard.display_menu([10, 14, 15, 16, 17, 18, 19, 20, 21, 27, 29]) 
         else: 
-            print('Vous devez vous connecter pour pouvoir accéder aux fonctionnalités de l\'application. ') 
+            print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
+            self.close_the_app() 
+            return False 
 
 
         # ==== Registers one dept ==== # 
@@ -357,7 +359,10 @@ class Controller():
 
         # Check the email with the registered emails into the DB 
         # print('DEBUG userEmail CL363 :', userConnect['email']) 
-        self.logged_user = self.manager.select_one_user('email', userConnect['email']) 
+        self.logged_user = self.manager.select_one_user( 
+            'email', 
+            userConnect['email'] 
+        ) 
         if self.logged_user: 
             # Check if the token exists 
             row = self.manager.verify_if_token_exists( 
@@ -377,7 +382,12 @@ class Controller():
                     userPass = userConnect['password'] 
                 elif mode == 'pub': 
                     userPass = self.views.input_user_connection_pass() 
-                if self.check_pw(mode, self.logged_user, userPass): 
+                # if pass_counter < 3: 
+                if self.check_pw( 
+                    mode, 
+                    self.logged_user, 
+                    userPass 
+                ): 
                     token = self.manager.get_token(60, { 
                         'email': self.logged_user.email, 
                         'dept': self.logged_user.department.name 
@@ -394,8 +404,7 @@ class Controller():
                     print('Les informations saisies ne sont pas bonnes, veuillez contacter un administrateur.')                 
                     self.close_the_app() 
         else: 
-            print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
-            self.close_the_app() 
+            return False 
 
 
     # ==== register methods ==== # 

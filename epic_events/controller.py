@@ -7,6 +7,7 @@ from views import Views
 from datetime import datetime, timedelta 
 import json 
 import os 
+import re 
 import time 
 
 from sentry_sdk import capture_message 
@@ -347,6 +348,14 @@ class Controller():
         if mode == 'pub': 
             # Type the required credentials: 
             userConnect['email'] = self.views.input_user_connection_email() 
+            # Check the format of the email 
+            print(f"|{userConnect['email']}|") 
+            reg = '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,6}' 
+            if re.match(reg, userConnect['email']): 
+                print('Ce mail est valide. ') 
+            else: 
+                print('Ce mail n\'est pas valide. ') 
+                return False 
         elif mode == 'dev': 
             # file deepcode ignore PT: local project 
             with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 

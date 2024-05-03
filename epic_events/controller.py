@@ -52,6 +52,7 @@ class Controller():
             self.dashboard.display_menu([3, 5, 8, 9, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 29]) 
         elif self.user_session == 'SUPPORT': 
             self.dashboard.display_menu([10, 14, 15, 16, 17, 18, 19, 20, 21, 27, 29]) 
+        # elif self.user_session == 'past': 
         else: 
             print('self.user_session CL56 :',self.user_session) 
             print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
@@ -380,21 +381,66 @@ class Controller():
                 self.logged_user.email) 
             if row is not None: 
                 # Check token for connected user + department 
-                if self.check_token(row): 
+                token_check = self.manager.verify_token( 
+                    self.logged_user.email, 
+                    self.logged_user.department.name, 
+                    row 
+                ) 
+
+                if token_check == 'past': 
+                    userPass = '' 
+                    if mode == 'dev': 
+                        userPass = userConnect['password'] 
+                    elif mode == 'pub': 
+                        userPass = self.views.input_user_connection_pass() 
+                    print(f'input pass CL397 : |{userPass}|') 
+                    pw_check = self.check_pw(mode, userPass) 
+                    if pw_check: 
+                        token = self.manager.get_token(60, { 
+                            'email': self.logged_user.email, 
+                            'dept': self.logged_user.department.name 
+                        }) 
+                        self.manager.register_token( 
+                            self.logged_user.email, 
+                            token 
+                        ) 
+
+                        row = self.manager.verify_if_token_exists( 
+                            self.logged_user.email 
+                        ) 
+                        self.user_session = self.manager.verify_token( 
+                            self.logged_user.email, 
+                            self.logged_user.department.name, 
+                            row 
+                        ) 
+
+                        print('Un token a été enregistré. ') 
+                        self.dashboard.display_welcome( 
+                            self.logged_user.name, 
+                            self.logged_user.department.name 
+                        ) 
+                        self.press_enter_to_continue() 
+
+                elif token_check in ['GESTION', 'COMMERCE', 'SUPPORT']: 
                     print('Un token est enregistré. ') 
                     self.dashboard.display_welcome( 
                         self.logged_user.name, 
                         self.logged_user.department.name 
                     ) 
                     self.press_enter_to_continue() 
+                    self.dashboard.display_welcome( 
+                        self.logged_user.name, 
+                        self.logged_user.department.name 
+                    ) 
+                    self.press_enter_to_continue() 
+
             else: 
                 userPass = '' 
                 if mode == 'dev': 
                     userPass = userConnect['password'] 
                 elif mode == 'pub': 
                     userPass = self.views.input_user_connection_pass() 
-                print(f'input pass : |{userPass}|') 
-                # if pass_counter < 3: 
+                print(f'input pass CL444 : |{userPass}|') 
                 if self.check_pw( 
                     mode, 
                     userPass 
@@ -409,17 +455,25 @@ class Controller():
                     row = self.manager.verify_if_token_exists( 
                         self.logged_user.email 
                     ) 
-                    self.user_session = self.manager.verify_token( 
+                    token_check = self.manager.verify_token( 
                         self.logged_user.email, 
                         self.logged_user.department.name, 
                         row 
                     ) 
 
-                    self.dashboard.display_welcome( 
-                        self.logged_user.name, 
-                        self.logged_user.department.name 
-                    ) 
-                    self.press_enter_to_continue() 
+                    if token_check in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+                        print('Un token a été enregistré. ') 
+                        self.dashboard.display_welcome( 
+                            self.logged_user.name, 
+                            self.logged_user.department.name 
+                        ) 
+                        self.press_enter_to_continue() 
+                        self.dashboard.display_welcome( 
+                            self.logged_user.name, 
+                            self.logged_user.department.name 
+                        ) 
+                        self.press_enter_to_continue()  
+
                 else: 
                     print('Les informations saisies ne sont pas bonnes, veuillez contacter un administrateur.')                 
                     self.close_the_app() 
@@ -438,7 +492,7 @@ class Controller():
             print('\nEnregistrer un département') 
             fields = self.views.input_create_dept() 
 
-            self.confirmation_process(fields, 'enregistrer', 'dept') 
+            self.register_confirmation_process(fields, 'dept') 
 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -456,7 +510,7 @@ class Controller():
             print('\nEnregistrer un utilisateur') 
             fields = self.views.input_create_user() 
 
-            self.confirmation_process(fields, 'enregistrer', 'user') 
+            self.register_confirmation_process(fields, 'user') 
 
             # confirmation = self.views.ask_for_creation('user') 
             # self.press_enter_to_continue() 
@@ -485,7 +539,7 @@ class Controller():
             fields = self.views.input_create_client() 
             fields['sales_contact_id'] = self.logged_user.id 
 
-            self.confirmation_process(fields, 'enregistrer', 'client') 
+            self.register_confirmation_process(fields, 'client') 
 
             # new_item = self.manager.add_entity('client', fields) 
             # print(f"Le client {new_item.name} (ID : {new_item.id}) du contact {new_item.User.name} a bien été créé. ") 
@@ -505,7 +559,7 @@ class Controller():
             print('\nEnregistrer un contrat') 
             fields = self.views.input_create_contract() 
 
-            self.confirmation_process(fields, 'enregistrer', 'contract') 
+            self.register_confirmation_process(fields, 'contract') 
 
             # confirmation = self.views.ask_for_creation('contract') 
             # self.press_enter_to_continue() 
@@ -540,7 +594,7 @@ class Controller():
             else: 
                 fields = self.views.input_create_event() 
 
-                self.confirmation_process(fields, 'enregistrer', 'event') 
+                self.register_confirmation_process(fields, 'event') 
 
                 # confirmation = self.views.ask_for_creation('event') 
                 # self.press_enter_to_continue() 
@@ -573,7 +627,10 @@ class Controller():
             fields = self.views.input_modify_dept(dept_to_modify) 
 
             # Confirmation : 
-            confirmation = self.views.ask_for_confirmation('modifier', 'dept') 
+            confirmation = self.views.ask_for_confirmation( 
+                'modifier', 
+                'dept' 
+            ) 
             if (confirmation == 'y') | (confirmation == 'Y'): 
                 modified_item = self.manager.update_dept( 
                     dept_to_modify, 
@@ -610,28 +667,34 @@ class Controller():
                 'user', 
                 user_to_modify 
             ) 
-            print('fields CL643 : ', fields) 
+            # print('fields CL615 : ', fields) 
 
             if fields['field_to_modify'] == 'password': 
                 hash_new_pw = self.manager.hash_pw(fields['new_value']) 
                 fields['new_value'] = hash_new_pw 
-            
+
             # print('fields avant changemt (controller 7) : ', fields) 
             fields[fields['field_to_modify']] = fields['new_value'] 
 
-            # Confirmation : 
-            confirmation = self.views.ask_for_confirmation('modifier', 'user') 
-            if (confirmation == 'y') | (confirmation == 'Y'): 
-                modified_item = self.manager.update_user( 
-                    user_to_modify, 
-                    fields['field_to_modify'], 
-                    fields['new_value'] 
-                ) 
-                print(f"L'utilisateur {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
-                return modified_item 
-            else: 
-                print('Vous avez annulé la modification, l\'utilisateur n\'a pas été modifié.') 
-                return False 
+            self.modify_confirmation_process( 
+                user_to_modify, 
+                fields['field_to_modify'], 
+                fields['new_value'] 
+            ) 
+
+            # # Confirmation : 
+            # confirmation = self.views.ask_for_confirmation('modifier', 'user') 
+            # if (confirmation == 'y') | (confirmation == 'Y'): 
+            #     modified_item = self.manager.update_user( 
+            #         user_to_modify, 
+            #         fields['field_to_modify'], 
+            #         fields['new_value'] 
+            #     ) 
+            #     print(f"L'utilisateur {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+            #     return modified_item 
+            # else: 
+            #     print('Vous avez annulé la modification, l\'utilisateur n\'a pas été modifié.') 
+            #     return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -659,19 +722,25 @@ class Controller():
             fields[fields['field_to_modify']] = fields['new_value'] 
             # print('fields après changemt (controller 8) : ', fields) 
 
-            # Confirmation : 
-            confirmation = self.views.ask_for_confirmation('modifier', 'client') 
-            if (confirmation == 'y') | (confirmation == 'Y'): 
-                modified_item = self.manager.update_client( 
-                    client_to_modify, 
-                    fields['field_to_modify'], 
-                    fields['new_value'] 
-                ) 
-                print(f"Le client a bien été modifié : \"{modified_item}\". ") 
-                return modified_item 
-            else: 
-                print('Vous avez annulé la modification, le client n\'a pas été modifié.') 
-                return False 
+            self.modify_confirmation_process( 
+                client_to_modify, 
+                fields['field_to_modify'], 
+                fields['new_value'] 
+            ) 
+
+            # # Confirmation : 
+            # confirmation = self.views.ask_for_confirmation('modifier', 'client') 
+            # if (confirmation == 'y') | (confirmation == 'Y'): 
+            #     modified_item = self.manager.update_client( 
+            #         client_to_modify, 
+            #         fields['field_to_modify'], 
+            #         fields['new_value'] 
+            #     ) 
+            #     print(f"Le client a bien été modifié : \"{modified_item}\". ") 
+            #     return modified_item 
+            # else: 
+            #     print('Vous avez annulé la modification, le client n\'a pas été modifié.') 
+            #     return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -701,22 +770,29 @@ class Controller():
             fields[fields['field_to_modify']] = fields['new_value'] 
             # print('fields après changemt (controller 9) : ', fields) 
 
-            # Confirmation : 
-            confirmation = self.views.ask_for_confirmation('modifier', 'contract') 
-            if (confirmation == 'y') | (confirmation == 'Y'): 
-                modified_item = self.manager.update_contract( 
-                    contract_to_modify, 
-                    fields['field_to_modify'], 
-                    fields['new_value'] 
-                ) 
-                print(f"Le contrat a bien été modifié : \"{modified_item}\". ") 
-                if (fields['field_to_modify'] == 'signed') & (modified_item.is_signed is True): 
-                    # from sentry_sdk import capture_message 
-                    capture_message(f'Le contrat {new_item.id} a été signé.') 
-                return modified_item 
-            else: 
-                print('Vous avez annulé la modification, le contrat n\'a pas été modifié.') 
-                return False 
+            # self.confirmation_process(fields, 'modifier', 'contract') 
+            self.modify_confirmation_process( 
+                contract_to_modify, 
+                fields['field_to_modify'], 
+                fields['new_value'] 
+            ) 
+
+            # # Confirmation : 
+            # confirmation = self.views.ask_for_confirmation('modifier', 'contract') 
+            # if (confirmation == 'y') | (confirmation == 'Y'): 
+            #     modified_item = self.manager.update_contract( 
+            #         contract_to_modify, 
+            #         fields['field_to_modify'], 
+            #         fields['new_value'] 
+            #     ) 
+            #     print(f"Le contrat a bien été modifié : \"{modified_item}\". ") 
+            #     if (fields['field_to_modify'] == 'signed') & (modified_item.is_signed is True): 
+            #         # from sentry_sdk import capture_message 
+            #         capture_message(f'Le contrat {new_item.id} a été signé.') 
+            #     return modified_item 
+            # else: 
+            #     print('Vous avez annulé la modification, le contrat n\'a pas été modifié.') 
+            #     return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -728,10 +804,7 @@ class Controller():
             Returns: 
                 Event object: The modified event instance. 
         """ 
-        if (self.user_session != 'GESTION') & (self.user_session != 'SUPPORT'): 
-            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
-            return False 
-        else: 
+        if (self.user_session == 'GESTION') & (self.user_session == 'SUPPORT'): 
             print('\nModifier un événement') 
             event_to_select = self.views.input_select_entity('event') 
             event_to_modify = self.manager.select_one_event( 
@@ -746,25 +819,34 @@ class Controller():
                 event_to_modify, 
                 gestion=gestion 
             ) 
-            print('fields : ', fields) 
+            # print('fields : ', fields) 
 
             # print('fields avant changemt (controller 10) : ', fields) 
             fields[fields['field_to_modify']] = fields['new_value'] 
             # print('fields après changemt (controller 10) : ', fields) 
 
-            # Confirmation : 
-            confirmation = self.views.ask_for_confirmation('modifier', 'event') 
-            if (confirmation == 'y') | (confirmation == 'Y'): 
-                modified_item = self.manager.update_event( 
-                    event_to_modify, 
-                    fields['field_to_modify'], 
-                    fields['new_value'] 
-                ) 
-                print(f"L'événement {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
-                return modified_item 
-            else: 
-                print('Vous avez annulé la modification, l\'événement n\'a pas été modifié.') 
-                return False 
+            self.modify_confirmation_process( 
+                event_to_modify, 
+                fields['field_to_modify'], 
+                fields['new_value'] 
+            ) 
+
+            # # Confirmation : 
+            # confirmation = self.views.ask_for_confirmation('modifier', 'event') 
+            # if (confirmation == 'y') | (confirmation == 'Y'): 
+            #     modified_item = self.manager.update_event( 
+            #         event_to_modify, 
+            #         fields['field_to_modify'], 
+            #         fields['new_value'] 
+            #     ) 
+            #     print(f"L'événement {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+            #     return modified_item 
+            # else: 
+            #     print('Vous avez annulé la modification, l\'événement n\'a pas été modifié.') 
+            #     return False 
+        else: 
+            print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+            return False 
 
 
     # ==== delete methods ==== # 
@@ -778,18 +860,20 @@ class Controller():
             print('\nSupprimer un utilisateur') 
             user_to_select = self.views.input_select_entity('user') 
 
-            # Confirmation : 
-            confirmation = self.views.ask_for_confirmation('supprimer', 'user') 
-            if (confirmation == 'y') | (confirmation == 'Y'): 
-                user_to_delete = self.manager.delete_user( 
-                    user_to_select['chosen_field'], 
-                    user_to_select['old_value'] 
-                ) 
-                print(f"L'utilisateur {user_to_select['old_value']} a bien été supprimé. ") 
-                return True 
-            else: 
-                print('Vous avez annulé la suppression, l\'utilisateur n\'a pas été supprimé.') 
-                return False 
+            self.confirmation_process(fields, 'supprimer', 'user') 
+
+            # # Confirmation : 
+            # confirmation = self.views.ask_for_confirmation('supprimer', 'user') 
+            # if (confirmation == 'y') | (confirmation == 'Y'): 
+            #     user_to_delete = self.manager.delete_user( 
+            #         user_to_select['chosen_field'], 
+            #         user_to_select['value_to_select'] 
+            #     ) 
+            #     print(f"L'utilisateur {user_to_select['value_to_select']} a bien été supprimé. ") 
+            #     return True 
+            # else: 
+            #     print('Vous avez annulé la suppression, l\'utilisateur n\'a pas été supprimé.') 
+            #     return False 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -1169,6 +1253,7 @@ class Controller():
             self.user_session = 'SUPPORT' 
         print('DEBUG : ', self.user_session) 
 
+
     def check_pw(self, mode, userPass): 
         """ Recursive method that checks the password of the user, if the token is past. 
             Args: 
@@ -1199,38 +1284,37 @@ class Controller():
                 else: 
                     return False 
 
-    def check_token(self, row): 
-        """ Checks token's department and expiration time for connected user 
-            for each request. 
-            Args: 
-                User object: the authenticated user instance. 
-        """ 
-        self.user_session = self.manager.verify_token( 
-            self.logged_user.email, 
-            self.logged_user.department.name, 
-            row 
-        ) 
-        print('self.user_session CL1142 : ', self.user_session) 
+    # def check_token(self, row): 
+    #     """ Checks token's department and expiration time for connected user 
+    #         for each request. 
+    #         Args: 
+    #             User object: the authenticated user instance. 
+    #     """ 
+    #     self.user_session = self.manager.verify_token( 
+    #         self.logged_user.email, 
+    #         self.logged_user.department.name, 
+    #         row 
+    #     ) 
+    #     print('self.user_session CL1142 : ', self.user_session) 
 
-        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
-            return True 
-        elif self.user_session == 'past': 
-            return False 
+    #     if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
+    #         return True 
+    #     elif self.user_session == 'past': 
+    #         return 'past' 
 
-        elif self.user_session is None: 
-            print(f'Il y a eu un problème ({self.user_session}), veuillez contacter un administrateur.') 
-            self.close_the_app() 
+    #     elif not self.user_session: 
+    #         print(f'Il y a eu un problème ({self.user_session}), veuillez contacter un administrateur.') 
+    #         self.close_the_app() 
 
-    def confirmation_process(self, fields, action, entity): 
-        """ Asks for confirmation and receives the answer. 
+
+    def register_confirmation_process(self, fields, entity): 
+        """ Asks for confirmation of recording an entity and receives the answer. 
             Proceeds to the action or discards the data if not confirmed. 
+            If user created: a message is sent to Sentry. 
             Args: 
-                action (str): The action to do in 'enregistrer', 'modifier' et 'supprimer'. 
+                fields (dict): The data to register int othe DB. 
                 entity (str): The name of the entity in 'dept', 'user', 'client', 'contract', 'event'. 
         """ 
-        print('Voici les données à enregistrer : ') 
-        self.views.display_dict(fields) 
-
         entity_dict = { 
             'dept': 'Le département', 
             'user': 'L\'utilisateur', 
@@ -1238,20 +1322,89 @@ class Controller():
             'contract': 'Le contrat', 
             'event': 'L\'événement', 
         } 
-
+        print(f'Voici les données à enregistrer : ') 
+        self.views.display_dict(fields) 
         confirmation = self.views.ask_for_confirmation( 
             'enregistrer', 
-            'dept' 
+            entity 
         ) 
         if (confirmation == 'Y') | (confirmation == 'y'): 
             print(confirmation) 
-            # new_item = self.manager.add_entity('dept', fields) 
             new_item = self.manager.add_entity(entity, fields) 
+            if entity == 'user': 
+                capture_message(f'{user} {new_item.name} (ID {new_item.id}) a été créé. ') 
             print(f"{entity_dict[entity]} {new_item.name} (ID : {new_item.id}) a bien été créé. ") 
-            # return new_item 
         else: 
             print(confirmation) 
-            print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
+            print('Vous avez annulé l\'opération, vous allez être redirigé vers le menu. ') 
+
+
+    def modify_confirmation_process(self, entity, entity_to_modify, select, fields): 
+        """ Asks for confirmation of modifying an entity and receives the answer. 
+            Proceeds to the action or discards the data if not confirmed. 
+            Not for departments. 
+            Args: 
+                entity (str): The name of the entity in 'dept', 'user', 'client', 'contract', 'event'. 
+                entity_to_modify (obj): The entity to modify. 
+                select (dict): The data to retrieve into the DB, for modifying them. 
+                fiels (dict): The data to replace into the DB. 
+        """ 
+        entity_dict = { 
+            'user': 'L\'utilisateur', 
+            'client': 'Le client', 
+            'contract': 'Le contrat', 
+            'event': 'L\'événement', 
+        } 
+        print(f'Voici les données à modifier : ') 
+        self.views.display_dict(fields) 
+        confirmation = self.views.ask_for_confirmation( 
+            'modifier', 
+            entity 
+        ) 
+        if (confirmation == 'Y') | (confirmation == 'y'): 
+            print(confirmation) 
+
+            if entity == 'user': 
+                modified_item = self.manager.update_user( 
+                    entity_to_modify, 
+                    fields['field_to_modify'], 
+                    fields['new_value'] 
+                ) 
+                print(f"{user} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                return modified_item 
+            elif entity == 'client': 
+                modified_item = self.manager.update_client( 
+                    entity_to_modify, 
+                    fields['field_to_modify'], 
+                    fields['new_value'] 
+                ) 
+                print(f"{client} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                return modified_item 
+            elif entity == 'contract': 
+                modified_item = self.manager.update_contract( 
+                    entity_to_modify, 
+                    fields['field_to_modify'], 
+                    fields['new_value'] 
+                ) 
+                print(f"{contract} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                if (fields['field_to_modify'] == 'signed') & (modified_item.is_signed is True): 
+                    # from sentry_sdk import capture_message 
+                    capture_message(f'Le contrat {new_item.id} a été signé.') 
+                return modified_item 
+            elif entity == 'event': 
+                modified_item = self.manager.update_event( 
+                    entity_to_modify, 
+                    fields['field_to_modify'], 
+                    fields['new_value'] 
+                ) 
+                print(f"{event} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                return modified_item 
+            else: 
+                print('Il y a eu un problème, merci de contacter un administrateur. ') 
+                return False 
+        else: 
+            print(confirmation) 
+            print('Vous avez annulé l\'opération, vous allez être redirigé vers le menu. ') 
 
 
     def press_enter_to_continue(self): 

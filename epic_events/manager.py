@@ -752,14 +752,8 @@ class Manager():
                 or message (str) 
                 or None 
         """ 
-        # print('connectEmail ML757 :', connectEmail) 
-        # print('connectDept ML758 :', connectDept) 
-        # print('row ML759 :', row) 
-        # Get the decrypted token row 
         if connectEmail == row['email']: 
-            # print('ok row : ', row) 
             registeredToken = row['token'] 
-        # print('registeredToken ML818 : ', registeredToken) 
 
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
@@ -772,8 +766,6 @@ class Manager():
             ) 
             print('self.userDecode ML773 : ', self.userDecode) 
             userDecode_exp = int(self.userDecode.pop('exp'))-3600 
-            # print('time() ML815 :', time()) 
-            # print('userDecode_exp ML816 :', userDecode_exp) 
 
             permission = '' 
             if self.userDecode['dept'] == 'gestion': 
@@ -782,7 +774,6 @@ class Manager():
                 permission = 'COMMERCE' 
             elif self.userDecode['dept'] == 'support': 
                 permission = 'SUPPORT' 
-            # print('permission ML825 :', permission) 
             return permission 
 
         except ExpiredSignatureError as expired: 

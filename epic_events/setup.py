@@ -82,7 +82,7 @@ class Setup():
         # Encrypt the token 
         self.manager.first_register_token(userToken) 
         debug = self.manager.decrypt_token() 
-        print('debug decrypt_token :', debug) 
+        print('debug decrypt_token (empty users dict) :', debug) 
         return True 
         # ==== /register empty file for tokens ==== # 
 

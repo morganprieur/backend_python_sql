@@ -52,7 +52,20 @@ class Views():
             'client': 'le client', 
             'contract': 'le contrat', 
             'event': 'l\'événement', 
-        }
+        } 
+        if entity == 'dept': 
+            fields = ['id', 'name'] 
+        elif entity == 'user': 
+            fields = ['id', 'name', 'email'] 
+        elif entity == 'client': 
+            fields = ['id', 'name', 'email', 'phone'] 
+        elif entity == 'contract': 
+            fields = ['id'] 
+        elif entity == 'event': 
+            fields = ['id', 'name', 'contract_id'] 
+        print('Les champs possibles sont: ') 
+        for f in fields: 
+            print(f) 
         entity_dict = {} 
         entity_dict['chosen_field'] = session.prompt(f'\nSur quel champ voulez-vous sélectionner {entity_str[entity]} ? ') 
         entity_dict['value_to_select'] = session.prompt('\nValeur à sélectionner : ') 
@@ -67,6 +80,13 @@ class Views():
         """ 
         for obj in objects: 
             print(obj) 
+
+    def display_dict(self, entity_to_register): 
+        """ Displays the input data to register. 
+            Args: 
+                dict: The dictionary of data to register. 
+        """ 
+        print(entity_to_register) 
 
 
     def ask_for_confirmation(self, action, entity): 
@@ -109,7 +129,7 @@ class Views():
         } 
         print(f'\nVous êtes sur le point d\'enregistrer un {entity_name[entity]} avec les informations suivantes : ') 
         print(entity) 
-        return confirmation 
+        return entity_name 
 
     def enter_to_continue(self): 
         enter = session.prompt('Appuyez sur entrée pour continuer ') 
@@ -257,17 +277,6 @@ class Views():
     def input_modify_client(self, old_client): 
         print('Modifier le client : ') 
         self.display_entity([old_client]) 
-        #     ID : {old_event.id} 
-        #     nom : {old_event.name} 
-        #     ID contrat : {old_event.contract_id} 
-        #     client : {old_event.contracts.client.name} (id : {old_event.contracts.client.name}) 
-        #     début : {old_event.start_datetime} 
-        #     fin : {old_event.end_datetime} 
-        #     contact support : {old_event.user.name} (id : {old_event.support_contact_id})') 
-        #     lieu : {old_event.location} 
-        #     invités : {old_event.attendees} 
-        #     notes : {old_event.notes} 
-        # ''') 
         client = old_client.to_dict() 
         client['field_to_modify'] = session.prompt('\nQuel champ voulez-vous modifier ? ') 
         client['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ {client['field_to_modify']} : ") 

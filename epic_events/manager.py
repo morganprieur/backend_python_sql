@@ -153,7 +153,7 @@ class Manager():
             Returns:
                 list or False: The items selected, of False if the entity name doesn't exist. 
         """ 
-        print('select_all_entities') 
+        # print('select_all_entities') 
         entities_dict = { 
             'depts': Department, 
             'users': User, 
@@ -165,8 +165,8 @@ class Manager():
         # file deepcode ignore UpdateAPI: local project 
         if entity in entities_dict.keys(): 
             items_list_db = self.session.query(entities_dict[entity]).all() 
-            for item in items_list_db: 
-                print(f'{entity} trouvés (manager.select_all_entities) : {item}.') 
+            # for item in items_list_db: 
+                # print(f'{entity} trouvés (manager.select_all_entities) : {item}.') 
             return items_list_db 
         else: 
             print(f'Cet objet ({entity}) n\'existe pas ML748.') 
@@ -322,7 +322,9 @@ class Manager():
         """ 
         print('update_user') 
         # itemName = self.select_one_user('id', id) 
-        if field == 'name': 
+        if field == 'id': 
+            itemName.id = new_value 
+        elif field == 'name': 
             itemName.name = new_value 
         elif field == 'email': 
             itemName.email = new_value 
@@ -356,12 +358,12 @@ class Manager():
         if field == 'id': 
             user_db = self.session.query(User).filter( 
                 User.id==int(value)).first() 
-            print('manager user_db : ', user_db) 
+            # print('manager user_db : ', user_db) 
             return user_db 
         elif field == 'name': 
             user_db = self.session.query(User).filter( 
                 User.name==value).first() 
-            print('user_db ML386 :', user_db) 
+            # print('user_db ML386 :', user_db) 
             return user_db 
         elif field == 'email': 
             user_db = self.session.query(User).filter( 
@@ -428,13 +430,12 @@ class Manager():
                 Client.sales_contact_id==7).all() 
         else: 
             print('no field recognized (manager.select_one_client)') 
-        if client_db is None: 
-            # TODO : afficher de nouveau la question précédente ? 
-            print('Aucun client avec ces informations (manager.select_one_client)') 
-            return None 
-        else: 
+        # if client_db is None: 
+        #     print('Aucun client avec ces informations (manager.select_one_client)') 
+        #     return None 
+        # else: 
             # print(f'user trouvé (manager.select_one_client) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
-            return client_db 
+        return client_db 
 
     def update_client(self, itemName, field, new_value): 
         """ Modifies a field of a given Client instance. 
@@ -490,13 +491,11 @@ class Manager():
                 Contract.id==int(value)).first() 
         else: 
             print('no field recognized (manager.select_one_contract)') 
-        if contract_db is None: 
-            # TODO : afficher de nouveau la question précédente ? 
-            print('Aucun utilisateur avec ces informations (manager.select_one_user)') 
-            return False 
-        else: 
-            # print(f'user trouvé (manager.select_one_user) : {user_db.name}, id : {user_db.id}, mail : {user_db.email}, pass : {user_db.password}, départemt : (id : {user_db.department.id}) name : {user_db.department.name}.') 
-            return contract_db 
+        # if contract_db is None: 
+        #     print('Aucun contrat avec ces informations (manager.select_one_user)') 
+        #     return False 
+        # else: 
+        return contract_db 
 
     def update_contract(self, itemName, field, new_value): 
         """ Modifies a field of a Contract instance, following its id. 
@@ -538,7 +537,7 @@ class Manager():
             Possible fields: 
                 'id' 
                 'name' 
-                'contract_id', 
+                'contract_id' 
             Args:
                 field (string): The name of the field to look for. 
                 value (string): The value for select the Event instance. 
@@ -620,6 +619,7 @@ class Manager():
         secret = os.environ.get('JWT_SECRET') 
         algo = os.environ.get('JWT_ALGO') 
         encoded_jwt = jwt.encode(payload, secret, algo) 
+        print('token ML623 :', encoded_jwt) 
         return encoded_jwt 
 
     def first_register_token(self, data_to_encrypt:dict): 
@@ -721,7 +721,7 @@ class Manager():
         for row in users: 
             # print('row ML722 :', row) 
             if connectEmail == row['email']: 
-                # print('ok row ML724 : ', row) 
+                print('row ML725 : ', row) 
                 return row 
 
     def verify_token(self, connectEmail, connectDept, row:dict): 
@@ -811,6 +811,7 @@ class Manager():
             Return: 
                 Bool: True if it's done. 
         """ 
+        print('regsiter token ML756') 
         # get key 
         # file deepcode ignore PT: local project  # Snyk 
         with open(os.environ.get('JWT_KEY_PATH'), 'rb') as keyfile:
@@ -854,6 +855,7 @@ class Manager():
         # Register the encrypted token 
         with open(os.environ.get('TOKEN_PATH'), 'wb') as encrypted_file:
             encrypted_file.write(encrypted) 
+        print('Token registered ML859') 
         return True 
 
 

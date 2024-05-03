@@ -53,6 +53,7 @@ class Controller():
         elif self.user_session == 'SUPPORT': 
             self.dashboard.display_menu([10, 14, 15, 16, 17, 18, 19, 20, 21, 27, 29]) 
         else: 
+            print('self.user_session CL56 :',self.user_session) 
             print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
             self.close_the_app() 
             return False 
@@ -183,6 +184,7 @@ class Controller():
         if self.dashboard.ask_for_action == '14': 
             self.dashboard.ask_for_action = None 
 
+            self.show_all_clients() 
 
             self.press_enter_to_continue() 
             self.start(mode) 
@@ -379,22 +381,22 @@ class Controller():
             if row is not None: 
                 # Check token for connected user + department 
                 if self.check_token(row): 
+                    print('Un token est enregistré. ') 
                     self.dashboard.display_welcome( 
                         self.logged_user.name, 
                         self.logged_user.department.name 
                     ) 
                     self.press_enter_to_continue() 
             else: 
-                pass_counter = 1 
                 userPass = '' 
                 if mode == 'dev': 
                     userPass = userConnect['password'] 
                 elif mode == 'pub': 
                     userPass = self.views.input_user_connection_pass() 
+                print(f'input pass : |{userPass}|') 
                 # if pass_counter < 3: 
                 if self.check_pw( 
                     mode, 
-                    self.logged_user, 
                     userPass 
                 ): 
                     token = self.manager.get_token(60, { 
@@ -403,6 +405,15 @@ class Controller():
                     }) 
                     self.manager.register_token( 
                         self.logged_user.email, token) 
+
+                    row = self.manager.verify_if_token_exists( 
+                        self.logged_user.email 
+                    ) 
+                    self.user_session = self.manager.verify_token( 
+                        self.logged_user.email, 
+                        self.logged_user.department.name, 
+                        row 
+                    ) 
 
                     self.dashboard.display_welcome( 
                         self.logged_user.name, 
@@ -427,19 +438,8 @@ class Controller():
             print('\nEnregistrer un département') 
             fields = self.views.input_create_dept() 
 
-            confirmation = self.views.ask_for_creation('dept') 
-            self.press_enter_to_continue() 
+            self.confirmation_process(fields, 'enregistrer', 'dept') 
 
-            if (confirmation == 'Y') | (confirmation == 'y'): 
-                new_item = self.manager.add_entity('dept', fields) 
-                print(f"Le département {new_item.name} (ID : {new_item.id}) a bien été créé. ") 
-                return new_item 
-            else: 
-                print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
-
-            new_item = self.manager.add_entity('dept', fields) 
-            print(f"Le département {new_item.id} {new_item.name} a bien été créé. ") 
-            return new_item 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -456,17 +456,19 @@ class Controller():
             print('\nEnregistrer un utilisateur') 
             fields = self.views.input_create_user() 
 
-            confirmation = self.views.ask_for_creation('user') 
-            self.press_enter_to_continue() 
+            self.confirmation_process(fields, 'enregistrer', 'user') 
 
-            if (confirmation == 'Y') | (confirmation == 'y'): 
-                new_item = self.manager.add_entity('user', fields) 
-                print(f"L\'utilisateur {new_item.name} (ID : {new_item.id}) a bien été créé. ") 
+            # confirmation = self.views.ask_for_creation('user') 
+            # self.press_enter_to_continue() 
 
-                capture_message(f'Utilisateur {new_item.name} (ID {new_item.id}) a été créé. ') 
-                return new_item 
-            else: 
-                print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
+            # if (confirmation == 'Y') | (confirmation == 'y'): 
+            #     new_item = self.manager.add_entity('user', fields) 
+            #     print(f"L\'utilisateur {new_item.name} (ID : {new_item.id}) a bien été créé. ") 
+
+            #     capture_message(f'Utilisateur {new_item.name} (ID {new_item.id}) a été créé. ') 
+            #     return new_item 
+            # else: 
+            #     print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -483,9 +485,11 @@ class Controller():
             fields = self.views.input_create_client() 
             fields['sales_contact_id'] = self.logged_user.id 
 
-            new_item = self.manager.add_entity('client', fields) 
-            print(f"Le client {new_item.name} (ID : {new_item.id}) du contact {new_item.User.name} a bien été créé. ") 
-            return new_item 
+            self.confirmation_process(fields, 'enregistrer', 'client') 
+
+            # new_item = self.manager.add_entity('client', fields) 
+            # print(f"Le client {new_item.name} (ID : {new_item.id}) du contact {new_item.User.name} a bien été créé. ") 
+            # return new_item 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -501,19 +505,21 @@ class Controller():
             print('\nEnregistrer un contrat') 
             fields = self.views.input_create_contract() 
 
-            confirmation = self.views.ask_for_creation('contract') 
-            self.press_enter_to_continue() 
+            self.confirmation_process(fields, 'enregistrer', 'contract') 
 
-            if (confirmation == 'Y') | (confirmation == 'y'): 
-                new_item = self.manager.add_entity('contract', fields) 
-                print(f"Le contrat {new_item.id} du client {new_item.client.name} a bien été créé. ") 
+            # confirmation = self.views.ask_for_creation('contract') 
+            # self.press_enter_to_continue() 
 
-                if new_item.is_signed is True: 
-                    # from sentry_sdk import capture_message 
-                    capture_message(f'Le nouveau contrat {new_item.id} du client {new_item.client.name} est signé.') 
-                return new_item 
-            else: 
-                print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
+            # if (confirmation == 'Y') | (confirmation == 'y'): 
+            #     new_item = self.manager.add_entity('contract', fields) 
+            #     print(f"Le contrat {new_item.id} du client {new_item.client.name} a bien été créé. ") 
+
+            #     if new_item.is_signed is True: 
+            #         # from sentry_sdk import capture_message 
+            #         capture_message(f'Le nouveau contrat {new_item.id} du client {new_item.client.name} est signé.') 
+            #     return new_item 
+            # else: 
+            #     print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -534,15 +540,17 @@ class Controller():
             else: 
                 fields = self.views.input_create_event() 
 
-                confirmation = self.views.ask_for_creation('event') 
-                self.press_enter_to_continue() 
+                self.confirmation_process(fields, 'enregistrer', 'event') 
 
-                if (confirmation == 'Y') | (confirmation == 'y'): 
-                    new_item = self.manager.add_entity('event', fields) 
-                    print(f"L\'événement a bien été créé : {new_item}. ") 
-                    return new_item 
-                else: 
-                    print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
+                # confirmation = self.views.ask_for_creation('event') 
+                # self.press_enter_to_continue() 
+
+                # if (confirmation == 'Y') | (confirmation == 'y'): 
+                #     new_item = self.manager.add_entity('event', fields) 
+                #     print(f"L\'événement a bien été créé : {new_item}. ") 
+                #     return new_item 
+                # else: 
+                #     print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -794,9 +802,15 @@ class Controller():
             Returns: 
                 list: The registered department instances. 
         """ 
+        print('Afficher tous les départementss ') 
         if self.user_session == 'GESTION': 
             depts = self.manager.select_all_entities('depts') 
-            self.views.display_entities(depts) 
+            if depts != []: 
+                print(f'Il y a {len(depts)} départements : ') 
+                self.views.display_entity(depts) 
+                return depts 
+            else: 
+                print('Il n\'y a aucun département à afficher. ') 
             return depts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -809,9 +823,15 @@ class Controller():
             Returns: 
                 list: The registered user instances. 
         """ 
+        print('Afficher tous les utilisateurs ') 
         if self.user_session == 'GESTION': 
             users = self.manager.select_all_entities('users') 
-            self.views.display_entities(users) 
+            print(f'Il y a {len(users)} utilisateurs : ') 
+            if users != []: 
+                self.views.display_entity(users) 
+                return users 
+            else: 
+                print('Il n\'y a aucun utilisateur à afficher. ') 
             return users 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -824,9 +844,15 @@ class Controller():
             Returns: 
                 list: The registered client instances. 
         """ 
+        print('Afficher tous les clients ') 
         if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
             clients = self.manager.select_all_entities('clients') 
-            self.views.display_entities(clients) 
+            print(f'Il y a {len(clients)} clients : ') 
+            if clients != []: 
+                self.views.display_entity(clients) 
+                return clients 
+            else: 
+                print('Il n\'y a aucun client à afficher. ') 
             return clients 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -839,9 +865,15 @@ class Controller():
             Returns: 
                 list: The registered contract instances. 
         """ 
+        print('Afficher tous les contrats ') 
         if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
             contracts = self.manager.select_all_entities('contracts') 
-            self.views.display_entities(contracts) 
+            print(f'Il y a {len(contracts)} contrats : ') 
+            if contracts != []: 
+                self.views.display_entity(contracts) 
+                return contracts 
+            else: 
+                print('Il n\'y a aucun contrat à afficher. ') 
             return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -854,10 +886,15 @@ class Controller():
             Returns: 
                 list: The registered events instances. 
         """ 
+        print('Afficher tous les événementss ') 
         if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
             events = self.manager.select_all_entities('events') 
-            self.views.display_entities(events) 
-            return events 
+            print(f'Il y a {len(evets)} événements : ') 
+            if events != []: 
+                self.views.display_entity(events) 
+                return events 
+            else: 
+                print('Il n\'y a aucun événement à afficher. ') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -873,9 +910,16 @@ class Controller():
         if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
             print('\nAfficher un département') 
             dept_to_select = self.views.input_select_entity('dept') 
-            dept = self.manager.select_one_dept(dept_to_select['chosen_field'], dept_to_select['old_value']) 
-            self.views.display_entity([dept]) 
-            return dept 
+            # print(dept_to_select) 
+            dept = self.manager.select_one_dept( 
+                dept_to_select['chosen_field'], 
+                dept_to_select['value_to_select'] 
+            ) 
+            if dept is not None: 
+                self.views.display_entity([dept]) 
+                return dept 
+            else: 
+                print('Il n\'y a aucun département avec ces inforamtions.') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -892,17 +936,24 @@ class Controller():
             user_to_select = self.views.input_select_entity('user') 
             user = self.manager.select_one_user( 
                 user_to_select['chosen_field'], 
-                user_to_select['old_value'] 
+                user_to_select['value_to_select'] 
             ) 
-            self.views.display_entity([user]) 
-            return user 
+            if user is not None: 
+                self.views.display_entity([user]) 
+                return user 
+            else: 
+                print('Il n\'y a aucun utilisateur avec ces inforamtions.') 
         elif (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT') : 
             user_to_select = self.views.input_select_entity('user') 
             user = self.manager.select_one_user( 
                 user_to_select['chosen_field'], 
-                user_to_select['old_value'] 
+                user_to_select['value_to_select'] 
             ) 
-            self.views.display_user_minimum(user) 
+            if user is not None: 
+                self.views.display_user_minimum(user) 
+                return user 
+            else: 
+                print('Il n\'y a aucun utilisateur avec ces inforamtions.') 
             return user 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -920,10 +971,13 @@ class Controller():
             client_to_select = self.views.input_select_entity('client') 
             client = self.manager.select_one_client( 
                 client_to_select['chosen_field'], 
-                client_to_select['old_value'] 
+                client_to_select['value_to_select'] 
             ) 
-            self.views.display_entity([client]) 
-            return client 
+            if client is not None: 
+                self.views.display_entity([client]) 
+                return client 
+            else: 
+                print('Il n\'y a aucun utilisateur avec ces inforamtions.') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -935,9 +989,13 @@ class Controller():
             contract_to_select = self.views.input_select_entity('contract') 
             contract = self.manager.select_one_contract( 
                 contract_to_select['chosen_field'], 
-                contract_to_select['old_value'] 
+                contract_to_select['value_to_select'] 
             ) 
-            self.views.display_entity([contract]) 
+            if contract is not None: 
+                self.views.display_entity([contract]) 
+                return contract 
+            else: 
+                print('Il n\'y a aucun utilisateur avec ces inforamtions.') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -949,9 +1007,13 @@ class Controller():
             event_to_select = self.views.input_select_entity('event') 
             event = self.manager.select_one_event( 
                 event_to_select['chosen_field'], 
-                event_to_select['old_value'] 
+                event_to_select['value_to_select'] 
             ) 
-            self.views.display_entity([event]) 
+            if event is not None: 
+                self.views.display_entity([event]) 
+                return event 
+            else: 
+                print('Il n\'y a aucun événement avec ces inforamtions.') 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -1107,8 +1169,7 @@ class Controller():
             self.user_session = 'SUPPORT' 
         print('DEBUG : ', self.user_session) 
 
-
-    def check_pw(self, mode, pass_counter): 
+    def check_pw(self, mode, userPass): 
         """ Recursive method that checks the password of the user, if the token is past. 
             Args: 
                 mode (str): The mode (dev or pub) wich the app has ben runned. 
@@ -1118,27 +1179,25 @@ class Controller():
                 bool: True if the self.user_session has been filled, if all was alright. 
                         False instead. 
         """ 
-        if pass_counter < 3: 
-            if mode == 'pub': 
-                print(f'Les informations saisies ne sont pas bonnes, merci de réessayer. \
-                    Il vous reste {3-pass_counter} essais. ') 
-                userPass = self.views.input_user_connection_pass() 
-                if self.manager.check_pw( 
-                    self.logged_user.email, 
-                    userPass 
-                ): 
-                    return True 
-                else: 
-                    pass_counter += 1 
-                    self.check_pw(mode, pass_counter) 
-            elif mode == 'dev': 
-                print('Il y a un problème avec le pw.')                 
-                self.close_the_app() 
-            else: 
-                return False 
+        pass_counter = 0 
+        if self.manager.check_pw( 
+            self.logged_user.email, 
+            userPass 
+        ): 
+            return True 
         else: 
-            return False 
-
+            pass_counter += 1 
+            if pass_counter < 3: 
+                if mode == 'pub': 
+                    print(f'Les informations saisies ne sont pas bonnes, merci de réessayer. \
+                        Il vous reste {3-pass_counter} essais. ') 
+                    userPass = self.views.input_user_connection_pass() 
+                    self.check_pw(mode, pass_counter, userPass) 
+                elif mode == 'dev': 
+                    print('Il y a un problème avec le pw.')                 
+                    self.close_the_app() 
+                else: 
+                    return False 
 
     def check_token(self, row): 
         """ Checks token's department and expiration time for connected user 
@@ -1146,8 +1205,6 @@ class Controller():
             Args: 
                 User object: the authenticated user instance. 
         """ 
-        # row = self.manager.verify_if_token_exists(self.logged_user.email) 
-        # if row: 
         self.user_session = self.manager.verify_token( 
             self.logged_user.email, 
             self.logged_user.department.name, 
@@ -1163,6 +1220,38 @@ class Controller():
         elif self.user_session is None: 
             print(f'Il y a eu un problème ({self.user_session}), veuillez contacter un administrateur.') 
             self.close_the_app() 
+
+    def confirmation_process(self, fields, action, entity): 
+        """ Asks for confirmation and receives the answer. 
+            Proceeds to the action or discards the data if not confirmed. 
+            Args: 
+                action (str): The action to do in 'enregistrer', 'modifier' et 'supprimer'. 
+                entity (str): The name of the entity in 'dept', 'user', 'client', 'contract', 'event'. 
+        """ 
+        print('Voici les données à enregistrer : ') 
+        self.views.display_dict(fields) 
+
+        entity_dict = { 
+            'dept': 'Le département', 
+            'user': 'L\'utilisateur', 
+            'client': 'Le client', 
+            'contract': 'Le contrat', 
+            'event': 'L\'événement', 
+        } 
+
+        confirmation = self.views.ask_for_confirmation( 
+            'enregistrer', 
+            'dept' 
+        ) 
+        if (confirmation == 'Y') | (confirmation == 'y'): 
+            print(confirmation) 
+            # new_item = self.manager.add_entity('dept', fields) 
+            new_item = self.manager.add_entity(entity, fields) 
+            print(f"{entity_dict[entity]} {new_item.name} (ID : {new_item.id}) a bien été créé. ") 
+            # return new_item 
+        else: 
+            print(confirmation) 
+            print('Vous avez annulé la création, vous allez être redirigé vers le menu. ') 
 
 
     def press_enter_to_continue(self): 

@@ -54,10 +54,10 @@ class Dashboard():
     def display_welcome(self, user_name, user_dept): 
         # print(self.welcome) 
         print(f'\n* * * * * * * * * * * * * * * * * \
-            \n\033[1mBonjour et bienvenue {user_name} (département {user_dept}) !\033[0m \
-            \n\n\tCe programme vous permet de gérer vos clients. \
-            \nLe fichier README.md contient les informations pour installer et utiliser l\'application.' 
-            '\n' 
+            \n\n\033[1mBonjour et bienvenue {user_name} (département {user_dept}) !\033[0m \
+            \n\tCe programme vous permet de gérer vos clients selon votre rôle. \
+            \nPour revenir au menu précédent : *. \
+            \n' 
         ) 
 
 
@@ -69,8 +69,6 @@ class Dashboard():
         print('\n* * * * * * * * * * * * * * * * *') 
         for item in items: 
             print(self.menu[item]) 
-        # for r in self.rescue_menu: 
-        #     print(r) 
         self.ask_for_action = session.prompt('\nChoisir une action : ') 
         print('') 
         return self.ask_for_action 

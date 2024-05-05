@@ -81,12 +81,17 @@ class Views():
         for obj in objects: 
             print(obj) 
 
-    def display_dict(self, entity_to_register): 
+    def display_dict(self, entity_name, dict_to_register): 
         """ Displays the input data to register. 
             Args: 
                 dict: The dictionary of data to register. 
         """ 
-        print(entity_to_register) 
+        # if entity_name == 'user': 
+        #     print(f"nom : {dict_to_register['name']}, mail: {dict_to_register['email']}, mot de passe: (secret), téléphone: {dict_to_register['phone']}, département : {dict_to_register['department']['name']}") 
+        if entity_name == 'user': 
+            print(f"nom : {dict_to_register['name']}, mail: {dict_to_register['email']}, mot de passe: (secret), téléphone: {dict_to_register['phone']}, nom du département : {dict_to_register['department_name']}") 
+        else: 
+            print(dict_to_register) 
 
 
     def ask_for_confirmation(self, action, entity): 
@@ -111,25 +116,25 @@ class Views():
         confirmation = session.prompt(f'\nEtes-vous sûr de vouloir {action} {entity_dict[entity]} ? (Y/N) ') 
         return confirmation 
 
-    def ask_for_creation(self, entity): 
-        """ Prompt to confirm the creation of the item with the given data. 
-            Possible entities: 
-                'dept', 'user', 'client', 'contract', 'event'. 
-            Args: 
-                entity (str): The entity to delete or modify. 
-            Returns:
-                str: The answer from the user. 
-        """ 
-        entity_name = { 
-            'dept': 'nouveau département', 
-            'user': 'nouvel utilisateur',
-            'client': 'nouveau client', 
-            'contract': 'nouveau contrat', 
-            'event': 'nouvel événement'
-        } 
-        print(f'\nVous êtes sur le point d\'enregistrer un {entity_name[entity]} avec les informations suivantes : ') 
-        print(entity) 
-        return entity_name 
+    # def ask_for_creation(self, entity): 
+    #     """ Prompt to confirm the creation of the item with the given data. 
+    #         Possible entities: 
+    #             'dept', 'user', 'client', 'contract', 'event'. 
+    #         Args: 
+    #             entity (str): The entity to delete or modify. 
+    #         Returns:
+    #             str: The answer from the user. 
+    #     """ 
+    #     entity_name = { 
+    #         'dept': 'nouveau département', 
+    #         'user': 'nouvel utilisateur',
+    #         'client': 'nouveau client', 
+    #         'contract': 'nouveau contrat', 
+    #         'event': 'nouvel événement'
+    #     } 
+    #     print(f'\nVous êtes sur le point d\'enregistrer un {entity_name[entity]} avec les informations suivantes : ') 
+    #     print(entity) 
+    #     return entity_name 
 
     def enter_to_continue(self): 
         enter = session.prompt('Appuyez sur entrée pour continuer ') 
@@ -154,14 +159,15 @@ class Views():
             Returns:
                 dict: The data to register into the DB. 
         """ 
-        user = {} 
-        user['name'] = session.prompt('\nNom de l\'utilisateur : ') 
-        user['email'] = session.prompt('\nMail : ') 
-        user['entered_password'] = getpass('\nMot de passe : ') 
-        user['phone'] = session.prompt('\nTéléphone : ') 
-        user['department_name'] = session.prompt('\nNom du département : ') 
-        # user['department_id'] = session.prompt('\nDépartement (auto) : ') 
-        return user 
+        # user = {} 
+        # user['name'] = session.prompt('\nNom de l\'utilisateur : ') 
+        # user['email'] = session.prompt('\nMail : ') 
+        # user['entered_password'] = getpass('\nMot de passe : ') 
+        # user['phone'] = session.prompt('\nTéléphone : ') 
+        # user['department_name'] = session.prompt('\nNom du département : ') 
+        # return user 
+        user_role = session.prompt('\nRôle de l\'utilisateur : ') 
+        return user_role 
 
 
     def input_create_client(self): 

@@ -58,6 +58,7 @@ class Manager():
                 entity object: The last created entity item. 
         """ 
         print('add_entity') 
+        print('fields ML61 :', fields) 
         entities_dict = { 
             'dept': Department, 
             'user': User, 

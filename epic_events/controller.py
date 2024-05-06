@@ -25,6 +25,8 @@ class Controller():
 
         self.user_session = None 
         self.role = role 
+        with open(os.environ.get('FILE_PATH'), 'r') as users_file: 
+            self.registered = json.load(users_file) 
 
 
     def start(self, mode): 
@@ -52,19 +54,13 @@ class Controller():
         # Displays only the useful menus, depending on the connected user  
         if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             self.display_roles_menus() 
-        # elif self.user_session == 'GESTION': 
-        #     self.dashboard.display_menu([1, 2, 4, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29]) 
-        # elif self.user_session == 'COMMERCE': 
-        #     self.dashboard.display_menu([3, 5, 8, 9, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 29]) 
-        # elif self.user_session == 'SUPPORT': 
-        #     self.dashboard.display_menu([10, 14, 15, 16, 17, 18, 19, 20, 21, 27, 29]) 
         else: 
-            print('self.user_session CL56 :',self.user_session) 
+            print('DEBUG self.user_session CL56 :',self.user_session) 
             print('Ce mail n\'est pas enregistré, veuillez contacter un administrateur.') 
             self.close_the_app() 
             return False 
 
-
+        # ======== M E N U  C H O I C E S ======== # 
         # ==== Registers one dept ==== # 
         if self.dashboard.ask_for_action == '1': 
             self.dashboard.ask_for_action = None 
@@ -78,7 +74,7 @@ class Controller():
         if self.dashboard.ask_for_action == '2': 
             self.dashboard.ask_for_action = None 
 
-            self.register_user() 
+            self.register_user(mode) 
             # from sentry_sdk import capture_message 
             capture_message('Un utilisateur a été créé. ') 
 
@@ -89,7 +85,7 @@ class Controller():
         if self.dashboard.ask_for_action == '3': 
             self.dashboard.ask_for_action = None 
 
-            self.register_client() 
+            self.register_client(mode) 
 
             self.views.enter_to_continue() 
             self.start(mode) 
@@ -98,7 +94,7 @@ class Controller():
         if self.dashboard.ask_for_action == '4': 
             self.dashboard.ask_for_action = None 
 
-            self.register_contract() 
+            self.register_contract(mode) 
 
             self.views.enter_to_continue() 
             self.start(mode) 
@@ -107,7 +103,7 @@ class Controller():
         if self.dashboard.ask_for_action == '5': 
             self.dashboard.ask_for_action = None 
 
-            self.register_event() 
+            self.register_event(mode) 
 
             self.views.enter_to_continue() 
             self.start(mode) 
@@ -146,6 +142,8 @@ class Controller():
             self.dashboard.ask_for_action = None 
 
             self.modify_contract() 
+            # from sentry_sdk import capture_message 
+            capture_message('Un contrat a été modifié. ') 
 
             self.views.enter_to_continue() 
             self.start(mode) 
@@ -312,7 +310,7 @@ class Controller():
             self.views.enter_to_continue() 
             self.start(mode) 
 
-        # ==== Quit the application ==== #  
+        # ==== QUIT THE APP ==== #  
         if self.dashboard.ask_for_action == '0': 
             self.dashboard.ask_for_action = None 
             self.close_the_app() 
@@ -367,8 +365,8 @@ class Controller():
                 return False 
         elif mode == 'dev': 
             # file deepcode ignore PT: local project 
-            with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
-                self.registered = json.load(jsonfile) 
+            # with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
+            #     self.registered = json.load(jsonfile) 
                 userConnect = {} 
                 if self.role == 'admin': 
                     userConnect = self.registered['users'][0] 
@@ -440,7 +438,7 @@ class Controller():
                     print('Un token est enregistré. ') 
                     # print('self.user_session :', self.user_session) 
                     self.user_session = token_check 
-                    print('self.user_session CL443 :', self.user_session) 
+                    print('DEBUG self.user_session :', self.user_session) 
                     self.dashboard.display_welcome( 
                         self.logged_user.name, 
                         self.logged_user.department.name 
@@ -512,8 +510,7 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
-    def register_user(self): 
+    def register_user(self, mode): 
         """ Registers one user with the data entered into the terminal. 
             Only the gestion users are allowed to do this. 
             The password is hashed, the token is registered into the encrypted file. 
@@ -522,36 +519,34 @@ class Controller():
         """ 
         if self.user_session == 'GESTION': 
             print('\nEnregistrer un utilisateur') 
-            # fields = self.views.input_create_user() 
-            user_role = self.views.input_create_user() 
-
             fields = {} 
-
-            with open(os.environ.get('FILE_PATH'), 'r') as users_file: 
-                users = json.load(users_file) 
-            if user_role == '*': 
-                print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
-            # else: 
-            elif user_role == 'sales': 
-                fields = users['users'][1] 
-                fields['entered_password'] = os.environ.get('USER_2_PW') 
-            elif user_role == 'support': 
-                fields = users['users'][2] 
-                fields['entered_password'] = os.environ.get('U_3_PW') 
+            if mode == 'dev': 
+                user_role = self.views.input_user_role() 
+                users = self.registered['users'] 
+                if user_role == '*': 
+                    print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                elif user_role == 'sales': 
+                    fields = users['users'][1] 
+                    fields['entered_password'] = os.environ.get('USER_2_PW') 
+                elif user_role == 'support': 
+                    fields = users['users'][2] 
+                    fields['entered_password'] = os.environ.get('U_3_PW') 
+                else: 
+                    print('Cet utilisateur n\'existe pas. ') 
+                    return False 
+            elif mode == 'pub': 
+                fields = self.views.input_create_user() 
+                if fields['name'] == '*': 
+                    print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
-                print('Cet utilisateur n\'existe pas. ') 
-                self.views.enter_to_continue() 
-
-            # print('fields file :', fields) 
-
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
             self.register_confirmation_process('user', fields) 
-
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
-    def register_client(self): 
+    def register_client(self, mode): 
         """ Registers one client with the data entered into the terminal. 
             Only the 'commerce' users are allowed to do this. 
             Returns: 
@@ -559,21 +554,25 @@ class Controller():
         """ 
         if self.user_session == 'COMMERCE': 
             print('\nEnregistrer un client') 
-            fields = self.views.input_create_client() 
-
-            if fields['name'] == '*': 
-                print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+            if mode == 'dev': 
+                clients = self.registered['clients'] 
+                fields = clients[0] 
+            elif mode == 'pub': 
+                fields = self.views.input_create_client() 
+                if fields['name'] == '*': 
+                    print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                    return false 
             else: 
-                fields['sales_contact_id'] = self.logged_user.id 
-
-                self.register_confirmation_process('client', fields) 
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+            fields['sales_contact_id'] = self.logged_user.id 
+            self.register_confirmation_process('client', fields) 
 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
-    def register_contract(self): 
+    def register_contract(self, mode): 
         """ Registers one contract with the data entered into the terminal. 
             Only the 'gestion' users are allowed to do this. 
             Returns: 
@@ -581,19 +580,23 @@ class Controller():
         """ 
         if self.user_session == 'GESTION': 
             print('\nEnregistrer un contrat') 
-            fields = self.views.input_create_contract() 
-
-            if fields['client_name'] == '*': 
-                print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+            if mode == 'dev': 
+                contracts = self.registered['contracts'] 
+                fields = contracts[0] 
+            elif mode == 'pub': 
+                fields = self.views.input_create_contract() 
+                if fields['client_name'] == '*': 
+                    print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                    return False 
             else: 
-                self.register_confirmation_process('contract', fields) 
-
+                print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                return False 
+            self.register_confirmation_process('contract', fields) 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
-    def register_event(self): 
+    def register_event(self, mode): 
         """ Registers one event with the data entered into the terminal. 
             Only the 'commerce' users are allowed to do this. 
             Returns: 
@@ -601,18 +604,30 @@ class Controller():
         """ 
         if self.user_session == 'COMMERCE': 
             print('\nEnregistrer un événement') 
-            contract = self.views.input_select_entity('contract') 
 
+            print('\nSélectionner un contract : ') 
+            fields = self.views.input_select_entity('contract') 
+            contract = self.manager.select_one_contract( 
+                fields['field_to_select'], 
+                fields['value_to_select'] 
+            ) 
             if not contract.is_signed: 
                 print(f"Le contrat {contract.id} n\'est pas signé, vous ne pouvez pas créer d\'événement.") 
             else: 
-                fields = self.views.input_create_event() 
+                if mode == 'dev': 
+                    events = self.registered['events'] 
+                    event = events[0] 
+                    event['contract_id'] = fields['value_to_select']
+                elif mode == 'pub': 
+                    fields = self.views.input_create_event() 
+                    fields['contract_id'] = fields['value_to_select']
 
-                if fields['name'] == '*': 
-                    print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                    if fields['name'] == '*': 
+                        print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
                 else: 
-                    self.register_confirmation_process('event', fields) 
-
+                    print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
+                    return False 
+                self.register_confirmation_process('event', fields) 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -629,11 +644,12 @@ class Controller():
             print('\nModifier un département') 
             dept_to_select = self.views.input_select_entity('dept') 
 
-            if dept_to_select['chosen_field'] == '*': 
+            if dept_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                return False 
             else: 
                 dept_to_modify = self.manager.select_one_dept( 
-                    dept_to_select['chosen_field'], 
+                    dept_to_select['field_to_select'], 
                     dept_to_select['value_to_select'] 
                 ) 
                 fields = self.views.input_modify_dept(dept_to_modify) 
@@ -658,7 +674,6 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def modify_user(self): 
         """ Modifies a User instance, entering the field to modify and the new value to register. 
             A User instance needs to get the password hashed, and a token, depending of his/her 
@@ -673,6 +688,7 @@ class Controller():
 
             if user_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                return False 
             else: 
                 user_to_modify = self.manager.select_one_user( 
                     user_to_select['field_to_select'], 
@@ -683,25 +699,22 @@ class Controller():
                     'user', 
                     user_to_modify 
                 ) 
-                # print('fields CL615 : ', fields) 
 
                 if fields['field_to_modify'] == 'password': 
                     hash_new_pw = self.manager.hash_pw(fields['new_value']) 
                     fields['new_value'] = hash_new_pw 
 
-                # print('fields avant changemt (controller 7) : ', fields) 
                 fields[fields['field_to_modify']] = fields['new_value'] 
 
                 self.modify_confirmation_process( 
                     user_to_modify, 
                     fields['field_to_modify'], 
-                    fields['new_value'] 
+                    fields 
                 ) 
 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def modify_client(self): 
         """ Modifies one client, entering the field and the new value to register. 
@@ -715,6 +728,7 @@ class Controller():
 
             if client_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                return False 
             else: 
                 client_to_modify = self.manager.select_one_client( 
                     client_to_select['field_to_select'], 
@@ -725,20 +739,17 @@ class Controller():
                     client_to_modify 
                 ) 
 
-                # print('fields avant changemt (controller 8) : ', fields) 
                 fields[fields['field_to_modify']] = fields['new_value'] 
-                # print('fields après changemt (controller 8) : ', fields) 
 
                 self.modify_confirmation_process( 
                     client_to_modify, 
                     fields['field_to_modify'], 
-                    fields['new_value'] 
+                    fields 
                 ) 
 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def modify_contract(self): 
         """ Modifies one contract, entering the field and the new value to register. 
@@ -746,39 +757,39 @@ class Controller():
             Returns: 
                 Contract object: The modified contract instance. 
         """ 
-        if (self.user_session == 'COMMERCE') | (self.user_session == 'COMMERCE'): 
+        if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE'): 
             print('\nModifier un contrat') 
             contract_to_select = self.views.input_select_entity('contract') 
 
             if contract_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                return False 
             else: 
                 contract_to_modify = self.manager.select_one_contract( 
                     contract_to_select['field_to_select'], 
                     contract_to_select['value_to_select'] 
                 ) 
 
-                fields = self.views.input_modify_contract(contract_to_modify) 
                 fields = self.views.input_modify_entity( 
                     'contract', 
                     contract_to_modify 
                 ) 
+                # fields = self.views.input_modify_contract( 
+                #     contract_to_modify 
+                # ) 
+                fields['new_value'] = bool(fields['new_value']) 
 
-                # print('fields avant changemt (controller 9) : ', fields) 
-                fields[fields['field_to_modify']] = fields['new_value'] 
-                # print('fields après changemt (controller 9) : ', fields) 
 
-                # self.confirmation_process(fields, 'modifier', 'contract') 
                 self.modify_confirmation_process( 
+                    'contract', 
                     contract_to_modify, 
                     fields['field_to_modify'], 
-                    fields['new_value'] 
+                    fields 
                 ) 
 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def modify_event(self): 
         """ Modifies one event, entering the field and the new value to register. 
@@ -786,12 +797,13 @@ class Controller():
             Returns: 
                 Event object: The modified event instance. 
         """ 
-        if (self.user_session == 'GESTION') & (self.user_session == 'SUPPORT'): 
+        if (self.user_session == 'GESTION') | (self.user_session == 'SUPPORT'): 
             print('\nModifier un événement') 
             event_to_select = self.views.input_select_entity('event') 
 
             if event_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
+                return False 
             else: 
                 event_to_modify = self.manager.select_one_event( 
                     event_to_select['field_to_select'], 
@@ -799,24 +811,20 @@ class Controller():
                 ) 
 
                 if self.user_session == 'GESTION': 
-                    gestion = True 
-                fields = self.views.input_modify_entity( 
-                    'event', 
-                    event_to_modify, 
-                    gestion=gestion 
-                ) 
-                # print('fields : ', fields) 
+                    fields = self.views.input_modify_entity( 
+                        'event', 
+                        event_to_modify, 
+                        gestion=True 
+                    ) 
 
-                # print('fields avant changemt (controller 10) : ', fields) 
-                fields[fields['field_to_modify']] = fields['new_value'] 
-                # print('fields après changemt (controller 10) : ', fields) 
+                    fields[fields['field_to_modify']] = fields['new_value'] 
 
-                self.modify_confirmation_process( 
-                    event_to_modify, 
-                    fields['field_to_modify'], 
-                    fields['new_value'] 
-                ) 
-
+                    self.modify_confirmation_process( 
+                        'event', 
+                        event_to_modify, 
+                        fields['field_to_modify'], 
+                        fields 
+                    ) 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
@@ -824,7 +832,7 @@ class Controller():
 
     # ==== delete method ==== # 
     def delete_user(self): 
-        """ Deletes one user from the DB. Only user who does not have any client can be deleted. 
+        """ Deletes one user from the DB. Only a user who does not have any client can be deleted. 
             Only the 'gestion' users are allowed to do this. 
             Returns: 
                 bool: True if it has been deleted, False instead. 
@@ -850,7 +858,7 @@ class Controller():
             Returns: 
                 list: The registered department instances. 
         """ 
-        print('Afficher tous les départementss ') 
+        print('\nAfficher tous les départements ') 
         if self.user_session == 'GESTION': 
             depts = self.manager.select_all_entities('depts') 
             if depts != []: 
@@ -859,11 +867,9 @@ class Controller():
                 return depts 
             else: 
                 print('Il n\'y a aucun département à afficher. ') 
-            return depts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def show_all_users(self): 
         """ Displays all users. 
@@ -871,20 +877,18 @@ class Controller():
             Returns: 
                 list: The registered user instances. 
         """ 
-        print('Afficher tous les utilisateurs ') 
+        print('\nAfficher tous les utilisateurs ') 
         if self.user_session == 'GESTION': 
             users = self.manager.select_all_entities('users') 
-            print(f'Il y a {len(users)} utilisateurs : ') 
             if users != []: 
+                print(f'Il y a {len(users)} utilisateurs : ') 
                 self.views.display_entity(users) 
                 return users 
             else: 
                 print('Il n\'y a aucun utilisateur à afficher. ') 
-            return users 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def show_all_clients(self): 
         """ Displays all clients. 
@@ -892,20 +896,18 @@ class Controller():
             Returns: 
                 list: The registered client instances. 
         """ 
-        print('Afficher tous les clients ') 
-        if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        print('\nAfficher tous les clients ') 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             clients = self.manager.select_all_entities('clients') 
-            print(f'Il y a {len(clients)} clients : ') 
             if clients != []: 
+                print(f'Il y a {len(clients)} clients : ') 
                 self.views.display_entity(clients) 
                 return clients 
             else: 
                 print('Il n\'y a aucun client à afficher. ') 
-            return clients 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def show_all_contracts(self): 
         """ Displays all contracts. 
@@ -913,20 +915,18 @@ class Controller():
             Returns: 
                 list: The registered contract instances. 
         """ 
-        print('Afficher tous les contrats ') 
-        if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        print('\nAfficher tous les contrats ') 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']:  
             contracts = self.manager.select_all_entities('contracts') 
-            print(f'Il y a {len(contracts)} contrats : ') 
             if contracts != []: 
+                print(f'Il y a {len(contracts)} contrats : ') 
                 self.views.display_entity(contracts) 
                 return contracts 
             else: 
                 print('Il n\'y a aucun contrat à afficher. ') 
-            return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def show_all_events(self): 
         """ Displays all events. 
@@ -934,11 +934,11 @@ class Controller():
             Returns: 
                 list: The registered events instances. 
         """ 
-        print('Afficher tous les événementss ') 
-        if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        print('\nAfficher tous les événementss ') 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']:  
             events = self.manager.select_all_entities('events') 
-            print(f'Il y a {len(events)} événements : ') 
             if events != []: 
+                print(f'Il y a {len(events)} événements : ') 
                 self.views.display_entity(events) 
                 return events 
             else: 
@@ -955,16 +955,16 @@ class Controller():
             Returns: 
                 Department object: The registered department instance. 
         """ 
-        if (self.user_session == 'GESTION') | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']: 
             print('\nAfficher un département') 
             dept_to_select = self.views.input_select_entity('dept') 
 
-            if dept_to_select['chosen_field'] == '*': 
+            if dept_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
                 # print(dept_to_select) 
                 dept = self.manager.select_one_dept( 
-                    dept_to_select['chosen_field'], 
+                    dept_to_select['field_to_select'], 
                     dept_to_select['value_to_select'] 
                 ) 
                 if dept is not None: 
@@ -976,14 +976,13 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_one_user(self): 
         """ Displays one user. 
             Only 'gestion' users are allowed to do this. 
             Returns: 
                 User object: The registered user instance. 
         """ 
-        if (self.user_session == 'GESTION') : 
+        if self.user_session == 'GESTION' : 
             print('\nAfficher un utilisateur') 
             user_to_select = self.views.input_select_entity('user') 
 
@@ -991,7 +990,7 @@ class Controller():
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
                 user = self.manager.select_one_user( 
-                    user_to_select['chosen_field'], 
+                    user_to_select['field_to_select'], 
                     user_to_select['value_to_select'] 
                 ) 
                 if user is not None: 
@@ -1000,14 +999,14 @@ class Controller():
                 else: 
                     print('Il n\'y a aucun utilisateur avec ces informations.') 
 
-        elif (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT') : 
+        elif self.user_session in ['COMMERCE', 'SUPPORT']:  
             user_to_select = self.views.input_select_entity('user') 
 
             if user_to_select['field_to_select'] == '*': 
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
                 user = self.manager.select_one_user( 
-                    user_to_select['chosen_field'], 
+                    user_to_select['field_to_select'], 
                     user_to_select['value_to_select'] 
                 ) 
                 if user is not None: 
@@ -1020,14 +1019,13 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_one_client(self): 
         """ Displays one client. 
             Only 'gestion' and 'commerce' users are allowed to do this. 
             Returns: 
                 Client object: The registered client instance. 
         """ 
-        if (self.user_session == 'GESTION')  | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']:  
             print('\nAfficher un client') 
             client_to_select = self.views.input_select_entity('client') 
 
@@ -1035,7 +1033,7 @@ class Controller():
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
                 client = self.manager.select_one_client( 
-                    client_to_select['chosen_field'], 
+                    client_to_select['field_to_select'], 
                     client_to_select['value_to_select'] 
                 ) 
                 if client is not None: 
@@ -1047,9 +1045,8 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_one_contract(self): 
-        if (self.user_session == 'GESTION')  | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']:  
             print('\nAfficher un contrat') 
             contract_to_select = self.views.input_select_entity('contract') 
 
@@ -1057,7 +1054,7 @@ class Controller():
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
                 contract = self.manager.select_one_contract( 
-                    contract_to_select['chosen_field'], 
+                    contract_to_select['field_to_select'], 
                     contract_to_select['value_to_select'] 
                 ) 
                 if contract is not None: 
@@ -1069,9 +1066,8 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_one_event(self): 
-        if (self.user_session == 'GESTION')  | (self.user_session == 'COMMERCE') | (self.user_session == 'SUPPORT'): 
+        if self.user_session in ['GESTION', 'COMMERCE', 'SUPPORT']:  
             print('\nAfficher un événement') 
             event_to_select = self.views.input_select_entity('event') 
 
@@ -1079,7 +1075,7 @@ class Controller():
                 print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
             else: 
                 event = self.manager.select_one_event( 
-                    event_to_select['chosen_field'], 
+                    event_to_select['field_to_select'], 
                     event_to_select['value_to_select'] 
                 ) 
                 if event is not None: 
@@ -1100,19 +1096,18 @@ class Controller():
                 List of Event instances: The list of the events, 
                 or False if the user does not have the authorization to perform this. 
         """ 
-        if (self.user_session == 'GESTION'): 
+        if self.user_session == 'GESTION': 
             print('\nAfficher les événements sans contact support') 
             events = self.manager.select_entities_with_criteria( 
                 'events', 
                 'without support', 
                 self.logged_user.id 
             ) 
-            self.views.display_entity([event]) 
+            self.views.display_entity([events]) 
             return events 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
-
 
     def show_clients_of_commerce_user(self): 
         """ Selects the clients who are attached to the user. 
@@ -1121,7 +1116,7 @@ class Controller():
                 Client instance: The list of the clients, 
                 or False if the user does not have the authorization to perform this. 
         """ 
-        if (self.user_session == 'COMMERCE'): 
+        if self.user_session == 'COMMERCE': 
             print('\nAfficher les clients d\'un utilisateur commercial') 
             clients = self.manager.select_entities_with_criteria( 
                 'clients', 
@@ -1134,7 +1129,6 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_contracts_of_commerce_user(self): 
         """ Selects the contracts those are attached to the user's clients. 
             Only "commerce" users are allowed to do this. 
@@ -1142,7 +1136,7 @@ class Controller():
                 List of Contract instances: The list of the contracts, 
                 or False if the user does not have the authorization to perform this. 
         """ 
-        if (self.user_session == 'COMMERCE'): 
+        if self.user_session == 'COMMERCE': 
             print('\nAfficher les contrats d\'un utilisateur commercial ') 
             clients = self.manager.select_entities_with_criteria( 
                 'clients', 
@@ -1163,7 +1157,6 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_not_paid_contracts(self): 
         """ Selects the contracts those aren't entirely paid. 
             Only "commerce" users are allowed to do this. 
@@ -1171,7 +1164,7 @@ class Controller():
                 List of Contract instances: The list of the contracts, 
                 or False if the user does not have the authorization to perform this. 
         """ 
-        if (self.user_session == 'COMMERCE'): 
+        if self.user_session == 'COMMERCE': 
             print('\nAfficher les contrats non fini de payer ') 
             contracts = self.manager.select_entities_with_criteria( 
                 'contracts', 
@@ -1184,7 +1177,6 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_not_signed_contracts(self): 
         """ Selects the contracts those aren't signed. 
             Only "commerce" users are allowed to do this. 
@@ -1192,7 +1184,7 @@ class Controller():
                 List of Contract instances: The list of the contracts, 
                 or False if the user does not have the authorization to perform this. 
         """ 
-        if (self.user_session == 'COMMERCE'): 
+        if self.user_session == 'COMMERCE': 
             print('\nAfficher les contrats non signés ') 
             contracts = self.manager.select_entities_with_criteria( 
                 'contracts', 
@@ -1205,7 +1197,6 @@ class Controller():
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
             return False 
 
-
     def show_events_support_user(self): 
         """ Selects the events those are attached to the 'support' user. 
             Only "support" users are allowed to do this. 
@@ -1213,7 +1204,7 @@ class Controller():
                 List of Event instances: The list of the events, 
                 or False if the user does not have the authorization to perform this. 
         """ 
-        if (self.user_session == 'SUPPORT'): 
+        if self.user_session == 'SUPPORT': 
             print('\nAfficher les événements d\'un utilisateur support ') 
             events = self.manager.select_entities_with_criteria( 
                 'events', 
@@ -1274,6 +1265,18 @@ class Controller():
                     return False 
 
 
+    def display_roles_menus(self): 
+        gestion_menu = [1, 2, 4, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29] 
+        sales_menu = [3, 5, 8, 9, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 29] 
+        support_menu = [10, 14, 15, 16, 17, 18, 19, 20, 21, 27, 29] 
+        if self.user_session == 'GESTION': 
+            self.dashboard.display_menu(gestion_menu) 
+        elif self.user_session == 'COMMERCE': 
+            self.dashboard.display_menu(sales_menu) 
+        if self.user_session == 'SUPPORT': 
+            self.dashboard.display_menu(support_menu) 
+
+
     def register_confirmation_process(self, entity_name, fields): 
         """ Asks for confirmation of recording an entity and receives the answer. 
             Proceeds to the action or discards the data if not confirmed. 
@@ -1301,9 +1304,13 @@ class Controller():
             # print('fields CL1236 :', fields) 
             new_item = self.manager.add_entity(entity_name, fields) 
             if entity_name == 'user': 
-                # Sentry notification 
-                capture_message(f'L\'utilisateur {new_item.name} (ID {new_item.id}) a été créé. ') 
-            print(f"{entity_dict[entity_name]} \"{new_item.name}\" (ID : {new_item.id}) a bien été créé. ") 
+                # # Sentry notification 
+                # capture_message(f'L\'utilisateur {new_item.name} (ID {new_item.id}) a été créé. ') 
+                print(f"{entity_dict[entity_name]} \"{new_item.name}\" (ID : {new_item.id}) a bien été créé. ") 
+            elif entity_name == 'contract': 
+                print(f"{entity_dict[entity_name]} ID {new_item.id} a bien été créé. ") 
+            else: 
+                print(f"{entity_dict[entity_name]} \"{new_item.name}\" (ID : {new_item.id}) a bien été créé. ") 
         else: 
             print(confirmation) 
             print('Vous avez annulé l\'opération, vous allez être redirigé vers le menu. ') 
@@ -1319,6 +1326,7 @@ class Controller():
                 select (dict): The data to retrieve into the DB, for modifying them. 
                 fiels (dict): The data to replace into the DB. 
         """ 
+        # print('fields CL1333 :', fields) 
         entity_dict = { 
             'user': 'L\'utilisateur', 
             'client': 'Le client', 
@@ -1340,7 +1348,7 @@ class Controller():
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
-                print(f"{user} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                print(f"{entity_dict[entity_name]} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
                 return modified_item 
             elif entity_name == 'client': 
                 modified_item = self.manager.update_client( 
@@ -1348,7 +1356,7 @@ class Controller():
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
-                print(f"{client} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                print(f"{entity_dict[entity_name]} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
                 return modified_item 
             elif entity_name == 'contract': 
                 modified_item = self.manager.update_contract( 
@@ -1356,10 +1364,10 @@ class Controller():
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
-                print(f"{contract} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
-                if (fields['field_to_modify'] == 'signed') & (modified_item.is_signed is True): 
-                    # from sentry_sdk import capture_message 
-                    capture_message(f'Le contrat {new_item.id} a été signé.') 
+                print(f"{entity_dict[entity_name]} ID {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                # if (fields['field_to_modify'] == 'signed') & (modified_item.is_signed is True): 
+                #     # from sentry_sdk import capture_message 
+                #     capture_message(f'Le contrat ID {new_item.id} a été signé.') 
                 return modified_item 
             elif entity_name == 'event': 
                 modified_item = self.manager.update_event( 
@@ -1367,7 +1375,7 @@ class Controller():
                     fields['field_to_modify'], 
                     fields['new_value'] 
                 ) 
-                print(f"{event} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
+                print(f"{entity_dict[entity_name]} {modified_item.id} a bien été modifié : \"{modified_item}\". ") 
                 return modified_item 
             else: 
                 print('Il y a eu un problème, merci de contacter un administrateur. ') 
@@ -1375,18 +1383,6 @@ class Controller():
         else: 
             print(confirmation) 
             print('Vous avez annulé l\'opération, vous allez être redirigé vers le menu. ') 
-
-
-    def display_roles_menus(self): 
-        gestion_menu = [1, 2, 4, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 29] 
-        sales_menu = [3, 5, 8, 9, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 29] 
-        support_menu = [10, 14, 15, 16, 17, 18, 19, 20, 21, 27, 29] 
-        if self.user_session == 'GESTION': 
-            self.dashboard.display_menu(gestion_menu) 
-        elif self.user_session == 'COMMERCE': 
-            self.dashboard.display_menu(sales_menu) 
-        if self.user_session == 'SUPPORT': 
-            self.dashboard.display_menu(support_menu) 
 
 
 

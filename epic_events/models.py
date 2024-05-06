@@ -169,7 +169,6 @@ class Contract(Base):
     is_signed = Column( 
         Boolean 
     ) 
-    #TODO Auto *** 
     created_at = Column( 
         DateTime 
     ) 

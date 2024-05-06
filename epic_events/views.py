@@ -107,7 +107,9 @@ class Views():
             Args: 
                 objects (list): The objects to display. 
         """ 
+        # print(objects) 
         for obj in objects: 
+            # print(type(obj)) 
             print(obj) 
 
     def display_dict(self, entity_name, dict_to_register): 
@@ -116,11 +118,7 @@ class Views():
                 dict: The dictionary of data to register. 
         """ 
         if entity_name == 'user': 
-            print(f"nom : {dict_to_register['name']}, \
-                mail: {dict_to_register['email']}, \
-                mot de passe: (secret), \
-                téléphone: {dict_to_register['phone']}, \
-                nom du département : {dict_to_register['department_name']}") 
+            print(f"nom : {dict_to_register['name']}, mail: {dict_to_register['email']}, mot de passe: (secret), téléphone: {dict_to_register['phone']}, nom du département : {dict_to_register['department_name']}") 
         else: 
             print(dict_to_register) 
 

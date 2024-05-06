@@ -52,12 +52,12 @@ class Manager():
     def add_entity(self, entity_name, fields:dict): 
         """ Generic method that creates an entity. 
             Args: 
-                entity (str): The table in which to create an item. 
+                entity_name (str): The table in which to create an item. 
                 fields (dict): The data to register. 
             Returns: 
                 entity object: The last created entity item. 
         """ 
-        print('\nadd_entity') 
+        print('\nAdd_entity') 
         entities_dict = { 
             'dept': Department, 
             'user': User, 
@@ -80,6 +80,7 @@ class Manager():
                 """ A User instance needs to get the password hashed 
                     and registered into the DB. 
                 """ 
+                print('...Création du token, veuillez patienter...') 
                 fields['department_id'] = self.select_one_dept( 
                     'name', fields['department_name']).id 
                 department_name = fields.pop('department_name') 

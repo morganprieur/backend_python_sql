@@ -451,7 +451,7 @@ class Controller():
                     userPass = userConnect['pass'] 
                 elif mode == 'pub': 
                     userPass = self.views.input_user_connection_pass() 
-                print(f'input pass CL456 : |{userPass}|') 
+                print(f'DEBUG input pass CL456 : |{userPass}|') 
                 if self.check_pw( 
                     mode, 
                     userPass 
@@ -526,10 +526,10 @@ class Controller():
                 if user_role == '*': 
                     print('Vous avez tapé *, vous allez être redirigé vers le menu.') 
                 elif user_role == 'sales': 
-                    fields = users['users'][1] 
+                    fields = users[1] 
                     fields['entered_password'] = os.environ.get('USER_2_PW') 
                 elif user_role == 'support': 
-                    fields = users['users'][2] 
+                    fields = users[2] 
                     fields['entered_password'] = os.environ.get('U_3_PW') 
                 else: 
                     print('Cet utilisateur n\'existe pas. ') 
@@ -605,7 +605,7 @@ class Controller():
         if self.user_session == 'COMMERCE': 
             print('\nEnregistrer un événement') 
 
-            print('\nSélectionner un contract : ') 
+            print('\nSélectionner un contrat : ') 
             fields = self.views.input_select_entity('contract') 
             contract = self.manager.select_one_contract( 
                 fields['field_to_select'], 
@@ -616,8 +616,8 @@ class Controller():
             else: 
                 if mode == 'dev': 
                     events = self.registered['events'] 
-                    event = events[0] 
-                    event['contract_id'] = fields['value_to_select']
+                    fields = events[0] 
+                    fields['contract_id'] = contract.id
                 elif mode == 'pub': 
                     fields = self.views.input_create_event() 
                     fields['contract_id'] = fields['value_to_select']
@@ -1103,7 +1103,7 @@ class Controller():
                 'without support', 
                 self.logged_user.id 
             ) 
-            self.views.display_entity([events]) 
+            self.views.display_entity(events) 
             return events 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -1123,7 +1123,7 @@ class Controller():
                 'sales contact', 
                 self.logged_user.id 
             ) 
-            self.views.display_entity([clients]) 
+            self.views.display_entity(clients) 
             return clients 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -1151,7 +1151,7 @@ class Controller():
                     self.logged_user.id 
                 ) 
                 contracts.append(contract) 
-            self.views.display_entity([contracts]) 
+            self.views.display_entity(contracts) 
             return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -1171,7 +1171,7 @@ class Controller():
                 'not paid', 
                 self.logged_user.id 
             ) 
-            self.views.display_entity([contracts]) 
+            self.views.display_entity(contracts) 
             return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -1191,7 +1191,7 @@ class Controller():
                 'not signed', 
                 self.logged_user.id 
             ) 
-            self.views.display_entity([contracts]) 
+            self.views.display_entity(contracts) 
             return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -1211,7 +1211,7 @@ class Controller():
                 'support contact', 
                 self.logged_user.id 
             ) 
-            self.views.display_entity([events]) 
+            self.views.display_entity(events) 
             return events 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 
@@ -1300,12 +1300,10 @@ class Controller():
         ) 
         if (confirmation == 'Y') | (confirmation == 'y'): 
             print(confirmation) 
-            # print('entity_name CL1231 :', entity_name) 
-            # print('fields CL1236 :', fields) 
             new_item = self.manager.add_entity(entity_name, fields) 
             if entity_name == 'user': 
-                # # Sentry notification 
-                # capture_message(f'L\'utilisateur {new_item.name} (ID {new_item.id}) a été créé. ') 
+                # Sentry notification 
+                capture_message(f'L\'utilisateur {new_item.name} (ID {new_item.id}) a été créé. ') 
                 print(f"{entity_dict[entity_name]} \"{new_item.name}\" (ID : {new_item.id}) a bien été créé. ") 
             elif entity_name == 'contract': 
                 print(f"{entity_dict[entity_name]} ID {new_item.id} a bien été créé. ") 

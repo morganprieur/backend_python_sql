@@ -27,16 +27,16 @@ class Views():
 
 
     def display_user_minimum(self, user): 
-        print(f'\nUtilisateur : \nid : :{user.id}, {user.name}, département : {user.department.name} (ID : {user.department_id})') 
+        print(f'\nUtilisateur : \nid :{user.id}, {user.name}, département : {user.department.name} (ID : {user.department_id})') 
 # ==== /non generics ==== # 
 
 
 # ==== generics ==== # 
-    def input_select_entity(self, entity): 
+    def input_select_entity(self, entity_name): 
         """ Select an entity, in order to do other action with the object's data, 
             or just for displaying it. 
             Args: 
-                entity (str): The name of the entity. 
+                entity_name (str): The name of the entity. 
                 Possible names: 
                     'dept' 
                     'user' 
@@ -53,23 +53,52 @@ class Views():
             'contract': 'le contrat', 
             'event': 'l\'événement', 
         } 
-        if entity == 'dept': 
+        if entity_name == 'dept': 
             fields = ['id', 'name'] 
-        elif entity == 'user': 
+        elif entity_name == 'user': 
             fields = ['id', 'name', 'email'] 
-        elif entity == 'client': 
+        elif entity_name == 'client': 
             fields = ['id', 'name', 'email', 'phone'] 
-        elif entity == 'contract': 
+        elif entity_name == 'contract': 
             fields = ['id'] 
-        elif entity == 'event': 
+        elif entity_name == 'event': 
             fields = ['id', 'name', 'contract_id'] 
         print('Les champs possibles sont: ') 
         for f in fields: 
             print(f) 
         entity_dict = {} 
-        entity_dict['chosen_field'] = session.prompt(f'\nSur quel champ voulez-vous sélectionner {entity_str[entity]} ? ') 
+        entity_dict['field_to_select'] = session.prompt(f'\nSur quel champ voulez-vous sélectionner {entity_str[entity_name]} ? ') 
         entity_dict['value_to_select'] = session.prompt('\nValeur à sélectionner : ') 
         return entity_dict 
+
+    
+    def input_modify_entity(self, entity_name, old_entity, gestion=False): 
+        """ Prompt the data to modify an entity into the DB. Not for departments. 
+            Args: 
+                entity_name (str): The name of the table of the entity to modify. 
+                old_entity (object): The registered entity to modify. 
+            Returns: 
+                dict: The new data to register into the DB. 
+        """ 
+        entity_str = { 
+            'user': 'l\'utilisateur', 
+            'client': 'le client', 
+            'contract': 'le contrat', 
+            'event': 'l\'événement', 
+        } 
+        print('\ninput_modify_entity (views)') 
+        print(f'\nModifier {entity_str[entity_name]} : ') 
+
+        self.display_entity([old_entity]) 
+        entity_dict = old_entity.to_dict() 
+        if (entity_name == 'event') & gestion: 
+            entity_dict['field_to_modify'] = 'support_contact_name' 
+            entity_dict['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ ''support_contact_name'' (name) : ") 
+            return entity_dict 
+        else: 
+            entity_dict['field_to_modify'] = session.prompt('\nQuel champ voulez-vous modifier ? ') 
+            entity_dict['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ {entity_dict['field_to_modify']} : ") 
+            return entity_dict 
 
 
     def display_entity(self, objects:list): 
@@ -81,12 +110,19 @@ class Views():
         for obj in objects: 
             print(obj) 
 
-    def display_dict(self, entity_to_register): 
+    def display_dict(self, entity_name, dict_to_register): 
         """ Displays the input data to register. 
             Args: 
                 dict: The dictionary of data to register. 
         """ 
-        print(entity_to_register) 
+        if entity_name == 'user': 
+            print(f"nom : {dict_to_register['name']}, \
+                mail: {dict_to_register['email']}, \
+                mot de passe: (secret), \
+                téléphone: {dict_to_register['phone']}, \
+                nom du département : {dict_to_register['department_name']}") 
+        else: 
+            print(dict_to_register) 
 
 
     def ask_for_confirmation(self, action, entity): 
@@ -111,26 +147,6 @@ class Views():
         confirmation = session.prompt(f'\nEtes-vous sûr de vouloir {action} {entity_dict[entity]} ? (Y/N) ') 
         return confirmation 
 
-    def ask_for_creation(self, entity): 
-        """ Prompt to confirm the creation of the item with the given data. 
-            Possible entities: 
-                'dept', 'user', 'client', 'contract', 'event'. 
-            Args: 
-                entity (str): The entity to delete or modify. 
-            Returns:
-                str: The answer from the user. 
-        """ 
-        entity_name = { 
-            'dept': 'nouveau département', 
-            'user': 'nouvel utilisateur',
-            'client': 'nouveau client', 
-            'contract': 'nouveau contrat', 
-            'event': 'nouvel événement'
-        } 
-        print(f'\nVous êtes sur le point d\'enregistrer un {entity_name[entity]} avec les informations suivantes : ') 
-        print(entity) 
-        return entity_name 
-
     def enter_to_continue(self): 
         enter = session.prompt('Appuyez sur entrée pour continuer ') 
         return enter 
@@ -148,6 +164,13 @@ class Views():
         dept['name'] = session.prompt('\nNom du département : ') 
         return dept 
 
+    def input_user_role(self): 
+        """ Prompt the role of the new pre-registered user (only when mode == 'dev'). 
+            Returns:
+                str: The role in 'sales' and 'support'. 
+        """ 
+        user_role = session.prompt('\nRôle de l\'utilisateur : ') 
+        return user_role 
 
     def input_create_user(self): 
         """ Prompt the data to register a new user. 
@@ -160,9 +183,7 @@ class Views():
         user['entered_password'] = getpass('\nMot de passe : ') 
         user['phone'] = session.prompt('\nTéléphone : ') 
         user['department_name'] = session.prompt('\nNom du département : ') 
-        # user['department_id'] = session.prompt('\nDépartement (auto) : ') 
         return user 
-
 
     def input_create_client(self): 
         """ Prompt the data to register a new client. 
@@ -174,9 +195,7 @@ class Views():
         client['email'] = session.prompt('\nMail : ') 
         client['phone'] = session.prompt('\nTéléphone : ') 
         client['corporation_name'] = session.prompt('\nNom de l\'entreprise : ') 
-        # client['sales_contact_name'] = auto 
         return client 
-
 
     def input_create_contract(self): 
         """ Prompt the data to register a new contract. 
@@ -190,7 +209,6 @@ class Views():
         contract['paid_amount'] = session.prompt('Quel montant réglé ? : ') 
         return contract 
 
-
     def input_create_event(self): 
         """ Prompt the data to register a new event. 
             Returns:
@@ -198,10 +216,8 @@ class Views():
         """ 
         event = {} 
         event['name'] = session.prompt('\nNom de l\'événement : ') 
-        event['contract_id'] = session.prompt('\nID du contrat (numéro) : ') 
         event['start_datetime'] = session.prompt('\nDate / heure de début (format) : ') 
         event['end_datetime'] = session.prompt('\nDate / heure de fin (format) : ') 
-        # event['support_contact_name'] = (auto) 
         event['location'] = session.prompt('\nLieu / adresse : ') 
         event['attendees'] = session.prompt('\nNombre de aprticipants : ') 
         event['notes'] = session.prompt('\nNotes : ') 
@@ -217,79 +233,9 @@ class Views():
             Returns: 
                 dict: The new data to register into the DB. 
         """ 
-        print(f'Modifier le département : ') 
+        print(f'\nModifier le département : ') 
         self.display_entity([old_dept]) 
         dept = old_dept.to_dict() 
         dept['new_name'] = session.prompt('\nNouveau nom du département : ') 
         return dept 
-
-
-    def input_modify_entity(self, entity, old_entity, gestion=False): 
-        """ Prompt the data to modify an entity into the DB. 
-            Args: 
-                entity (str): The name of the table of the entity to modify. 
-                old_entity (object): The registered entity to modify. 
-            Returns: 
-                dict: The new data to register into the DB. 
-        """ 
-        entity_str = { 
-            'user': 'l\'utilisateur', 
-            'client': 'le client', 
-            'contract': 'le contrat', 
-            'event': 'l\'événement', 
-        } 
-        print('input_modify_entity (views)') 
-        print('old_entity : ', old_entity)  # ok 
-        # print('entity : ', entity) 
-        # print('gestion : ', gestion) 
-        print(f'Modifier {entity_str[entity]} : ') 
-
-        # problème : 
-        self.display_entity([old_entity]) 
-        entity_dict = old_entity.to_dict() 
-        if (entity == 'event') & gestion: 
-            entity_dict['field_to_modify'] = 'support_contact_id' 
-            entity_dict['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ ''support_contact_id'' (ID) : ") 
-            return entity_dict 
-        else: 
-            entity_dict['field_to_modify'] = session.prompt('\nQuel champ voulez-vous modifier ? ') 
-            entity_dict['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ {entity_dict['field_to_modify']} : ") 
-            print('entity_dict (views) : ', entity_dict) 
-            return entity_dict 
-
-
-    def input_modify_user(self, old_user): 
-        """ Prompt the data to modify a user into the DB. 
-            Args: 
-                old_user (object): The registered entity to modify. 
-            Returns: 
-                dict: The new data to register into the DB. 
-        """ 
-        print(f'Modifier l\'utilisateur : ') 
-        self.display_entity([old_user]) 
-        user = old_user.to_dict() 
-        user['field_to_modify'] = session.prompt('\nQuel champ voulez-vous modifier ? ') 
-        user['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ {user['field_to_modify']} : ") 
-        print('user (views) : ', user) 
-        return user 
-
-
-    def input_modify_client(self, old_client): 
-        print('Modifier le client : ') 
-        self.display_entity([old_client]) 
-        client = old_client.to_dict() 
-        client['field_to_modify'] = session.prompt('\nQuel champ voulez-vous modifier ? ') 
-        client['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ {client['field_to_modify']} : ") 
-        print('client (views) : ', client) 
-        return client 
-
-
-    def input_modify_contract(self, old_contract): 
-        print('Modifier le contrat : ') 
-        self.display_entity([old_contract]) 
-        contract = old_contract.to_dict() 
-        contract['field_to_modify'] = session.prompt('\nQuel champ voulez-vous modifier ? ') 
-        contract['new_value'] = session.prompt(f"\nNouvelle valeur pour le champ {contract['field_to_modify']} : ") 
-        print('contrat (views) : ', contract) 
-        return contract 
 

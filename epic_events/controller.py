@@ -269,7 +269,7 @@ class Controller():
         if self.dashboard.ask_for_action == '23': 
             self.dashboard.ask_for_action = None 
 
-            show_clients_of_commerce_user() 
+            self.show_clients_of_commerce_user() 
 
             self.views.enter_to_continue() 
             self.start(mode) 
@@ -774,10 +774,8 @@ class Controller():
                     'contract', 
                     contract_to_modify 
                 ) 
-                # fields = self.views.input_modify_contract( 
-                #     contract_to_modify 
-                # ) 
-                fields['new_value'] = bool(fields['new_value']) 
+                if (fields['new_value'] == 'True') | (fields['new_value'] == 'False'): 
+                    fields['new_value'] = bool(fields['new_value']) 
 
 
                 self.modify_confirmation_process( 
@@ -1145,13 +1143,14 @@ class Controller():
             ) 
             contracts = [] 
             for client in clients: 
-                contract = self.manager.select_entities_with_criteria( 
+                contracts_db = self.manager.select_entities_with_criteria( 
                     'contracts', 
                     'client', 
-                    self.logged_user.id 
+                    client.id 
                 ) 
-                contracts.append(contract) 
-            self.views.display_entity(contracts) 
+                contracts.append(contracts_db) 
+            for contract in contracts: 
+                self.views.display_entity(contract) 
             return contracts 
         else: 
             print('Vous n\'avez pas l\'autorisation d\'effectuer cette action.') 

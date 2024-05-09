@@ -107,9 +107,8 @@ class Views():
             Args: 
                 objects (list): The objects to display. 
         """ 
-        # print(objects) 
+        print(objects) 
         for obj in objects: 
-            # print(type(obj)) 
             print(obj) 
 
     def display_dict(self, entity_name, dict_to_register): 

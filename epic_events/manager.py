@@ -80,7 +80,7 @@ class Manager():
                 """ A User instance needs to get the password hashed 
                     and registered into the DB. 
                 """ 
-                print('...Création du token, veuillez patienter...') 
+                print('...Hashage du mot de passe, veuillez patienter...') 
                 fields['department_id'] = self.select_one_dept( 
                     'name', fields['department_name']).id 
                 department_name = fields.pop('department_name') 
@@ -214,8 +214,8 @@ class Manager():
                 else: 
                     return contracts_db 
             elif criteria == 'client': 
-                contracts_db = self.session.query(Contracts).filter( 
-                    Contracts.client_id==contact_id) 
+                contracts_db = self.session.query(Contract).filter( 
+                    Contract.client_id==contact_id).all() 
                 if contracts_db is None: 
                     print('Aucun contrat avec ces informations (manager.select_entities_with_criteria)') 
                     return False 

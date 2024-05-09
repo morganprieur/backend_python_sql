@@ -26,19 +26,25 @@ def main():
     print(f'hello main (datetime : {datetime.now()})') 
 
     mode = str(sys.argv[1]) 
+    if not (sys.argv[2]): 
+        role = None 
+    else: 
+        role = str(sys.argv[2]) 
     # Test Sentry 
     # division_by_zero = 1 / 0 
     # capture_message('Something went wrong') 
-    controller = Controller() 
+    controller = Controller(role) 
     controller.start(mode) 
 
 
 if __name__ == "__main__": 
-    """ Call the programm with 'python project.py <arg>', 
-        where <arg> is the way to get the user's connection informations. 
-        Args choice: 
-            'dev': NOT SECURE, get one predefined user's informations. 
-            'pub': SECURE, asks for the user's informations. 
+    """ Calls the programm with 'python project.py <mode> <role>', 
+        where <mode> is the way to get the user's connection informations, 
+        and <role> the role of a "demo" user. 
+        Args: 
+            mode (str): 'dev' NOT SECURE, get one predefined user's informations, 
+                        'pub' SECURE, asks for the user's informations. 
+            role (str): 'admin', 'sales' or 'support' roles. 
     """ 
     main() 
 

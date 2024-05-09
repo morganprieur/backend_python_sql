@@ -28,7 +28,6 @@ class SetupTest(unittest.TestCase):
 	""" 
 
 	def setUp(self): 
-		# # view = Views() 
 		self.manager = Manager() 
 		self.manager.connect() 
 		self.manager.create_session() 

@@ -26,10 +26,6 @@ class Department(Base):
     def __str__(self): 
         return f'Département : {self.name} (id : {self.id}).' 
 
-    def __repr__(self): 
-        return str(self) 
-        # return f'User {self.__str__()}' 
-
     def to_dict(self): 
         return { 
             'id': self.id,
@@ -68,11 +64,6 @@ class User(Base):
         Integer, 
         ForeignKey('departments.id'), 
     ) 
-    # # TODO: à mettre dans un fichier chiffré 
-    # token = Column( 
-    #     String, 
-    #     unique=True 
-    # ) 
 
     department = relationship('Department', back_populates='user') 
     clients = relationship("Client", back_populates="user", 
@@ -81,10 +72,6 @@ class User(Base):
 
     def __str__(self): 
         return f'User (id : {self.id}) : {self.name}, {self.email}, hash mot de passe : {self.password}, téléphone : {self.phone}, département {self.department_id} {self.department.name}.' 
-
-    def __repr__(self): 
-        return str(self) 
-        # return f'User {self.name}'
 
     def to_dict(self): 
         return { 
@@ -127,11 +114,9 @@ class Client(Base):
         unique=False, 
         index=True 
     ) 
-    #TODO Auto *** 
     created_at = Column( 
         DateTime 
     ) 
-    #TODO Auto *** 
     updated_at = Column( 
         DateTime 
     ) 
@@ -143,14 +128,9 @@ class Client(Base):
     user = relationship('User', back_populates="clients") 
     contract = relationship("Contract", back_populates="client", 
         cascade='all, delete') 
-    # contract = relationship("Contract", back_populates="clients") 
 
     def __str__(self): 
         return f'Client : {self.name} (id : {self.id}), contacts : {self.email} {self.phone}, entreprise : {self.corporation_name}, créé le {self.created_at}, mis à jour le {self.updated_at}, contact commerce : {self.user.name} (id : {self.user.id}).' 
-
-    def __repr__(self): 
-        return str(self) 
-
 
     def to_dict(self): 
         return { 
@@ -189,7 +169,6 @@ class Contract(Base):
     is_signed = Column( 
         Boolean 
     ) 
-    #TODO Auto *** 
     created_at = Column( 
         DateTime 
     ) 
@@ -201,8 +180,15 @@ class Contract(Base):
     def __str__(self): 
         return f'Contract : id {self.id}, client id : {self.client_id}, montant payé : {self.paid_amount}, is_signed : {self.is_signed}.' 
 
-    def __repr__(self): 
-        return str(self) 
+    def to_dict(self): 
+        return { 
+            'id': self.id, 
+            'client_id': self.client_id, 
+            'amount': self.amount, 
+            'paid_amount': self.paid_amount, 
+            'is_signed': self.is_signed, 
+            'created_at': self.created_at 
+        } 
 
 
 class Event(Base): 
@@ -253,11 +239,7 @@ class Event(Base):
             support_contact_id = '' 
         else: 
             support_contact_id = self.support_contact_id 
-        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support ID : {support_contact_id}, lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
-        # return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support {self.user.name} (ID : {support_contact_id}), lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}).' 
-
-    def __repr__(self): 
-        return str(self) 
+        return f'Evénement : {self.name} (id : {self.id}), contrat : {self.contract_id}, début : {self.start_datetime}, fin : {self.end_datetime}, contact support ID : {support_contact_id}, lieu : {self.location}, invités : {self.attendees}, notes : {self.notes}.' 
 
     def to_dict(self): 
         if not self.support_contact_id: 

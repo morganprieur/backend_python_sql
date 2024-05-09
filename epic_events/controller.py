@@ -25,6 +25,7 @@ class Controller():
 
         self.user_session = None 
         self.role = role 
+        # file deepcode ignore PT: local project 
         with open(os.environ.get('FILE_PATH'), 'r') as users_file: 
             self.registered = json.load(users_file) 
 
@@ -315,6 +316,12 @@ class Controller():
             self.dashboard.ask_for_action = None 
             self.close_the_app() 
 
+        # ==== QUIT THE APP ==== #  
+        else: 
+            print('Cette commande n\'est pas reconnue.') 
+            self.views.enter_to_continue() 
+            self.start(mode) 
+
 
     def connect_user(self, mode): 
         """ Connects a user to the application. 
@@ -356,17 +363,15 @@ class Controller():
             # Type the required credentials: 
             userConnect['email'] = self.views.input_user_connection_email() 
             # Check the format of the email 
-            print(f"|{userConnect['email']}|") 
+            print(f"DEBUG |{userConnect['email']}|") 
             reg = '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,6}' 
             if re.match(reg, userConnect['email']): 
                 print('Ce mail est valide. ') 
             else: 
                 print('Ce mail n\'est pas valide. ') 
                 return False 
+
         elif mode == 'dev': 
-            # file deepcode ignore PT: local project 
-            # with open(os.environ.get('FILE_PATH'), 'r') as jsonfile: 
-            #     self.registered = json.load(jsonfile) 
                 userConnect = {} 
                 if self.role == 'admin': 
                     userConnect = self.registered['users'][0] 
@@ -379,11 +384,11 @@ class Controller():
                     userConnect['pass'] = os.environ.get('U_3_PW') 
                 else: 
                     print(f'Cet argument n\'est pas reconnu ({self.role}). Veuillez contacter un administrateur. ') 
+
         else: 
             print(f'Cet argument n\'est pas reconnu ({mode}). Vous devez utiliser "dev" ou "pub".') 
 
         # Check the email with the registered emails into the DB 
-        # print('DEBUG userEmail CL363 :', userConnect['email']) 
         self.logged_user = self.manager.select_one_user( 
             'email', 
             userConnect['email'] 
@@ -406,7 +411,8 @@ class Controller():
                         userPass = userConnect['pass'] 
                     elif mode == 'pub': 
                         userPass = self.views.input_user_connection_pass() 
-                    print(f'input pass CL397 : |{userPass}|') 
+                    print(f'input pass CL407 : |{userPass}|') 
+
                     pw_check = self.check_pw(mode, userPass) 
                     if pw_check: 
                         token = self.manager.get_token(60, { 
@@ -433,6 +439,10 @@ class Controller():
                             self.logged_user.department.name 
                         ) 
                         self.views.enter_to_continue() 
+
+                    else: 
+                        print('Les informations saisies ne sont pas bonnes, veuillez contacter un administrateur.')                 
+                        self.close_the_app() 
 
                 elif token_check in ['GESTION', 'COMMERCE', 'SUPPORT']: 
                     print('Un token est enregistré. ') 

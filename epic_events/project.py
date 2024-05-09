@@ -1,10 +1,9 @@
 
-import os 
-import sentry_sdk 
-
 # import this 
 from controller import Controller 
 from datetime import datetime 
+import os 
+import sentry_sdk 
 import sys 
 
 sentry_sdk.init( 
@@ -20,13 +19,12 @@ sentry_sdk.init(
 # from sentry_sdk import capture_message 
 # capture_message('Something went wrong') 
 
-# def main(mode='pub'): 
-def main(): 
 
+def main(): 
     print(f'hello main (datetime : {datetime.now()})') 
 
     mode = str(sys.argv[1]) 
-    if not (sys.argv[2]): 
+    if not sys.argv[2]: 
         role = None 
     else: 
         role = str(sys.argv[2]) 

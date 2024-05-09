@@ -25,7 +25,6 @@ class Views():
         userPass = getpass('\nMot de passe : ') 
         return userPass 
 
-
     def display_user_minimum(self, user): 
         print(f'\nUtilisateur : \nid :{user.id}, {user.name}, département : {user.department.name} (ID : {user.department_id})') 
 # ==== /non generics ==== # 

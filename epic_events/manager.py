@@ -1,20 +1,22 @@
 
-from sqlalchemy import create_engine 
-import psycopg2 
 from models import Base, Client, Contract, Department, Event, User   
-from sqlalchemy.orm import sessionmaker 
 
-import os 
 import bcrypt 
-from cryptography.fernet import Fernet 
-from datetime import datetime, timedelta 
 import json 
 import jwt 
-from jwt.exceptions import ExpiredSignatureError
+import os 
+import psycopg2 
 import re 
-from time import time 
 # Abstract Syntax Trees 
 import ast 
+
+from cryptography.fernet import Fernet 
+from datetime import datetime, timedelta 
+from jwt.exceptions import ExpiredSignatureError
+from sqlalchemy import create_engine 
+from sqlalchemy.orm import sessionmaker 
+from time import time 
+
 
 
 class Manager(): 
